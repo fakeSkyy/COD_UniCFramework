@@ -1,0 +1,9 @@
+# gcov artefacts land beside the objects
+*.gcda
+*.gcno
+*.gcov
+
+# Python gate/report caches are generated outside source in CI, but local runs
+# should never make them part of the test tree.
+__pycache__/
+*.py[cod]

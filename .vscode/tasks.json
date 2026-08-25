@@ -1,0 +1,70 @@
+{
+	// See https://go.microsoft.com/fwlink/?LinkId=733558
+	//
+	// CMake, not make: the CubeMX project is generated as a CMake tree now, and
+	// the root CMakeLists includes it rather than duplicating its source list.
+	//
+	// The generator is "Unix Makefiles" rather than the Ninja that
+	// 05_vender/stm32cubemx/CMakePresets.json asks for, because ninja is not
+	// installed here. That is also why these tasks configure explicitly instead
+	// of using `cmake --preset` — the preset would fail on the generator, and it
+	// would configure the vendor subtree as the top-level project, which loses
+	// every framework source.
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "configure",
+			"type": "shell",
+			"command": "cmake -S . -B build -G 'Unix Makefiles' -DCMAKE_TOOLCHAIN_FILE=05_vender/stm32cubemx/cmake/gcc-arm-none-eabi.cmake -DCMAKE_BUILD_TYPE=Debug",
+			"problemMatcher": [],
+			"group": {
+				"kind": "none",
+				"isDefault": false
+			}
+		},
+		{
+			// Configures on demand: CMake regenerates build/ by itself when
+			// CMakeLists.txt changes, so this is safe to run as the default.
+			"label": "build task",
+			"type": "shell",
+			"command": "cmake -S . -B build -G 'Unix Makefiles' -DCMAKE_TOOLCHAIN_FILE=05_vender/stm32cubemx/cmake/gcc-arm-none-eabi.cmake -DCMAKE_BUILD_TYPE=Debug && cmake --build build -j16",
+			"problemMatcher": "$gcc",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		},
+		{
+			"label": "clean",
+			"type": "shell",
+			"command": "cmake --build build --target clean",
+			"problemMatcher": [],
+			"group": {
+				"kind": "none",
+				"isDefault": true
+			}
+		},
+		{
+			// Deletes the cache too, which `clean` does not. Needed after moving
+			// or renaming files that CMake globbed or after a toolchain change.
+			"label": "rebuild task",
+			"type": "shell",
+			"command": "rm -rf build && cmake -S . -B build -G 'Unix Makefiles' -DCMAKE_TOOLCHAIN_FILE=05_vender/stm32cubemx/cmake/gcc-arm-none-eabi.cmake -DCMAKE_BUILD_TYPE=Debug && cmake --build build -j16",
+			"problemMatcher": "$gcc",
+			"group": {
+				"kind": "none",
+				"isDefault": false
+			}
+		},
+		{
+			"label": "download dap",
+			"type": "shell",
+			"command": "openocd -f openocd_dap.cfg -c 'program build/COD_UniFramework_H7.elf verify reset exit'",
+			"problemMatcher": [],
+			"group": {
+				"kind": "none",
+				"isDefault": false
+			}
+		}
+	]
+}

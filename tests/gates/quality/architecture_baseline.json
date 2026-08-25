@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "reviewed_violations": [
+    {
+      "id": "06_utils/util_assert/util_assert.h|ARCH_LAYER_INCLUDE|SEGGER_RTT.h|1dc10c0038f0b2c2|1",
+      "path": "06_utils/util_assert/util_assert.h",
+      "rule": "ARCH_LAYER_INCLUDE",
+      "token": "SEGGER_RTT.h",
+      "line_sha256": "1dc10c0038f0b2c24c1765ff3d218e2bf1597ad53366317eb845928d8e97951e",
+      "occurrence": 1,
+      "rationale": "Reviewed legacy assertion transport coupling to SEGGER RTT; retained as explicit architecture debt until assertion transport is inverted."
+    },
+    {
+      "id": "06_utils/util_log/util_log.c|ARCH_LAYER_INCLUDE|SEGGER_RTT.h|1dc10c0038f0b2c2|1",
+      "path": "06_utils/util_log/util_log.c",
+      "rule": "ARCH_LAYER_INCLUDE",
+      "token": "SEGGER_RTT.h",
+      "line_sha256": "1dc10c0038f0b2c24c1765ff3d218e2bf1597ad53366317eb845928d8e97951e",
+      "occurrence": 1,
+      "rationale": "Reviewed legacy logging transport coupling to SEGGER RTT; retained as explicit architecture debt until logging gains a downward-neutral transport interface."
+    },
+    {
+      "id": "06_utils/util_msgbus/util_msgbus.c|ARCH_LAYER_INCLUDE|plat_mutex.h|0bc0286b9cec6de0|1",
+      "path": "06_utils/util_msgbus/util_msgbus.c",
+      "rule": "ARCH_LAYER_INCLUDE",
+      "token": "plat_mutex.h",
+      "line_sha256": "0bc0286b9cec6de056b2e653b4dbd36a5707d1f6b11f41ed3b270d52730ce12a",
+      "occurrence": 1,
+      "rationale": "Reviewed legacy message-bus dependency on the platform mutex API; retained as explicit architecture debt pending synchronization injection."
+    },
+    {
+      "id": "06_utils/util_msgbus/util_msgbus.c|ARCH_LAYER_INCLUDE|plat_task.h|59eefc3e1cbe19ce|1",
+      "path": "06_utils/util_msgbus/util_msgbus.c",
+      "rule": "ARCH_LAYER_INCLUDE",
+      "token": "plat_task.h",
+      "line_sha256": "59eefc3e1cbe19ced07e0a7b68b3b05c68dafa3297635dd24a79c2ced69d8070",
+      "occurrence": 1,
+      "rationale": "Reviewed legacy message-bus dependency on platform task notification APIs; retained as explicit architecture debt pending wakeup injection."
+    }
+  ]
+}

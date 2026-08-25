@@ -1,0 +1,323 @@
+/**
+ * @file board_devices.def
+ * @author Gao Xing
+ * @date 2026/8/6
+ * @version 1.0
+ */
+
+/* This file is data, not code: the single list of what is wired onto this board.
+ * It is included several times, each time with one macro defined to expand into
+ * something different — the storage, the init sequence, the failure names, the
+ * accessors, the bus selector enum, the bus handle table. Adding a peripheral is
+ * one line here, and the init check, the failure reporting and the accessor come
+ * out generated, so they cannot be forgotten for a new entry.
+ *
+ * @par What is deliberately NOT here
+ * Which backend implements each class of peripheral. That is the chip's business,
+ * not the board's, and it lives in 04_impl/<chip>_bsp/impl_<chip>_bind.h. This
+ * file therefore names no vendor prefix, and retargeting does not touch it — the
+ * entries below say "a PWM on this timer, this channel", never "an STM32 PWM".
+ *
+ * @par Two macros, one list
+ * Peripherals and CAN buses use different macros because what has to be generated
+ * for each differs — a peripheral yields an instance and an accessor, a bus yields
+ * an enumerator and a handle. They share this file because they are the same kind
+ * of fact: what the schematic put on the board. A reader asking "what is on this
+ * board" should not have to know the answer is split across two files.
+ *
+ * Every include site defines only the macro it needs; this file supplies an empty
+ * default for the other and cleans up only what it introduced. So board.h, which
+ * wants the bus enum and must stay free of vendor symbols, never has to name — or
+ * even know about — BOARD_DEVICE.
+ *
+ *
+ * BOARD_DEVICE(getter, name, Class, ctx_args...)
+ *
+ *   getter     Public accessor name; becomes Board_<getter>().
+ *   name       Storage name; becomes the static s_<name>, and the string that
+ *              Board_FailedDevice() reports.
+ *   Class      Peripheral class: <Class>_Instance_s, PLAT_<Class>_Init, and the
+ *              backend that IMPL_OPS / IMPL_CTX look up in the bind header. One
+ *              of GPIO, PWM, DWT, Flash, CAN, SPI, IIC, UART, ADC.
+ *   ctx_args   Arguments for that class's context factory, verbatim C. This is
+ *              the only place a CubeMX handle or a pin macro appears.
+ *
+ * @par Where to look up ctx_args, since nothing here can check them
+ * They are forwarded untouched to IMPL_<backend>_<Class>_CreateCtx, so the
+ * authority is that function's declaration — for this chip,
+ * 04_impl/bsp/stm32h7/<class>/impl_stm32_<class>.h. Open the one for the class
+ * being added and copy its parameter list; each is documented there with its units
+ * and its NULL/zero handling.
+ *
+ * As of this board, with the parameter names those headers use:
+ *
+ *   DWT     (cpu_freq_hz)
+ *   PWM     (htim, channel)
+ *   SPI     (hspi, cs_port, cs_pin, mode)      mode: SPI_XFER_IT | SPI_XFER_DMA
+ *   UART    (huart, mode)                      mode: UART_XFER_IT | UART_XFER_DMA
+ *   Flash   (first_sector, sector_count)
+ *   GPIO    (port, pin)
+ *   IIC     (hi2c, dev_addr, mode)
+ *   ADC     (hadc, channel)
+ *
+ * That list is a convenience, not the contract — nothing checks it against the
+ * headers, so treat a disagreement as the header being right. It was already wrong
+ * once: it omitted IIC's dev_addr.
+ *
+ * @par What a wrong entry looks like
+ * The build catches most of it, because every field is pasted into a real symbol:
+ *
+ *   Misspelled Class    -> "unknown type name 'SPl_Instance_s'", pointing at this
+ *                          file and line, with the bad token underlined.
+ *   Class with no
+ *   backend on this chip -> IMPL_BACKEND_<Class> undefined, naming the class.
+ *   Too few ctx_args    -> "requires at least one argument for the '...'" here,
+ *                          or a wrong-arity error inside CreateCtx.
+ *   Wrong ctx_arg TYPE  -> an ordinary argument-type error against CreateCtx.
+ *
+ * What is not checked is a well-typed but wrong VALUE — the wrong timer handle, the
+ * wrong pin, a sector that is not the one intended. Those compile and then fail on
+ * hardware as a device that does not answer, so they are what the per-entry comments
+ * below are for.
+ *
+ * @par Order is initialisation order
+ * BOARD_DEVICE entries are brought up top to bottom and the first failure stops
+ * the rest, so an entry may rely on everything above it. The ordering here is
+ * declarative rather than a comment in a function body.
+ *
+ *
+ * BOARD_BUS(name, handle)
+ *
+ *   name    Selector name; becomes BOARD_<name> in Board_CANBus_e.
+ *   handle  CubeMX CAN peripheral handle. Only board_devices.c expands this
+ *           parameter, which is why the vendor type it has (FDCAN_HandleTypeDef
+ *           on this part, CAN_HandleTypeDef on a bxCAN one) stays in that file.
+ *
+ * @par Why a bus is listed but its nodes are not
+ * Which CAN peripherals exist, and which vendor handle each one is, is fixed by
+ * the schematic — so it belongs here, and generating both the enum and the handle
+ * lookup from one line is what stops them drifting apart the way a hand-written
+ * enum and a hand-written if/else chain did.
+ *
+ * How many *nodes* hang off a bus is not board data: a node is a (bus, transmit
+ * id, receive id) triple — one motor, one sensor — so the count, and the ids,
+ * belong to the robot. Board_CANCreate stays a factory the application calls once
+ * per device; everything vendor-specific inside it comes from this table.
+ */
+
+/* Both macros are required at every expansion point, even the ones that only care
+ * about one kind of entry — those define the other as empty. This file used to
+ * default a missing macro to nothing, which was convenient and hid a whole class
+ * of mistake: a site that misspells the name (BOARD_DEVIC) then expands to
+ * nothing at all, with no error, no warning, and no output to notice the absence
+ * of. Verified before this changed: a misspelled macro preprocessed to zero
+ * declarations and gcc exited 0 with an empty stderr, so the generated
+ * accessors, storage, or init steps simply were not there and the first symptom
+ * was a link error somewhere else — or, for an init loop, no symptom at all.
+ *
+ * Failing here instead costs one empty #define per site and names the problem at
+ * the line that caused it. */
+
+#ifndef BOARD_DEVICE
+#error "BOARD_DEVICE must be defined before including board_devices.def -- define it as empty if this site only wants BOARD_BUS entries"
+#endif
+
+#ifndef BOARD_BUS
+#error "BOARD_BUS must be defined before including board_devices.def -- define it as empty if this site only wants BOARD_DEVICE entries"
+#endif
+
+/* ------------------------------------------------------------------------- */
+/*  Peripherals, in initialisation order                                     */
+/* ------------------------------------------------------------------------- */
+
+/* Timebase first: a plain cycle counter with no dependency on any other
+ * peripheral, so having it up front means everything created later can rely on
+ * microsecond delays being available.
+ *
+ * CYCCNT counts CPU cycles, so what it needs is the core clock — taken from a
+ * value the RCC maintains rather than hardcoded, so that retuning the clock tree
+ * in CubeMX cannot silently skew every conversion.
+ *
+ * @par Not HAL_RCC_GetHCLKFreq(), which is what this used to say
+ * On the F407 HCLK and SYSCLK were the same 168 MHz, so HCLK happened to be the
+ * core clock and the wrong question got the right answer. Here AHBCLKDivider is
+ * RCC_HCLK_DIV2: the core runs at 550 MHz while HCLK is 275 MHz, so passing HCLK
+ * would make every microsecond conversion and every delay come out 2x long.
+ * SystemCoreClock is the CMSIS variable HAL_RCC_ClockConfig() sets to the CM7
+ * core clock, and SystemClock_Config() has run by the time Board_Init is called.
+ *
+ * @par Consequence of 550 MHz for callers
+ * CYCCNT is 32 bits, so it now wraps every ~7.8 s rather than the F407's ~25.6 s,
+ * and the 64-bit timeline is reconstructed by observing those wraps. Anything
+ * relying on PLAT_DWT_GetTimeline_* must poll more than twice as often as it did
+ * on the F407, or the timeline silently loses 2^32 cycles per missed wrap. */
+BOARD_DEVICE(Timebase, timebase, DWT, SystemCoreClock)
+
+/* The BMI088 is two dies in one package with independent register maps and
+ * separate chip selects, so it needs two handles rather than one. They are not
+ * interchangeable: the accelerometer inserts a dummy byte into every read and the
+ * gyroscope does not, so the read paths genuinely differ.
+ *
+ * The SPI backend owns both chip-select pins and drives them as part of every
+ * transfer. There is deliberately no separate GPIO entry for either: a second
+ * owner of a chip select desynchronises against the transfer, and a CS that goes
+ * inactive mid-frame aborts it at the sensor.
+ *
+ * Both pass the same &hspi2, which is what makes the backend give them a shared
+ * bus-arbitration record so their transfers cannot overlap. Interrupt-driven
+ * rather than DMA: the transfers are a few bytes each, so DMA setup would cost
+ * more than it saves — and on this part that is no longer only an efficiency
+ * argument, because DMA1/DMA2 cannot reach DTCM, where .bss lives.
+ *
+ * @par hspi2, not the F407's hspi1
+ * SPI2 is the only SPI peripheral CubeMX configured here (PB13 SCK, PC1 MOSI,
+ * PC2_C MISO), and the two chip selects it configured — PC0 and PC3_C — are
+ * labelled for this sensor. Confirmed working against the hardware: both dies
+ * answer their who-am-I on these pins.
+ *
+ * @par The SPI2 prescaler is load-bearing: 32, not 8
+ * A BMI088 accepts at most 10 MHz on SPI. The kernel clock here is 240 MHz, so
+ * prescaler 32 gives 7.5 MHz — the same value the vendor's own example for this
+ * board uses — while the 8 that was configured gave 24 MHz, 2.4x over the limit.
+ *
+ * That failure is worth describing because it does not look like a clock problem.
+ * The gyro die still answered correctly (0x0F) while the accelerometer returned a
+ * consistent, plausible-looking 0x23 instead of 0x1E — stable across retries, not
+ * obviously noise. Every SPI call reported success; only the payload was wrong.
+ * The two dies differ because the accelerometer inserts a dummy byte into every
+ * read, so it needs one more bus turnaround to survive. A single device answering
+ * correctly is therefore NOT evidence that the bus rate is legal.
+ *
+ * If either die ever fails its ID check, verify this prescaler before suspecting
+ * the wiring. */
+BOARD_DEVICE(ImuAccel, imu_accel, SPI, &hspi2, ACCEL_CS_GPIO_Port, ACCEL_CS_Pin, SPI_XFER_IT)
+BOARD_DEVICE(ImuGyro, imu_gyro, SPI, &hspi2, GYRO_CS_GPIO_Port, GYRO_CS_Pin, SPI_XFER_IT)
+
+/* @par A SPI instance that is not talking to a SPI device
+ * The status LED is a WS2812 on PA7, which is SPI6_MOSI. It has no clock line and
+ * no chip select: it decodes the width of the high pulse on a single wire, and
+ * SPI6 is here only because its shift register can generate that waveform without
+ * a critical section. Hence NULL for the port and 0 for the pin — the SPI backend
+ * accepts a CS-less device, see IMPL_STM32_SPI_CreateCtx.
+ *
+ * @par The CubeMX settings this depends on, and why they are not obvious
+ * SPI6 must be Transmit Only Master, and three of its parameters are load-bearing
+ * for dev_ws2812.c's byte-per-bit encoding:
+ *
+ *   Kernel clock   -> HSE, 24 MHz. Set in HAL_SPI_MspInit in spi.c, not in main.c:
+ *                    H7's CubeMX puts each peripheral's own clock source in its
+ *                    MspInit and reserves main.c for sources shared between
+ *                    peripherals (PLL2, CKPER). Worth knowing because grepping
+ *                    main.c for it finds nothing and suggests it was never
+ *                    generated.
+ *   Prescaler /4   -> 6.0 MHz, which is DEV_WS2812_SCK_HZ. That constant is the
+ *                    driver's stated requirement; this line and the kernel clock
+ *                    above are what satisfy it. Nothing checks the two agree, so
+ *                    changing either without the other is silent.
+ *   Data Size 8    -> one whole byte per colour bit. CubeMX defaults this to 4 bits
+ *                    when the .ioc has no DataSize key, which halves the clock
+ *                    count and produces a waveform the strip cannot decode — with
+ *                    no error anywhere, because HAL_SPI_Init accepts it and the
+ *                    transfer reports success.
+ *
+ * All three are in the .ioc (RCC.SPI6CLockSelection, SPI6.BaudRatePrescaler,
+ * SPI6.DataSize). If the LED ever shows the wrong colour or ignores data, check
+ * them in that order.
+ *
+ * CubeMX also assigned PA5 to SPI6_SCK. A WS2812 does not use a clock, so that pin
+ * is spent for nothing — harmless today because nothing else claims it.
+ *
+ * @par SPI_XFER_IT here selects nothing, and must not be changed to DMA
+ * dev_ws2812 sends through PLAT_SPI_Send, the blocking path, which ignores this
+ * argument entirely — 124 bytes at 6 MHz is 165 us, too short to be worth an
+ * interrupt. The mode is only consulted by the async calls, and for SPI6 those
+ * would not work as generated: CubeMX enabled no SPI6 interrupt and produced no
+ * SPI6_IRQHandler, so an interrupt-driven transfer would never complete. Switching
+ * this to SPI_XFER_DMA would additionally require a DMA stream and a buffer outside
+ * DTCM. Leave it, and keep using the blocking send. */
+BOARD_DEVICE(StatusLed, status_led, SPI, &hspi6, NULL, 0u, SPI_XFER_IT)
+
+/* @par The telemetry link, PE2/PE3 at 921600
+ * USART10 is the port app_telemetry.c streams the attitude estimate out of, in
+ * VOFA+ justFloat format for plotting.
+ *
+ * @par The baud rate is what sets the achievable frame rate
+ * 921600, eight times USART1's 115200, which is why the telemetry divider can be
+ * what it is: a 32-byte frame is 320 bit-times, so the line carries ~2880 frames a
+ * second and 200 Hz uses 7% of it rather than 56%. Raising the frame rate is now a
+ * question of whether anything needs it, not of whether the wire can take it. That
+ * number lives in CubeMX (USART10.BaudRate), so TELEM_DIVIDER in app_telemetry.c is
+ * chosen against it and nothing checks the two agree.
+ *
+ * @par UART_XFER_IT rather than DMA, which is not the obvious choice
+ * DMA is unusable here regardless of what CubeMX configured: DMA1/DMA2 cannot reach
+ * DTCM, and this linker script puts .bss there, so a send from an ordinary static
+ * buffer is rejected outright by the backend (see dma_reachable in
+ * impl_stm32_uart.c). Fixing that needs an AXI SRAM section in STM32H723xG_flash.ld
+ * — a CubeMX-owned file with no user region around the memory map, so a
+ * regeneration would silently drop it and telemetry would stop with every send
+ * returning false.
+ *
+ * Interrupt mode has no such constraint and costs one interrupt per byte, which at
+ * 921600 is 92 k/s. That is no longer negligible next to the 1 kHz attitude loop, so
+ * it is the reason to watch App_Telemetry_Skipped rather than assume headroom. The
+ * send is still asynchronous, so the task is not blocked for the 350 us a 32-byte
+ * frame occupies the wire.
+ *
+ * Unlike SPI6, this path works as generated: CubeMX enabled USART10_IRQn at priority
+ * 5 and stm32h7xx_it.c forwards USART10_IRQHandler to HAL_UART_IRQHandler. */
+BOARD_DEVICE(DebugUart, debug_uart, UART, &huart10, UART_XFER_IT)
+
+/* @par TIM12 CH2, not the F407's TIM4 CH3
+ * Only TIM3 (CH4 on PB1) and TIM12 (CH2 on PB15) are configured on this part, and
+ * the F407's buzzer pin PD14/TIM4_CH3 does not exist in this configuration at all,
+ * so the entry had to move to one of the two. TIM12 is the one whose CubeMX setup
+ * is shaped like a tone generator — prescaler 0 and period 20999, i.e. the full
+ * counter range left free for the frequency to be rewritten — whereas TIM3 is
+ * preloaded to a fixed 1 kHz-ish rate with autoreload preload enabled, the shape
+ * of a servo or a heater where the duty varies and the frequency does not.
+ *
+ * That is an inference from the timer configuration, NOT from a schematic. Which
+ * of PB15 and PB1 the buzzer is actually on is a fact about the board that must be
+ * confirmed against it before this is trusted; if it is PB1, change this line to
+ * &htim3 / TIM_CHANNEL_4 and nothing else moves.
+ *
+ * There is no clock argument. Which APB domain a timer is on, and whether the RCC
+ * doubles that domain's clock for its timers, are properties of the chip — so the
+ * backend derives the rate from the handle rather than having this file state a
+ * number it has no way to check. See timer_input_clk_hz in impl_stm32_pwm.c. */
+BOARD_DEVICE(BuzzerPWM, buzzer_pwm, PWM, &htim12, TIM_CHANNEL_2)
+
+/* Parameter storage in the safe sector. Which sector that is comes from the bind
+ * header, not from here — it depends on the part's flash layout. It is also the
+ * one value in this file that cannot be checked at runtime: every access is
+ * bounds-tested against the region, so naming the wrong sector is what would let
+ * a bad offset reach the firmware. */
+BOARD_DEVICE(ParamFlash, param_flash, Flash, IMPL_FLASH_PARAM_SECTOR, 1u)
+
+/* ------------------------------------------------------------------------- */
+/*  CAN buses                                                                */
+/* ------------------------------------------------------------------------- */
+
+/* FDCAN1 and FDCAN2 keep the names the application already uses. FDCAN3 (PD12/PD13)
+ * exists on this part and is initialised by CubeMX, but it is deliberately not
+ * listed: adding a bus here is what creates its selector, and an enumerator for a
+ * connector nothing is plugged into only invites a node to be created on it.
+ *
+ * @par FDCAN2 receives on FIFO 1, and that is not a detail this file can hide
+ * CubeMX gave FDCAN1 and FDCAN3 eight elements in receive FIFO 0 and none in
+ * FIFO 1, and FDCAN2 the reverse. A FIFO with zero elements does not exist, so a
+ * filter routed to it discards every match — the backend therefore picks whichever
+ * FIFO the peripheral actually has rather than alternating between them as the
+ * bxCAN driver did. Nothing here has to change for that; it is recorded because a
+ * future CubeMX edit that zeroes both FIFOs on a bus would make every node on it
+ * fail to come up, and this is where a reader would look. */
+BOARD_BUS(CAN1, hfdcan1)
+BOARD_BUS(CAN2, hfdcan2)
+
+/* ------------------------------------------------------------------------- */
+/*  Clean up only the defaults this file introduced                          */
+/* ------------------------------------------------------------------------- */
+
+/* Nothing to clean up: this file no longer defines either macro, so both belong
+ * to the site that defined them and it undefines them itself. */

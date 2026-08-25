@@ -1,0 +1,20 @@
+# Build output
+build/
+build-tests/
+
+# Generated language-server database. Produced by `make cdb` from the Makefile's
+# own commands, so it is reproducible and would only ever conflict in a diff.
+compile_commands.json
+
+# Tool state and caches
+.cache/
+.claude/
+.kiro/
+
+# Legacy code kept for reference only, not part of the build
+ref/
+
+# Editor and OS noise
+*.swp
+*~
+.DS_Store

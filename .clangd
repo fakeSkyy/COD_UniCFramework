@@ -1,0 +1,60 @@
+# clangd configuration for this STM32H723 firmware project.
+#
+# The flags themselves are NOT here. They come from compile_commands.json, which
+# CMake writes on every configure (CMAKE_EXPORT_COMPILE_COMMANDS in the root
+# CMakeLists) — so clangd sees exactly what the compiler sees, and a source or
+# include path added to the build cannot leave this file behind. Nothing needs
+# running by hand; the database lands in build/, and .vscode/settings.json passes
+# --compile-commands-dir=build so clangd finds it there.
+#
+# clangd does not read .vscode/c_cpp_properties.json; that file is for the
+# Microsoft C/C++ extension, whose IntelliSense is disabled in settings.json.
+#
+# What remains here is the handful of things a compile database cannot express.
+
+CompileFlags:
+  # Query the ARM cross-compiler for its target, builtin macros and system
+  # headers (newlib), rather than letting clang assume the host. Without this,
+  # <stdint.h> resolves to glibc's and every fixed-width type is subtly wrong.
+  Compiler: /home/stg/tools/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-gcc
+
+  Add:
+    # A bare .h is ambiguous — C, C++ and Objective-C all use it — and clangd
+    # guesses Objective-C++ for headers with no matching .c in the database.
+    # Forcing C is what makes the *_ops contracts and util_* headers navigable.
+    - -xc
+
+    # newlib's headers, explicitly. `Compiler:` above is meant to make clangd
+    # discover these by querying the driver, and it finds most of what the
+    # toolchain reports — but not this directory, so a file including <stdlib.h>,
+    # <stdio.h> or <string.h> got "file not found" and clangd abandoned the whole
+    # translation unit. GCC resolves them fine (this is what
+    # `arm-none-eabi-gcc -print-sysroot` points at), so it was only ever a
+    # language-server blind spot, never a build failure.
+    #
+    # Surfaced when 04_impl/rtos/freertos/rtos_hooks.c and rtos_tasks.c became the first
+    # project sources to include SEGGER_RTT.h, which pulls in <stdlib.h>.
+    - -isystem/home/stg/tools/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi/arm-none-eabi/include
+
+  Remove:
+    # Valid for arm-none-eabi-gcc, rejected by clangd's bundled clang. Each one
+    # left in place aborts parsing for the whole translation unit, which shows up
+    # as "every symbol is unknown" rather than as one bad-flag message.
+    # CMake does not emit these, but a hand-run compiler invocation might; this is
+    # the backstop for a
+    # database generated some other way (bear, compiledb, an IDE).
+    - -mword-relocations
+    - -fno-tree-scev-cprop
+    - -Wa,*
+    - -specs=*
+    - -flto*
+    - --param*
+
+Diagnostics:
+  Suppress:
+    # The vendor tree is generated code we do not edit, and its warnings would
+    # bury the ones from code we do. Project sources are still fully checked —
+    # the build runs -Wall and is kept at zero warnings.
+    - unused-includes
+
+  UnusedIncludes: None

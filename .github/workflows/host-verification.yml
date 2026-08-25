@@ -1,0 +1,190 @@
+name: Host verification
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 2 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: host-verification-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  verification:
+    name: ${{ matrix.mode }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [host, coverage, address, undefined]
+
+    steps:
+      - name: Initialize ${{ matrix.mode }} status
+        env:
+          MODE: ${{ matrix.mode }}
+        run: |
+          artifact="$RUNNER_TEMP/cod-ci-$MODE"
+          mkdir -p "$artifact"
+          printf 'INCOMPLETE: %s gate did not finish\n' "$MODE" > "$artifact/status.txt.tmp"
+          mv "$artifact/status.txt.tmp" "$artifact/status.txt"
+
+      - name: Check out sources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install pinned host analysis tools
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            clang-format-18=1:18.1.3-1ubuntu1 \
+            clang-tidy-18=1:18.1.3-1ubuntu1 \
+            cppcheck=2.13.0-2ubuntu3 \
+            ruby=1:3.2~ubuntu1 \
+            ruby3.2=3.2.3-1ubuntu0.24.04.8
+          sudo ln -sf /usr/bin/clang-format-18 /usr/local/bin/clang-format
+
+      - name: Run ${{ matrix.mode }} gate
+        env:
+          MODE: ${{ matrix.mode }}
+        run: |
+          set -uo pipefail
+          artifact="$RUNNER_TEMP/cod-ci-$MODE"
+
+          status=0
+          if [[ "$MODE" == host ]]; then
+            : > "$artifact/cmock-regeneration.log"
+            ./tests/scripts/cmock/check.sh \
+              --json-out "$artifact/cmock-check.json" 2>&1 | \
+              tee "$artifact/cmock-regeneration.log"
+            status=${PIPESTATUS[0]}
+            if [[ $status -eq 0 ]]; then
+              REPORT_CMOCK_JSON="$artifact/cmock-check.json" \
+                ./tests/run_tests.sh "$RUNNER_TEMP/cod-build-host" 2>&1 | tee "$artifact/run.log"
+              status=${PIPESTATUS[0]}
+            fi
+          elif [[ "$MODE" == coverage ]]; then
+            ./tests/run_coverage.sh "$RUNNER_TEMP/cod-build-coverage" 2>&1 | \
+              tee "$artifact/run.log"
+            status=${PIPESTATUS[0]}
+          else
+            SANITIZER_CONFIGS="$MODE" ./tests/run_sanitizers.sh \
+              "$RUNNER_TEMP/cod-build-sanitizer" 2>&1 | tee "$artifact/run.log"
+            status=${PIPESTATUS[0]}
+          fi
+
+          if [[ $status -eq 0 ]]; then
+            printf 'PASS: %s gate\n' "$MODE" > "$artifact/status.txt.tmp"
+          else
+            printf 'FAIL: %s gate exited with status %s\n' "$MODE" "$status" \
+              > "$artifact/status.txt.tmp"
+          fi
+          mv "$artifact/status.txt.tmp" "$artifact/status.txt"
+          exit "$status"
+
+      - name: Finalize ${{ matrix.mode }} status
+        if: always()
+        env:
+          MODE: ${{ matrix.mode }}
+        run: |
+          artifact="$RUNNER_TEMP/cod-ci-$MODE"
+          mkdir -p "$artifact"
+          if ! grep -Eq '^(PASS|FAIL):' "$artifact/status.txt" 2>/dev/null; then
+            printf 'FAIL: %s gate interrupted before terminal status\n' "$MODE" \
+              > "$artifact/status.txt.tmp"
+            mv "$artifact/status.txt.tmp" "$artifact/status.txt"
+          fi
+
+      - name: Upload ${{ matrix.mode }} reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: host-${{ matrix.mode }}-reports
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            ${{ runner.temp }}/cod-ci-${{ matrix.mode }}
+            ${{ runner.temp }}/cod-build-host/quality-report.json
+            ${{ runner.temp }}/cod-build-host/performance/reports
+            ${{ runner.temp }}/cod-build-host/Testing/Temporary/LastTest.log
+            ${{ runner.temp }}/cod-build-coverage/coverage
+            ${{ runner.temp }}/cod-build-coverage/quality-report.json
+            ${{ runner.temp }}/cod-build-coverage/Testing/Temporary/LastTest.log
+            ${{ runner.temp }}/cod-build-sanitizer-${{ matrix.mode }}/sanitizer-status.txt
+            ${{ runner.temp }}/cod-build-sanitizer-${{ matrix.mode }}/quality-report.json
+            ${{ runner.temp }}/cod-build-host/reports
+            ${{ runner.temp }}/cod-build-coverage/reports
+            ${{ runner.temp }}/cod-build-sanitizer-${{ matrix.mode }}/reports
+            ${{ runner.temp }}/cod-build-sanitizer-${{ matrix.mode }}/Testing/Temporary/LastTest.log
+
+  nightly-fuzz:
+    name: nightly fuzz
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Initialize fuzz status
+        run: |
+          artifact="$RUNNER_TEMP/cod-ci-fuzz"
+          mkdir -p "$artifact"
+          printf '%s\n' 'INCOMPLETE: fuzz gate did not finish' > "$artifact/status.txt.tmp"
+          mv "$artifact/status.txt.tmp" "$artifact/status.txt"
+
+      - name: Check out sources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install pinned Clang
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang-18=1:18.1.3-1ubuntu1
+
+      - name: Run bounded fuzz campaigns
+        run: |
+          set -uo pipefail
+          artifact="$RUNNER_TEMP/cod-ci-fuzz"
+          FUZZ_RUNS=4096 FUZZ_MAX_TOTAL_TIME=60 FUZZ_SEED=1337 \
+            ./tests/run_fuzz.sh "$RUNNER_TEMP/cod-build-fuzz" 2>&1 | tee "$artifact/run.log"
+          status=${PIPESTATUS[0]}
+          if [[ $status -eq 0 ]]; then
+            cp "$RUNNER_TEMP/cod-build-fuzz/fuzz-status.txt" "$artifact/status.txt.tmp"
+          else
+            printf 'FAIL: fuzz gate exited with status %s\n' "$status" \
+              > "$artifact/status.txt.tmp"
+          fi
+          mv "$artifact/status.txt.tmp" "$artifact/status.txt"
+          exit "$status"
+
+      - name: Finalize fuzz status
+        if: always()
+        run: |
+          artifact="$RUNNER_TEMP/cod-ci-fuzz"
+          mkdir -p "$artifact"
+          if ! grep -Eq '^(PASS|FAIL):' "$artifact/status.txt" 2>/dev/null; then
+            printf '%s\n' 'FAIL: fuzz gate interrupted before terminal status' \
+              > "$artifact/status.txt.tmp"
+            mv "$artifact/status.txt.tmp" "$artifact/status.txt"
+          fi
+
+      - name: Upload fuzz reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: host-fuzz-reports
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            ${{ runner.temp }}/cod-ci-fuzz
+            ${{ runner.temp }}/cod-build-fuzz/fuzz-status.txt
+            ${{ runner.temp }}/cod-build-fuzz/artifacts
+            ${{ runner.temp }}/cod-build-fuzz/reports

@@ -1,0 +1,13 @@
+{
+  "calibration_max_spread": @PERF_CALIBRATION_MAX_SPREAD@,
+  "ringbuf_max_ratio": @PERF_RINGBUF_MAX_RATIO@,
+  "pid_max_ratio": @PERF_PID_MAX_RATIO@,
+  "ahrs_max_ratio": @PERF_AHRS_MAX_RATIO@,
+  "max_stack_bytes": @PERF_MAX_STACK_BYTES@,
+  "benchmark_max_text": @PERF_BENCHMARK_MAX_TEXT@,
+  "benchmark_max_data": @PERF_BENCHMARK_MAX_DATA@,
+  "benchmark_max_bss": @PERF_BENCHMARK_MAX_BSS@,
+  "representative_max_text": @PERF_REPRESENTATIVE_MAX_TEXT@,
+  "representative_max_data": @PERF_REPRESENTATIVE_MAX_DATA@,
+  "representative_max_bss": @PERF_REPRESENTATIVE_MAX_BSS@
+}

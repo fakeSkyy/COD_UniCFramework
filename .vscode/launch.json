@@ -1,0 +1,90 @@
+{
+    // 启动调试的快捷键是 F5。需要 Cortex-Debug 扩展 (marus25.cortex-debug),
+    // 以及 PATH 上的 openocd。
+    //
+    // 本机探针是 WCH 的 CMSIS-DAP (USB 1a86:e6e1);它的 VID/PID 写在
+    // openocd_dap.cfg 里,因为 OpenOCD 内置列表不含 WCH。
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // 烧写并运行。日常调试用这个。
+            "name": "H7 Launch",
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceRoot}/build/COD_UniFramework_H7.elf",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            // 名字来自根 CMakeLists.txt 的 CMAKE_PROJECT_NAME,改那里要同步改这里。
+            "device": "STM32H723VG",
+            "svdFile": "05_vender/stm32cubemx/STM32H723.svd",
+            "configFiles": [
+                "openocd_dap.cfg"
+            ],
+            // 停在 main() 而不是复位向量,所以 SystemInit 和时钟配置已经跑完。
+            // 如果板子在到达这里之前就卡住,问题就在时钟配置 —— 改用 Attach
+            // 并让核心停在复位状态来抓它。
+            "runToEntryPoint": "main",
+            // 让扩展能解析任务列表和每个任务的栈。调度器启动前无害,视图是空的。
+            "rtos": "FreeRTOS",
+            "preLaunchTask": "build task",
+            // Live Watch: Cortex-Debug 自带的,不是 misaka21.arm-livewatch。它通过
+            // 第二条 GDB 连接读内存 (启动时的 CDLiveWatchSetup 就是给 OpenOCD 的
+            // gdb-max-connections 加一),所以核心运行时也能刷新变量,且不碰 TCL 端口。
+            //
+            // 因此这里不需要钉 tcl_port。装着的 arm-livewatch 扩展是多余的:它连
+            // TCL 端口,而探针独占 —— 两个 OpenOCD 抢同一个探针只会都失败。用这个,
+            // 停用那个。
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 4
+            },
+            // SEGGER RTT over SWD,这是本固件的日志通路 —— rtos_tasks.c 里每个
+            // SEGGER_RTT_printf 和断言处理器的输出都到这里,不走 UART。
+            // 代码只写通道 0。
+            //
+            // 控制块靠扫描 RAM 找签名。搜索范围必须覆盖 _SEGGER_RTT 的实际位置:
+            // 本链接脚本把 .bss 放在 DTCMRAM 0x20000000,而**不是** H7 项目更
+            // 常见的 AXI SRAM 0x24000000。范围错了 RTT 会静默连不上。
+            //
+            // 44 KB 而不是 DTCM 的全部 128 KB:搜到 0x20020000 会读到区域末尾
+            // 之后一个字,OpenOCD 报 "Failed to read memory" 并放弃扫描。
+            // _SEGGER_RTT 实测在 0x20009184,44 KB 足够覆盖。
+            "rttConfig": {
+                "enabled": true,
+                "address": "auto",
+                "searchSize": 45056,
+                "searchId": "SEGGER RTT",
+                "polling_interval": 20,
+                "decoders": [
+                    {
+                        "port": 0,
+                        "type": "console",
+                        "label": "RTT",
+                        "noprompt": true
+                    }
+                ]
+            }
+        },
+        {
+            // 附加到已在运行的固件,不重新烧写。用来检查已经出问题的板子 ——
+            // 烧写会毁掉你想看的现场。
+            "name": "H7 Attach",
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceRoot}/build/COD_UniFramework_H7.elf",
+            "request": "attach",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "device": "STM32H723VG",
+            "svdFile": "05_vender/stm32cubemx/STM32H723.svd",
+            "configFiles": [
+                "openocd_dap.cfg"
+            ],
+            "rtos": "FreeRTOS",
+            // 同上:Cortex-Debug 自带的 Live Watch,走第二条 GDB 连接。
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 4
+            }
+        }
+    ]
+}

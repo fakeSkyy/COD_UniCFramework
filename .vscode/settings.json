@@ -1,0 +1,72 @@
+{
+	"VsCodeTaskButtons.tasks": [
+		{
+			"label": "$(notebook-open-as-text) Build",
+			"task": "build task",
+			"tooltip": "Build target files"
+		},
+		{
+			"label": "$(search-refresh) ReBuild",
+			"task": "rebuild task",
+			"tooltip": "ReBuild target files"
+		},
+		{
+			"label": "$(notebook-move-down) Download",
+			"task": "download dap",
+			"tooltip": "Download code to flash memory"
+		}
+	],
+	"commentTranslate.hover.enabled": true,
+	"files.associations": {
+		"*.h": "c",
+		// board_devices.def is C preprocessor input, not plain text. Without this
+		// the editor gives it no syntax highlighting and clangd ignores it
+		// entirely, so a malformed entry looks the same as a correct one until
+		// the build expands it.
+		"*.def": "c"
+	},
+	"commentTranslate.source": "Bing",
+	// Language server: clangd, reading compile_commands.json. There is no
+	// c_cpp_properties.json — clangd never read it, and keeping a second hand-written
+	// include list only let it drift from the build (it had already lost
+	// 03_platform/rtos/{mutex,task}, 04_impl/rtos/freertos/{mutex,task} and
+	// 06_utils/util_msgbus). CMake writes compile_commands.json itself on every
+	// configure (CMAKE_EXPORT_COMPILE_COMMANDS), so there is nothing to run by
+	// hand — but it lands in build/, which is why clangd is pointed there below.
+	"clangd.arguments": [
+		// Absolute, because --query-driver matches the compiler path clangd reads out
+		// of compile_commands.json and will not accept a relative pattern. Written
+		// with ${env:...} so the path is not one machine's: set ARM_TOOLCHAIN_BIN to
+		// the toolchain's bin directory (the same one that holds arm-none-eabi-gcc on
+		// your PATH). Unset, this expands to a literal that matches nothing and clangd
+		// reports every vendor header as missing rather than failing loudly -- so if
+		// cross-compiled headers stop resolving, check this variable first.
+		"--query-driver=${env:ARM_TOOLCHAIN_BIN}/arm-none-eabi-*",
+		// CMake writes the database into build/, not the project root where clangd
+		// looks by default. Pointing at it beats symlinking a copy into the root,
+		// which a reconfigure could leave stale.
+		"--compile-commands-dir=build",
+		"--background-index",
+		"--clang-tidy",
+		"--header-insertion=never",
+		"--completion-style=detailed"
+	],
+	// The Microsoft C/C++ extension's IntelliSense must be off, not merely unused:
+	// with both active every diagnostic appears twice, and its own engine would fall
+	// back to guessing include paths now that c_cpp_properties.json is gone. Leaving
+	// the extension installed is fine — it still provides the debugger.
+	"C_Cpp.intelliSenseEngine": "disabled",
+	"keilMapHeatmap.memoryConfig": {
+		"COD_UniFramework_H7.map": {
+			"rom": 0,
+			"ram": 192
+		}
+	},
+	// misaka21.arm-livewatch 的设置曾经在这里,已删除:Cortex-Debug 自带 Live Watch
+	// (走第二条 GDB 连接,见 launch.json),而那个扩展走 OpenOCD 的 TCL 端口。探针是
+	// 独占的,两个都启用就是两个 OpenOCD 抢一个探针,谁都起不来。停用 arm-livewatch,
+	// 它的 elfPath / gdbPath / openocdPort / ramRegions 设置也随之删掉。
+	"cmake.configureOnOpen": true,
+	"cmake.generator": "Unix Makefiles",
+	"cmake.buildDirectory": "${workspaceFolder}/build"
+}

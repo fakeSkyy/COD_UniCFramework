@@ -1,0 +1,16 @@
+---
+:cmock:
+  :mock_path: tests/unit/utils/mocks
+  :mock_prefix: mock_
+  :verbosity: 2
+  :enforce_strict_ordering: true
+  :plugins:
+    - :ignore
+    - :ignore_arg
+    - :expect_any_args
+    - :callback
+    - :return_thru_ptr
+  :when_no_prototypes: :warn
+  :treat_externs: :include
+  :strippables:
+    - '(?:__attribute__\s*\(\([^)]*\)\))'

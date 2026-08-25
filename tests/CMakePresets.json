@@ -1,0 +1,110 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 22,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "host-debug",
+      "displayName": "Host Debug",
+      "generator": "Unix Makefiles",
+      "binaryDir": "/tmp/COD_UniCFramework-preset-host-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "host-coverage",
+      "displayName": "Host GCC coverage",
+      "inherits": "host-debug",
+      "binaryDir": "/tmp/COD_UniCFramework-preset-host-coverage",
+      "cacheVariables": {
+        "COVERAGE": "ON"
+      }
+    },
+    {
+      "name": "host-asan",
+      "displayName": "Host Address/Leak Sanitizer",
+      "inherits": "host-debug",
+      "binaryDir": "/tmp/COD_UniCFramework-preset-host-asan",
+      "cacheVariables": {
+        "SANITIZER": "address"
+      }
+    },
+    {
+      "name": "host-ubsan",
+      "displayName": "Host UndefinedBehaviorSanitizer",
+      "inherits": "host-debug",
+      "binaryDir": "/tmp/COD_UniCFramework-preset-host-ubsan",
+      "cacheVariables": {
+        "SANITIZER": "undefined"
+      }
+    },
+    {
+      "name": "host-fuzz",
+      "displayName": "Clang libFuzzer harnesses",
+      "generator": "Unix Makefiles",
+      "binaryDir": "/tmp/COD_UniCFramework-preset-host-fuzz",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_C_COMPILER": "clang-18",
+        "ENABLE_FUZZING": "ON",
+        "ENABLE_PERFORMANCE_GATES": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "host-debug",
+      "configurePreset": "host-debug",
+      "jobs": 0
+    },
+    {
+      "name": "host-coverage",
+      "configurePreset": "host-coverage",
+      "jobs": 0
+    },
+    {
+      "name": "host-asan",
+      "configurePreset": "host-asan",
+      "jobs": 0
+    },
+    {
+      "name": "host-ubsan",
+      "configurePreset": "host-ubsan",
+      "jobs": 0
+    },
+    {
+      "name": "host-fuzz",
+      "configurePreset": "host-fuzz",
+      "targets": ["fuzz_ringbuf", "fuzz_crc", "fuzz_remote"],
+      "jobs": 0
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "host-debug",
+      "configurePreset": "host-debug",
+      "output": {"outputOnFailure": true}
+    },
+    {
+      "name": "host-asan",
+      "configurePreset": "host-asan",
+      "output": {"outputOnFailure": true},
+      "environment": {
+        "ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1:abort_on_error=1:strict_string_checks=1:detect_stack_use_after_return=1",
+        "LSAN_OPTIONS": "exitcode=23:report_objects=1"
+      }
+    },
+    {
+      "name": "host-ubsan",
+      "configurePreset": "host-ubsan",
+      "output": {"outputOnFailure": true},
+      "environment": {
+        "UBSAN_OPTIONS": "halt_on_error=1:abort_on_error=1:print_stacktrace=1:report_error_type=1"
+      }
+    }
+  ]
+}
