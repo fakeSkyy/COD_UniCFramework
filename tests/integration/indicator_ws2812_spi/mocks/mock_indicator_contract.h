@@ -41,6 +41,19 @@ void Board_StatusLed_AddCallback(CMOCK_Board_StatusLed_CALLBACK Callback);
 void Board_StatusLed_Stub(CMOCK_Board_StatusLed_CALLBACK Callback);
 #define Board_StatusLed_StubWithCallback Board_StatusLed_Stub
 int Board_StatusLed_CallCount(void);
+#define Board_BuzzerPWM_Ignore() TEST_FAIL_MESSAGE("Board_BuzzerPWM requires _IgnoreAndReturn");
+#define Board_BuzzerPWM_IgnoreAndReturn(cmock_retval) Board_BuzzerPWM_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void Board_BuzzerPWM_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, PWM_Instance_s* cmock_to_return);
+#define Board_BuzzerPWM_StopIgnore() Board_BuzzerPWM_CMockStopIgnore()
+void Board_BuzzerPWM_CMockStopIgnore(void);
+#define Board_BuzzerPWM_Expect() TEST_FAIL_MESSAGE("Board_BuzzerPWM requires _ExpectAndReturn");
+#define Board_BuzzerPWM_ExpectAndReturn(cmock_retval) Board_BuzzerPWM_CMockExpectAndReturn(__LINE__, cmock_retval)
+void Board_BuzzerPWM_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, PWM_Instance_s* cmock_to_return);
+typedef PWM_Instance_s* (* CMOCK_Board_BuzzerPWM_CALLBACK)(int cmock_num_calls);
+void Board_BuzzerPWM_AddCallback(CMOCK_Board_BuzzerPWM_CALLBACK Callback);
+void Board_BuzzerPWM_Stub(CMOCK_Board_BuzzerPWM_CALLBACK Callback);
+#define Board_BuzzerPWM_StubWithCallback Board_BuzzerPWM_Stub
+int Board_BuzzerPWM_CallCount(void);
 #define PLAT_Task_Create_Ignore() TEST_FAIL_MESSAGE("PLAT_Task_Create requires _IgnoreAndReturn");
 #define PLAT_Task_Create_IgnoreAndReturn(cmock_retval) PLAT_Task_Create_CMockIgnoreAndReturn(__LINE__, cmock_retval)
 void PLAT_Task_Create_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return);

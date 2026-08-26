@@ -14,23 +14,31 @@
 #include "case_runner.h"
 #include "mock_indicator_deps.h"
 
-static SPI_Instance_s   spi;
-static PLAT_Task_Entry  captured_entry;
-static void*            captured_arg;
-static bool             create_result;
-static bool             led_init_result;
-static DEV_WS2812_s*    led_instance;
-static jmp_buf          task_exit;
-static unsigned         loop_limit;
-static unsigned         delay_calls;
-static unsigned         play_calls;
-static unsigned         show_calls;
-static unsigned         set_pixel_calls;
-static unsigned         warning_logs;
-static uint8_t          pixel[3];
-static uint16_t         seq_out[4];
-static UTIL_Seq_Frame_s copied_frames[24];
-static unsigned         copied_count;
+static SPI_Instance_s          spi;
+static PWM_Instance_s          pwm;
+static PLAT_Task_Entry         captured_entry;
+static void*                   captured_arg;
+static bool                    create_result;
+static bool                    led_init_result;
+static DEV_WS2812_s*           led_instance;
+static jmp_buf                 task_exit;
+static unsigned                loop_limit;
+static unsigned                delay_calls;
+static unsigned                play_calls;
+static unsigned                show_calls;
+static unsigned                set_pixel_calls;
+static unsigned                warning_logs;
+static uint8_t                 pixel[3];
+static uint16_t                seq_out[4];
+static UTIL_Seq_Frame_s        copied_frames[24];
+static unsigned                copied_count;
+static PWM_Instance_s*         buzzer_pwm_seen;
+static bool                    buzzer_create_result;
+static DEV_Buzzer_s*           buzzer_instance;
+static unsigned                buzzer_tick_calls;
+static unsigned                buzzer_playseq_calls;
+static const UTIL_Seq_Frame_s* buzzer_playseq_frames;
+static bool                    buzzer_playseq_loop;
 
 static bool capture_create(Task_s* task, PLAT_Task_Entry entry, void* arg, const char* name,
                            void* stack, size_t bytes, uint8_t priority, int calls)
@@ -147,9 +155,37 @@ static void capture_log(UTIL_Log_Level_e level, const char* tag, const char* fmt
     TEST_ASSERT_EQUAL_STRING("led", tag);
     if (level == UTIL_LOG_WARN)
     {
-        TEST_ASSERT_EQUAL_STRING("status LED unavailable; indicator runs without it", fmt);
+        TEST_ASSERT_TRUE(strcmp(fmt, "status LED unavailable; indicator runs without it") == 0 ||
+                         strcmp(fmt, "buzzer unavailable; faults will not be sounded") == 0);
         warning_logs++;
     }
+}
+
+static DEV_Buzzer_s* capture_buzzer_create(PWM_Instance_s* pwm_arg, uint32_t tick_hz, float volume,
+                                           int calls)
+{
+    (void) calls;
+    TEST_ASSERT_EQUAL_UINT32(40u, tick_hz);
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, 60.0f, volume);
+    buzzer_pwm_seen = pwm_arg;
+    return buzzer_create_result ? buzzer_instance : NULL;
+}
+
+static void capture_buzzer_tick(DEV_Buzzer_s* buz, int calls)
+{
+    (void) calls;
+    TEST_ASSERT_EQUAL_PTR(buzzer_instance, buz);
+    buzzer_tick_calls++;
+}
+
+static void capture_buzzer_playseq(DEV_Buzzer_s* buz, const UTIL_Seq_Frame_s* frames_arg, bool loop,
+                                   int calls)
+{
+    (void) calls;
+    TEST_ASSERT_EQUAL_PTR(buzzer_instance, buz);
+    buzzer_playseq_frames = frames_arg;
+    buzzer_playseq_loop   = loop;
+    buzzer_playseq_calls++;
 }
 
 static void capture_task(void)
@@ -165,6 +201,10 @@ static void run_task(unsigned loops)
     DEV_WS2812_Init_StubWithCallback(capture_led_init);
     DEV_Watchdog_Register_StubWithCallback(capture_watchdog);
     UTIL_Seq_Init_Ignore();
+    Board_BuzzerPWM_IgnoreAndReturn(&pwm);
+    DEV_Buzzer_Create_StubWithCallback(capture_buzzer_create);
+    DEV_Buzzer_Tick_StubWithCallback(capture_buzzer_tick);
+    DEV_Buzzer_PlaySeq_StubWithCallback(capture_buzzer_playseq);
     PLAT_Task_TickNow_StubWithCallback(tick_now);
     UTIL_Seq_Play_StubWithCallback(capture_play);
     UTIL_Seq_Step_StubWithCallback(seq_step);
@@ -184,6 +224,7 @@ void setUp(void)
 {
     mock_indicator_deps_Init();
     memset(&spi, 0, sizeof(spi));
+    memset(&pwm, 0, sizeof(pwm));
     captured_entry  = NULL;
     captured_arg    = NULL;
     create_result   = true;
@@ -201,7 +242,14 @@ void setUp(void)
     seq_out[2] = 30u;
     seq_out[3] = 0u;
     memset(copied_frames, 0, sizeof(copied_frames));
-    copied_count = 0u;
+    copied_count          = 0u;
+    buzzer_pwm_seen       = NULL;
+    buzzer_create_result  = true;
+    buzzer_instance       = (DEV_Buzzer_s*) &pwm; /* any non-NULL, opaque to production code */
+    buzzer_tick_calls     = 0u;
+    buzzer_playseq_calls  = 0u;
+    buzzer_playseq_frames = NULL;
+    buzzer_playseq_loop   = true;
 }
 
 void tearDown(void)
@@ -332,6 +380,74 @@ static void test_output_is_narrowed_to_pixel_bytes(void)
     TEST_ASSERT_EQUAL_UINT8(0u, pixel[2]);
 }
 
+/**
+ * @brief The buzzer must be ticked exactly once per beat_step iteration, at
+ * the same rate the LED is stepped — DEV_Buzzer_Tick's contract is that
+ * skipping a call leaves a note stuck, so this is what proves beat_step
+ * cannot silently skip it.
+ */
+static void test_buzzer_ticked_once_per_loop_iteration(void)
+{
+    capture_task();
+    run_task(3u);
+    TEST_ASSERT_EQUAL_PTR(&pwm, buzzer_pwm_seen);
+    TEST_ASSERT_EQUAL_UINT(3u, buzzer_tick_calls);
+}
+
+/**
+ * @brief A buzzer that never came up must not stop the LED from working —
+ * the same degrade-not-fail contract beat_init already gives a missing LED.
+ * DEV_Buzzer_Create is deliberately made to return NULL here rather than
+ * stubbing Board_BuzzerPWM to NULL, since either path reaches the same
+ * buzzer == NULL state and DEV_Buzzer_Create's own NULL-on-bad-argument case
+ * is what actually needs covering; DEV_Buzzer_Tick/PlaySeq are left
+ * unstubbed so CMock fails this test if beat_step or SetFault ever calls
+ * either without checking first.
+ */
+static void test_null_buzzer_leaves_led_working(void)
+{
+    buzzer_create_result = false;
+    capture_task();
+    run_task(1u);
+    TEST_ASSERT_EQUAL_UINT(1u, warning_logs);
+    TEST_ASSERT_EQUAL_UINT(1u, set_pixel_calls);
+    TEST_ASSERT_EQUAL_UINT(1u, show_calls);
+    App_Indicator_SetFault(3u);
+}
+
+/**
+ * @brief App_Indicator_SetFault must play the alert once, non-looping, and
+ * every frame duration must divide INDICATOR_TICK_MS's beat rate (25 ms) --
+ * the same timing hazard the LED's own on/gap times are asserted against.
+ */
+static void test_setfault_sounds_alert_once_with_divisible_frames(void)
+{
+    capture_task();
+    run_task(1u);
+    TEST_ASSERT_EQUAL_UINT(0u, buzzer_playseq_calls);
+
+    App_Indicator_SetFault(4u);
+    TEST_ASSERT_EQUAL_UINT(1u, buzzer_playseq_calls);
+    TEST_ASSERT_FALSE(buzzer_playseq_loop);
+    TEST_ASSERT_NOT_NULL(buzzer_playseq_frames);
+
+    unsigned total_frames = 0u;
+    for (unsigned i = 0u; i < 24u; i++)
+    {
+        const uint16_t ms = buzzer_playseq_frames[i].ms;
+        if (ms == 0u)
+        {
+            break;
+        }
+        TEST_ASSERT_EQUAL_UINT16(0u, ms % 25u);
+        total_frames++;
+    }
+    TEST_ASSERT_EQUAL_UINT(5u, total_frames);
+
+    App_Indicator_SetFault(5u);
+    TEST_ASSERT_EQUAL_UINT(2u, buzzer_playseq_calls);
+}
+
 int main(int argc, char** argv)
 {
     APP_CASES_BEGIN();
@@ -344,5 +460,8 @@ int main(int argc, char** argv)
     APP_CASE(fault_code_clamps_to_nine_red_flashes);
     APP_CASE(steady_condition_does_not_restart_sequence);
     APP_CASE(output_is_narrowed_to_pixel_bytes);
+    APP_CASE(buzzer_ticked_once_per_loop_iteration);
+    APP_CASE(null_buzzer_leaves_led_working);
+    APP_CASE(setfault_sounds_alert_once_with_divisible_frames);
     APP_CASES_END();
 }

@@ -32,16 +32,30 @@
  * interval, and anything built on top of it inherits that error — so it belongs
  * above any indicator or housekeeping task.
  *
- * @par Bring-up happens inside the task, and blocks for over two seconds
+ * @par Bring-up happens here, before the task is created, and blocks for over
+ * two seconds
  * ~165 ms of datasheet-mandated BMI088 reset waits plus two seconds of gyro-bias
- * averaging. Doing that here, before the scheduler, would stall every other task's
- * creation and delay the point at which anything is visibly alive. Inside the task
- * it delays only this loop. A bring-up failure is logged and parks the task, leaving
- * the accessors below returning zeros.
+ * averaging, all through PLAT_DWT_Delay_us/ms — busy-wait, not a scheduler
+ * primitive — so running it before PLAT_Task_StartScheduler is safe. It still
+ * delays every task's creation and, with it, the point at which anything is
+ * visibly alive: the status LED is dark for those two seconds rather than
+ * showing its heartbeat, because nothing is scheduled yet to drive it. That is
+ * expected, not a fault — someone watching a cold boot should see dark, then
+ * the heartbeat, and read the delay as normal rather than as a hang.
+ *
+ * @par A bring-up failure does not fail this call
+ * It raises INDICATOR_FAULT with a dedicated code, is logged, and this still
+ * returns true: App_StartTasks treats false as fatal to the whole scheduler,
+ * and a missing IMU is not that — the robot has a real fault to show on the
+ * LED, which requires the scheduler to actually start. The attitude task is
+ * not created in this case; there is nothing for it to do, and a task that
+ * only parks itself would waste its stack for the life of the program.
  *
  * @param priority  0 is lowest.
- * @return true when the task was created. This says nothing about whether the sensor
- *         came up — that is not known until the task has run.
+ * @return true once bring-up has been attempted, whether or not the sensor
+ *         came up — false only when the underlying PLAT_Task_Create call
+ *         itself fails (never attempted when init failed, since there is no
+ *         task to create).
  */
 bool App_Imu_StartTask(uint8_t priority);
 
@@ -117,5 +131,46 @@ const float* App_Imu_Rate(void);
  * spotting a sensor heating up or a thermal drift correlation.
  */
 float App_Imu_Temp(void);
+
+/* ========================================================================= */
+/*  Heater                                                                   */
+/* ========================================================================= */
+
+/**
+ * @brief Current heater duty, percent of PWM full scale.
+ *
+ * 0 whenever the heater is not regulating — see App_Imu_HeaterRegulating for
+ * why that covers more than "the heater is off because it is warm enough".
+ *
+ * @return Duty in [0, cap], where cap is well under 100% — see app_imu.c.
+ */
+float App_Imu_HeaterDuty(void);
+
+/**
+ * @brief Whether the heater loop is actively driving the die temperature.
+ *
+ * False when Board_ImuHeater() never came up, the temperature reading is out
+ * of the sensor's plausible range, or the IMU has been offline long enough
+ * that the reading feeding the loop is stale. In every one of those cases the
+ * commanded duty is zero regardless of what App_Imu_HeaterDuty reports having
+ * last computed — this is what tells a caller the zero means "not trying"
+ * rather than "trying and succeeding at 0%".
+ *
+ * @return true while the loop is closed on a trustworthy, live reading.
+ */
+bool App_Imu_HeaterRegulating(void);
+
+/**
+ * @brief The heater's duty ceiling, percent.
+ *
+ * Exposed so a caller — a diagnostic dump, or a test asserting the loop respects its
+ * own limit — can compare against the figure the controller actually uses instead of
+ * repeating it. A test that hardcodes the number passes for the wrong reason the day
+ * the ceiling is retuned, which is exactly what happened when it moved off the
+ * vendor's 5%.
+ *
+ * @return Ceiling in percent, always positive.
+ */
+float App_Imu_HeaterDutyCap(void);
 
 #endif /* APP_IMU_H */

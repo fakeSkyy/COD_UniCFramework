@@ -195,6 +195,29 @@ The H7 port builds clean and the scheduler runs on hardware, but these are open.
 
 `ref/` holds the pre-refactor `application/`, `components/`, `bsp/` and `algorithm/` trees, kept **for reference only** — they are not in the build and `README.md` documents that old design in Chinese. Read them to understand intended behaviour; put new work in the numbered layers.
 
+### The vendor's own examples are the authority on pin facts
+
+This board is a **DM_MC02** (达妙科技). The manufacturer publishes per-peripheral CubeMX
+example projects, and they are the authoritative source for anything about which pin does
+what — ahead of inference from our own `.ioc`, and far ahead of guessing from a signal
+name. Nothing in this repository records the schematic, so a pin claim not traceable to
+either our `.ioc` or one of these examples is a guess and should be labelled as one.
+
+<https://gitee.com/kit-miao/dm-mc02> — `例程/` holds one project per feature (the tree is
+in Chinese; paths need URL-escaping to fetch). No declared license, so read them for
+facts and write our own code rather than copying theirs.
+
+Fetch the `.ioc` for pin and timer mapping and the `App/` source for control constants.
+Note that the examples label pins only sparsely: `CtrBoard-H7_IMU_TempCtrl.ioc` names
+`ACC_CS`, `GYRO_CS`, `ACC_INT` and `GYRO_INT`, but leaves the heater pin unlabelled — it
+is identifiable only as the single PWM output the temperature-control project configures.
+So even here, confirm what a pin *drives* against the project's purpose, not its name.
+
+Confirmed from `例程/CtrBoard-H7_IMU_TempCtrl` (2026/8/26): the IMU heater is
+**PB1 / TIM3_CH4**, `Period = 10000-1`, `Prescaler = 24-1` off a 240 MHz kernel clock, so
+1 kHz PWM with 10000 duty steps. Our own `.ioc` configures PB1/TIM3_CH4 identically and
+`board_devices.def` has no entry for it, which is why `Board_Init` never touches it.
+
 ## Notes
 
 - `.claude/settings.local.json` denies reading `./.kiro/**`.

@@ -11,6 +11,7 @@
 #include <stdint.h>
 
 #include "board.h"
+#include "dev_buzzer.h"
 #include "dev_ws2812.h"
 #include "plat_task.h"
 #include "util_log.h"
@@ -187,6 +188,65 @@ static const indicator_pattern_s patterns[INDICATOR_CONDITION_COUNT] = {
 };
 
 /* ========================================================================= */
+/*  Alert tone                                                               */
+/* ========================================================================= */
+
+/**
+ * @brief Duty cycle for the alert tone, percent.
+ *
+ * 60, louder than mid-scale: this is meant to be noticed once, not lived with — see
+ * DEV_Buzzer_Create's documentation of what volume means for a passive buzzer.
+ */
+#define INDICATOR_BUZZER_VOLUME 60.0f
+
+/**
+ * @brief Rate DEV_Buzzer_Tick is called at, matching the beat's own wake rate.
+ *
+ * Derived from INDICATOR_TICK_MS rather than written as a separate number, so the
+ * two can never desync: DEV_Buzzer_Create converts note durations using this value,
+ * and if it disagreed with how often Tick is actually called every note would run
+ * at the wrong length. 1000u first keeps this in integer arithmetic — the buzzer's
+ * own rounding for a rate that does not divide 1000 evenly is documented on
+ * DEV_Buzzer_Create, and INDICATOR_TICK_MS does divide it here (1000 / 25 = 40).
+ */
+#define INDICATOR_BUZZER_TICK_HZ (1000u / INDICATOR_TICK_MS)
+
+/**
+ * @brief The one alert: three short beeps, then silence.
+ *
+ * Deliberately not a siren. A continuous tone masks whatever alert comes after it
+ * and is intolerable to work next to, so this plays once and stops — App_Indicator
+ * only ever calls DEV_Buzzer_PlaySeq with loop = false for it. Three beeps is
+ * short enough not to overstay and long enough to be unmistakable against a single
+ * accidental blip.
+ *
+ * Frame durations are whole multiples of INDICATOR_TICK_MS, asserted below one at a
+ * time: this table is played by the same task that steps the LED at that rate, and
+ * a duration that did not divide it would end a note early or late by however much
+ * it missed by, the same hazard INDICATOR_ON_MS/INDICATOR_GAP_MS avoid for the LED.
+ *
+ * The durations are named constants rather than literals inside the initialiser so
+ * the _Static_assert below can check each one directly: indexing into alert_seq
+ * itself is not an integer constant expression in strict C (only some compilers'
+ * extensions fold it), so the array's own elements cannot be asserted on portably.
+ */
+#define INDICATOR_ALERT_BEEP_MS 100u
+#define INDICATOR_ALERT_GAP_MS 75u
+
+static const UTIL_Seq_Frame_s alert_seq[] = {
+    {.ch = {DEV_NOTE_A5, 0u, 0u, 0u}, .ms = INDICATOR_ALERT_BEEP_MS, .ramp = false},
+    {.ch = {0u, 0u, 0u, 0u}, .ms = INDICATOR_ALERT_GAP_MS, .ramp = false},
+    {.ch = {DEV_NOTE_A5, 0u, 0u, 0u}, .ms = INDICATOR_ALERT_BEEP_MS, .ramp = false},
+    {.ch = {0u, 0u, 0u, 0u}, .ms = INDICATOR_ALERT_GAP_MS, .ramp = false},
+    {.ch = {DEV_NOTE_A5, 0u, 0u, 0u}, .ms = INDICATOR_ALERT_BEEP_MS, .ramp = false},
+    {.ms = 0u} /* terminator */
+};
+
+_Static_assert(INDICATOR_ALERT_BEEP_MS % INDICATOR_TICK_MS == 0u &&
+                   INDICATOR_ALERT_GAP_MS % INDICATOR_TICK_MS == 0u,
+               "every alert frame must be a whole multiple of the indicator tick");
+
+/* ========================================================================= */
 /*  State                                                                    */
 /* ========================================================================= */
 
@@ -210,6 +270,16 @@ static uint8_t      led_buf[DEV_WS2812_BUF_BYTES(1u)];
 
 /** @brief Whether the LED is usable; false when its Init failed. */
 static bool led_ready;
+
+/**
+ * @brief The buzzer, or NULL when it never came up.
+ *
+ * NULL either because Board_BuzzerPWM() itself returned NULL (that peripheral did
+ * not come up) or because DEV_Buzzer_Create rejected it — same handling either
+ * way, everywhere this is used: a missing buzzer degrades the indicator to LED-only
+ * rather than making it fail, mirroring how led_ready already covers a missing LED.
+ */
+static DEV_Buzzer_s* buzzer;
 
 /**
  * @brief Which conditions are raised, one bit per App_Indicator_Condition_e.
@@ -420,6 +490,21 @@ static void beat_init(void)
         (void) DEV_Watchdog_Register(&led_dev.wd, NULL);
     }
 
+    /* Board_BuzzerPWM() returns NULL when that peripheral did not come up, and
+     * DEV_Buzzer_Create returns NULL on top of that for bad arguments or an
+     * allocation failure — passing a NULL pwm through is one of those bad
+     * arguments, so this needs no separate branch for it. Either way buzzer stays
+     * NULL and every other buzzer call in this file already checks for that,
+     * same as led_ready covers a missing LED: a degraded indicator, not a dead
+     * one. */
+    buzzer =
+        DEV_Buzzer_Create(Board_BuzzerPWM(), INDICATOR_BUZZER_TICK_HZ, INDICATOR_BUZZER_VOLUME);
+
+    if (buzzer == NULL)
+    {
+        UTIL_LOG_W("led", "buzzer unavailable; faults will not be sounded");
+    }
+
     UTIL_Seq_Init(&player);
 
     /* Left at a count no real pattern has, so the first beat_step always builds
@@ -491,6 +576,16 @@ static void beat_step(void)
     const uint16_t* out = UTIL_Seq_Out(&player);
 
     led_set((uint8_t) out[0], (uint8_t) out[1], (uint8_t) out[2]);
+
+    /* Once per iteration, unconditionally — DEV_Buzzer_Tick documents that skipping
+     * a call leaves whatever note is sounding stuck indefinitely, and this is the
+     * only place in the program that runs at the rate DEV_Buzzer_Create was told to
+     * expect. NULL when the buzzer never came up; every DEV_Buzzer_* call in this
+     * file guards for that the same way led_set already does for led_ready. */
+    if (buzzer != NULL)
+    {
+        DEV_Buzzer_Tick(buzzer);
+    }
 
     /* Return value ignored, which is deliberate here and nowhere else: a missed
      * deadline in this task means something more important was running, which is
@@ -587,6 +682,22 @@ void App_Indicator_SetFault(uint8_t code)
     fault_code = (code > INDICATOR_FAULT_CODE_MAX) ? INDICATOR_FAULT_CODE_MAX : code;
 
     App_Indicator_Set(INDICATOR_FAULT, true);
+
+    /* Sounded here rather than exposing a separate App_Indicator_SoundAlert: every
+     * caller of this function already has something worth an audible alert — that
+     * is what a fault code means — so a second entry point would only give callers
+     * a way to light the LED without the sound, which is not a case anyone needs.
+     * DEV_Buzzer_PlaySeq replaces whatever is already sounding rather than queuing,
+     * so calling this again while the alert is still playing restarts it instead of
+     * layering two, which is what a caller re-asserting the same fault every cycle
+     * (detectors are level-triggered, same as App_Indicator_Set) would otherwise do.
+     * loop = false: one alert, then silence — a siren would mask whatever comes
+     * next and is intolerable to sit next to. NULL-checked, same as every other
+     * buzzer call in this file. */
+    if (buzzer != NULL)
+    {
+        DEV_Buzzer_PlaySeq(buzzer, alert_seq, false);
+    }
 }
 
 App_Indicator_Condition_e App_Indicator_Active(void) { return active(); }

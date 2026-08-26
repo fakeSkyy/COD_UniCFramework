@@ -12,5 +12,7 @@
     - :return_thru_ptr
   :when_no_prototypes: :warn
   :treat_externs: :include
+  :treat_as_void:
+    - DEV_Buzzer_s
   :strippables:
     - '(?:__attribute__\s*\(\([^)]*\)\))'

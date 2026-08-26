@@ -5,7 +5,11 @@
 #include "cmock.h"
 #include "mock_indicator_deps.h"
 
+static const char* CMockString_Board_BuzzerPWM = "Board_BuzzerPWM";
 static const char* CMockString_Board_StatusLed = "Board_StatusLed";
+static const char* CMockString_DEV_Buzzer_Create = "DEV_Buzzer_Create";
+static const char* CMockString_DEV_Buzzer_PlaySeq = "DEV_Buzzer_PlaySeq";
+static const char* CMockString_DEV_Buzzer_Tick = "DEV_Buzzer_Tick";
 static const char* CMockString_DEV_WS2812_Init = "DEV_WS2812_Init";
 static const char* CMockString_DEV_WS2812_SetPixel = "DEV_WS2812_SetPixel";
 static const char* CMockString_DEV_WS2812_Show = "DEV_WS2812_Show";
@@ -21,6 +25,7 @@ static const char* CMockString_UTIL_Seq_Step = "UTIL_Seq_Step";
 static const char* CMockString_arg = "arg";
 static const char* CMockString_b = "b";
 static const char* CMockString_buf = "buf";
+static const char* CMockString_buz = "buz";
 static const char* CMockString_bytes = "bytes";
 static const char* CMockString_count = "count";
 static const char* CMockString_dev = "dev";
@@ -36,6 +41,7 @@ static const char* CMockString_now_ms = "now_ms";
 static const char* CMockString_period_ms = "period_ms";
 static const char* CMockString_prev_tick = "prev_tick";
 static const char* CMockString_priority = "priority";
+static const char* CMockString_pwm = "pwm";
 static const char* CMockString_r = "r";
 static const char* CMockString_s = "s";
 static const char* CMockString_spi = "spi";
@@ -43,6 +49,8 @@ static const char* CMockString_stack = "stack";
 static const char* CMockString_stack_bytes = "stack_bytes";
 static const char* CMockString_tag = "tag";
 static const char* CMockString_task = "task";
+static const char* CMockString_tick_hz = "tick_hz";
+static const char* CMockString_volume = "volume";
 static const char* CMockString_wd = "wd";
 
 typedef struct _CMOCK_Board_StatusLed_CALL_INSTANCE
@@ -53,6 +61,15 @@ typedef struct _CMOCK_Board_StatusLed_CALL_INSTANCE
   int CallOrder;
 
 } CMOCK_Board_StatusLed_CALL_INSTANCE;
+
+typedef struct _CMOCK_Board_BuzzerPWM_CALL_INSTANCE
+{
+  UNITY_LINE_TYPE LineNumber;
+  char ExpectAnyArgsBool;
+  PWM_Instance_s* ReturnVal;
+  int CallOrder;
+
+} CMOCK_Board_BuzzerPWM_CALL_INSTANCE;
 
 typedef struct _CMOCK_DEV_WS2812_Init_CALL_INSTANCE
 {
@@ -132,6 +149,54 @@ typedef struct _CMOCK_DEV_Watchdog_Register_CALL_INSTANCE
   char IgnoreArg_name;
 
 } CMOCK_DEV_Watchdog_Register_CALL_INSTANCE;
+
+typedef struct _CMOCK_DEV_Buzzer_Create_CALL_INSTANCE
+{
+  UNITY_LINE_TYPE LineNumber;
+  char ExpectAnyArgsBool;
+  DEV_Buzzer_s* ReturnVal;
+  int CallOrder;
+  PWM_Instance_s* Expected_pwm;
+  uint32_t Expected_tick_hz;
+  float Expected_volume;
+  char ReturnThruPtr_pwm_Used;
+  PWM_Instance_s const* ReturnThruPtr_pwm_Val;
+  size_t ReturnThruPtr_pwm_Size;
+  char IgnoreArg_pwm;
+  char IgnoreArg_tick_hz;
+  char IgnoreArg_volume;
+
+} CMOCK_DEV_Buzzer_Create_CALL_INSTANCE;
+
+typedef struct _CMOCK_DEV_Buzzer_Tick_CALL_INSTANCE
+{
+  UNITY_LINE_TYPE LineNumber;
+  char ExpectAnyArgsBool;
+  int CallOrder;
+  DEV_Buzzer_s* Expected_buz;
+  char ReturnThruPtr_buz_Used;
+  DEV_Buzzer_s const* ReturnThruPtr_buz_Val;
+  size_t ReturnThruPtr_buz_Size;
+  char IgnoreArg_buz;
+
+} CMOCK_DEV_Buzzer_Tick_CALL_INSTANCE;
+
+typedef struct _CMOCK_DEV_Buzzer_PlaySeq_CALL_INSTANCE
+{
+  UNITY_LINE_TYPE LineNumber;
+  char ExpectAnyArgsBool;
+  int CallOrder;
+  DEV_Buzzer_s* Expected_buz;
+  const UTIL_Seq_Frame_s* Expected_frames;
+  bool Expected_loop;
+  char ReturnThruPtr_buz_Used;
+  DEV_Buzzer_s const* ReturnThruPtr_buz_Val;
+  size_t ReturnThruPtr_buz_Size;
+  char IgnoreArg_buz;
+  char IgnoreArg_frames;
+  char IgnoreArg_loop;
+
+} CMOCK_DEV_Buzzer_PlaySeq_CALL_INSTANCE;
 
 typedef struct _CMOCK_UTIL_Seq_Init_CALL_INSTANCE
 {
@@ -272,6 +337,12 @@ static struct mock_indicator_depsInstance
   CMOCK_Board_StatusLed_CALLBACK Board_StatusLed_CallbackFunctionPointer;
   int Board_StatusLed_CallbackCalls;
   CMOCK_MEM_INDEX_TYPE Board_StatusLed_CallInstance;
+  char Board_BuzzerPWM_IgnoreBool;
+  PWM_Instance_s* Board_BuzzerPWM_FinalReturn;
+  char Board_BuzzerPWM_CallbackBool;
+  CMOCK_Board_BuzzerPWM_CALLBACK Board_BuzzerPWM_CallbackFunctionPointer;
+  int Board_BuzzerPWM_CallbackCalls;
+  CMOCK_MEM_INDEX_TYPE Board_BuzzerPWM_CallInstance;
   char DEV_WS2812_Init_IgnoreBool;
   bool DEV_WS2812_Init_FinalReturn;
   char DEV_WS2812_Init_CallbackBool;
@@ -295,6 +366,22 @@ static struct mock_indicator_depsInstance
   CMOCK_DEV_Watchdog_Register_CALLBACK DEV_Watchdog_Register_CallbackFunctionPointer;
   int DEV_Watchdog_Register_CallbackCalls;
   CMOCK_MEM_INDEX_TYPE DEV_Watchdog_Register_CallInstance;
+  char DEV_Buzzer_Create_IgnoreBool;
+  DEV_Buzzer_s* DEV_Buzzer_Create_FinalReturn;
+  char DEV_Buzzer_Create_CallbackBool;
+  CMOCK_DEV_Buzzer_Create_CALLBACK DEV_Buzzer_Create_CallbackFunctionPointer;
+  int DEV_Buzzer_Create_CallbackCalls;
+  CMOCK_MEM_INDEX_TYPE DEV_Buzzer_Create_CallInstance;
+  char DEV_Buzzer_Tick_IgnoreBool;
+  char DEV_Buzzer_Tick_CallbackBool;
+  CMOCK_DEV_Buzzer_Tick_CALLBACK DEV_Buzzer_Tick_CallbackFunctionPointer;
+  int DEV_Buzzer_Tick_CallbackCalls;
+  CMOCK_MEM_INDEX_TYPE DEV_Buzzer_Tick_CallInstance;
+  char DEV_Buzzer_PlaySeq_IgnoreBool;
+  char DEV_Buzzer_PlaySeq_CallbackBool;
+  CMOCK_DEV_Buzzer_PlaySeq_CALLBACK DEV_Buzzer_PlaySeq_CallbackFunctionPointer;
+  int DEV_Buzzer_PlaySeq_CallbackCalls;
+  CMOCK_MEM_INDEX_TYPE DEV_Buzzer_PlaySeq_CallInstance;
   char UTIL_Seq_Init_IgnoreBool;
   char UTIL_Seq_Init_CallbackBool;
   CMOCK_UTIL_Seq_Init_CALLBACK UTIL_Seq_Init_CallbackFunctionPointer;
@@ -363,6 +450,19 @@ void mock_indicator_deps_Verify(void)
     call_instance = CMOCK_GUTS_NONE;
     (void)call_instance;
   }
+  call_instance = Mock.Board_BuzzerPWM_CallInstance;
+  if (Mock.Board_BuzzerPWM_IgnoreBool)
+    call_instance = CMOCK_GUTS_NONE;
+  if (CMOCK_GUTS_NONE != call_instance)
+  {
+    UNITY_SET_DETAIL(CMockString_Board_BuzzerPWM);
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
+  }
+  if (Mock.Board_BuzzerPWM_CallbackFunctionPointer != NULL)
+  {
+    call_instance = CMOCK_GUTS_NONE;
+    (void)call_instance;
+  }
   call_instance = Mock.DEV_WS2812_Init_CallInstance;
   if (Mock.DEV_WS2812_Init_IgnoreBool)
     call_instance = CMOCK_GUTS_NONE;
@@ -411,6 +511,45 @@ void mock_indicator_deps_Verify(void)
     UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
   }
   if (Mock.DEV_Watchdog_Register_CallbackFunctionPointer != NULL)
+  {
+    call_instance = CMOCK_GUTS_NONE;
+    (void)call_instance;
+  }
+  call_instance = Mock.DEV_Buzzer_Create_CallInstance;
+  if (Mock.DEV_Buzzer_Create_IgnoreBool)
+    call_instance = CMOCK_GUTS_NONE;
+  if (CMOCK_GUTS_NONE != call_instance)
+  {
+    UNITY_SET_DETAIL(CMockString_DEV_Buzzer_Create);
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
+  }
+  if (Mock.DEV_Buzzer_Create_CallbackFunctionPointer != NULL)
+  {
+    call_instance = CMOCK_GUTS_NONE;
+    (void)call_instance;
+  }
+  call_instance = Mock.DEV_Buzzer_Tick_CallInstance;
+  if (Mock.DEV_Buzzer_Tick_IgnoreBool)
+    call_instance = CMOCK_GUTS_NONE;
+  if (CMOCK_GUTS_NONE != call_instance)
+  {
+    UNITY_SET_DETAIL(CMockString_DEV_Buzzer_Tick);
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
+  }
+  if (Mock.DEV_Buzzer_Tick_CallbackFunctionPointer != NULL)
+  {
+    call_instance = CMOCK_GUTS_NONE;
+    (void)call_instance;
+  }
+  call_instance = Mock.DEV_Buzzer_PlaySeq_CallInstance;
+  if (Mock.DEV_Buzzer_PlaySeq_IgnoreBool)
+    call_instance = CMOCK_GUTS_NONE;
+  if (CMOCK_GUTS_NONE != call_instance)
+  {
+    UNITY_SET_DETAIL(CMockString_DEV_Buzzer_PlaySeq);
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
+  }
+  if (Mock.DEV_Buzzer_PlaySeq_CallbackFunctionPointer != NULL)
   {
     call_instance = CMOCK_GUTS_NONE;
     (void)call_instance;
@@ -625,6 +764,99 @@ void Board_StatusLed_Stub(CMOCK_Board_StatusLed_CALLBACK Callback)
   Mock.Board_StatusLed_CallbackBool = (char)0;
   Mock.Board_StatusLed_CallbackCalls = 0;
   Mock.Board_StatusLed_CallbackFunctionPointer = Callback;
+}
+
+PWM_Instance_s* Board_BuzzerPWM(void)
+{
+  UNITY_LINE_TYPE cmock_line = TEST_LINE_NUM;
+  CMOCK_Board_BuzzerPWM_CALL_INSTANCE* cmock_call_instance;
+  UNITY_SET_DETAIL(CMockString_Board_BuzzerPWM);
+  cmock_call_instance = (CMOCK_Board_BuzzerPWM_CALL_INSTANCE*)CMock_Guts_GetAddressFor(Mock.Board_BuzzerPWM_CallInstance);
+  Mock.Board_BuzzerPWM_CallInstance = CMock_Guts_MemNext(Mock.Board_BuzzerPWM_CallInstance);
+  if (Mock.Board_BuzzerPWM_IgnoreBool)
+  {
+    UNITY_CLR_DETAILS();
+    if (cmock_call_instance == NULL)
+      return Mock.Board_BuzzerPWM_FinalReturn;
+    Mock.Board_BuzzerPWM_FinalReturn = cmock_call_instance->ReturnVal;
+    return cmock_call_instance->ReturnVal;
+  }
+  if (!Mock.Board_BuzzerPWM_CallbackBool &&
+      Mock.Board_BuzzerPWM_CallbackFunctionPointer != NULL)
+  {
+    PWM_Instance_s* cmock_cb_ret = Mock.Board_BuzzerPWM_CallbackFunctionPointer(Mock.Board_BuzzerPWM_CallbackCalls++);
+    UNITY_CLR_DETAILS();
+    return cmock_cb_ret;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringCalledMore);
+  cmock_line = cmock_call_instance->LineNumber;
+  if (cmock_call_instance->CallOrder > ++GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledEarly);
+  if (cmock_call_instance->CallOrder < GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLate);
+  if (Mock.Board_BuzzerPWM_CallbackFunctionPointer != NULL)
+  {
+    UNITY_SET_DETAIL(CMockString_Board_BuzzerPWM);
+    cmock_call_instance->ReturnVal = Mock.Board_BuzzerPWM_CallbackFunctionPointer(Mock.Board_BuzzerPWM_CallbackCalls++);
+  }
+  UNITY_CLR_DETAILS();
+  return cmock_call_instance->ReturnVal;
+}
+
+void Board_BuzzerPWM_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, PWM_Instance_s* cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_Board_BuzzerPWM_CALL_INSTANCE));
+  CMOCK_Board_BuzzerPWM_CALL_INSTANCE* cmock_call_instance = (CMOCK_Board_BuzzerPWM_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.Board_BuzzerPWM_CallInstance = CMock_Guts_MemChain(Mock.Board_BuzzerPWM_CallInstance, cmock_guts_index);
+  Mock.Board_BuzzerPWM_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+  Mock.Board_BuzzerPWM_IgnoreBool = (char)1;
+}
+
+void Board_BuzzerPWM_CMockStopIgnore(void)
+{
+  if(Mock.Board_BuzzerPWM_IgnoreBool)
+    Mock.Board_BuzzerPWM_CallInstance = CMock_Guts_MemNext(Mock.Board_BuzzerPWM_CallInstance);
+  Mock.Board_BuzzerPWM_IgnoreBool = (char)0;
+}
+
+void Board_BuzzerPWM_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, PWM_Instance_s* cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_Board_BuzzerPWM_CALL_INSTANCE));
+  CMOCK_Board_BuzzerPWM_CALL_INSTANCE* cmock_call_instance = (CMOCK_Board_BuzzerPWM_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.Board_BuzzerPWM_CallInstance = CMock_Guts_MemChain(Mock.Board_BuzzerPWM_CallInstance, cmock_guts_index);
+  Mock.Board_BuzzerPWM_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+}
+
+void Board_BuzzerPWM_AddCallback(CMOCK_Board_BuzzerPWM_CALLBACK Callback)
+{
+  Mock.Board_BuzzerPWM_IgnoreBool = (char)0;
+  Mock.Board_BuzzerPWM_CallbackBool = (char)1;
+  Mock.Board_BuzzerPWM_CallbackCalls = 0;
+  Mock.Board_BuzzerPWM_CallbackFunctionPointer = Callback;
+}
+
+int Board_BuzzerPWM_CallCount(void)
+{
+  return Mock.Board_BuzzerPWM_CallbackCalls;
+}
+
+void Board_BuzzerPWM_Stub(CMOCK_Board_BuzzerPWM_CALLBACK Callback)
+{
+  Mock.Board_BuzzerPWM_IgnoreBool = (char)0;
+  Mock.Board_BuzzerPWM_CallbackBool = (char)0;
+  Mock.Board_BuzzerPWM_CallbackCalls = 0;
+  Mock.Board_BuzzerPWM_CallbackFunctionPointer = Callback;
 }
 
 bool DEV_WS2812_Init(DEV_WS2812_s* dev, SPI_Instance_s* spi, uint8_t* buf, uint16_t bytes, uint16_t count)
@@ -1475,6 +1707,525 @@ void DEV_Watchdog_Register_CMockIgnoreArg_name(UNITY_LINE_TYPE cmock_line)
   CMOCK_DEV_Watchdog_Register_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_Watchdog_Register_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.DEV_Watchdog_Register_CallInstance));
   UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
   cmock_call_instance->IgnoreArg_name = 1;
+}
+
+DEV_Buzzer_s* DEV_Buzzer_Create(PWM_Instance_s* pwm, uint32_t tick_hz, float volume)
+{
+  UNITY_LINE_TYPE cmock_line = TEST_LINE_NUM;
+  CMOCK_DEV_Buzzer_Create_CALL_INSTANCE* cmock_call_instance;
+  UNITY_SET_DETAIL(CMockString_DEV_Buzzer_Create);
+  cmock_call_instance = (CMOCK_DEV_Buzzer_Create_CALL_INSTANCE*)CMock_Guts_GetAddressFor(Mock.DEV_Buzzer_Create_CallInstance);
+  Mock.DEV_Buzzer_Create_CallInstance = CMock_Guts_MemNext(Mock.DEV_Buzzer_Create_CallInstance);
+  if (Mock.DEV_Buzzer_Create_IgnoreBool && cmock_call_instance != NULL &&
+      cmock_call_instance->ReturnThruPtr_pwm_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(pwm, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)pwm, (const void*)cmock_call_instance->ReturnThruPtr_pwm_Val,
+      cmock_call_instance->ReturnThruPtr_pwm_Size);
+  }
+  if (Mock.DEV_Buzzer_Create_IgnoreBool)
+  {
+    UNITY_CLR_DETAILS();
+    if (cmock_call_instance == NULL)
+      return Mock.DEV_Buzzer_Create_FinalReturn;
+    Mock.DEV_Buzzer_Create_FinalReturn = cmock_call_instance->ReturnVal;
+    return cmock_call_instance->ReturnVal;
+  }
+  if (!Mock.DEV_Buzzer_Create_CallbackBool &&
+      Mock.DEV_Buzzer_Create_CallbackFunctionPointer != NULL)
+  {
+    DEV_Buzzer_s* cmock_cb_ret = Mock.DEV_Buzzer_Create_CallbackFunctionPointer(pwm, tick_hz, volume, Mock.DEV_Buzzer_Create_CallbackCalls++);
+    UNITY_CLR_DETAILS();
+    return cmock_cb_ret;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringCalledMore);
+  cmock_line = cmock_call_instance->LineNumber;
+  if (cmock_call_instance->CallOrder > ++GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledEarly);
+  if (cmock_call_instance->CallOrder < GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLate);
+  if (!cmock_call_instance->ExpectAnyArgsBool)
+  {
+  if (!cmock_call_instance->IgnoreArg_pwm)
+  {
+    UNITY_SET_DETAILS(CMockString_DEV_Buzzer_Create,CMockString_pwm);
+    UNITY_TEST_ASSERT_EQUAL_MEMORY(cmock_call_instance->Expected_pwm, pwm, sizeof(PWM_Instance_s), cmock_line, CMockStringMismatch);
+  }
+  if (!cmock_call_instance->IgnoreArg_tick_hz)
+  {
+    UNITY_SET_DETAILS(CMockString_DEV_Buzzer_Create,CMockString_tick_hz);
+    UNITY_TEST_ASSERT_EQUAL_HEX32(cmock_call_instance->Expected_tick_hz, tick_hz, cmock_line, CMockStringMismatch);
+  }
+  if (!cmock_call_instance->IgnoreArg_volume)
+  {
+    UNITY_SET_DETAILS(CMockString_DEV_Buzzer_Create,CMockString_volume);
+    UNITY_TEST_ASSERT_EQUAL_FLOAT(cmock_call_instance->Expected_volume, volume, cmock_line, CMockStringMismatch);
+  }
+  }
+  if (Mock.DEV_Buzzer_Create_CallbackFunctionPointer != NULL)
+  {
+    UNITY_SET_DETAIL(CMockString_DEV_Buzzer_Create);
+    cmock_call_instance->ReturnVal = Mock.DEV_Buzzer_Create_CallbackFunctionPointer(pwm, tick_hz, volume, Mock.DEV_Buzzer_Create_CallbackCalls++);
+  }
+  if (cmock_call_instance->ReturnThruPtr_pwm_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(pwm, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)pwm, (const void*)cmock_call_instance->ReturnThruPtr_pwm_Val,
+      cmock_call_instance->ReturnThruPtr_pwm_Size);
+  }
+  UNITY_CLR_DETAILS();
+  return cmock_call_instance->ReturnVal;
+}
+
+void CMockExpectParameters_DEV_Buzzer_Create(CMOCK_DEV_Buzzer_Create_CALL_INSTANCE* cmock_call_instance, PWM_Instance_s* pwm, uint32_t tick_hz, float volume);
+void CMockExpectParameters_DEV_Buzzer_Create(CMOCK_DEV_Buzzer_Create_CALL_INSTANCE* cmock_call_instance, PWM_Instance_s* pwm, uint32_t tick_hz, float volume)
+{
+  cmock_call_instance->Expected_pwm = pwm;
+  cmock_call_instance->IgnoreArg_pwm = 0;
+  cmock_call_instance->ReturnThruPtr_pwm_Used = 0;
+  cmock_call_instance->Expected_tick_hz = tick_hz;
+  cmock_call_instance->IgnoreArg_tick_hz = 0;
+  cmock_call_instance->Expected_volume = volume;
+  cmock_call_instance->IgnoreArg_volume = 0;
+}
+
+void DEV_Buzzer_Create_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, DEV_Buzzer_s* cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_DEV_Buzzer_Create_CALL_INSTANCE));
+  CMOCK_DEV_Buzzer_Create_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_Buzzer_Create_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.DEV_Buzzer_Create_CallInstance = CMock_Guts_MemChain(Mock.DEV_Buzzer_Create_CallInstance, cmock_guts_index);
+  Mock.DEV_Buzzer_Create_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+  Mock.DEV_Buzzer_Create_IgnoreBool = (char)1;
+}
+
+void DEV_Buzzer_Create_CMockStopIgnore(void)
+{
+  if(Mock.DEV_Buzzer_Create_IgnoreBool)
+    Mock.DEV_Buzzer_Create_CallInstance = CMock_Guts_MemNext(Mock.DEV_Buzzer_Create_CallInstance);
+  Mock.DEV_Buzzer_Create_IgnoreBool = (char)0;
+}
+
+void DEV_Buzzer_Create_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, DEV_Buzzer_s* cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_DEV_Buzzer_Create_CALL_INSTANCE));
+  CMOCK_DEV_Buzzer_Create_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_Buzzer_Create_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.DEV_Buzzer_Create_CallInstance = CMock_Guts_MemChain(Mock.DEV_Buzzer_Create_CallInstance, cmock_guts_index);
+  Mock.DEV_Buzzer_Create_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+  cmock_call_instance->ExpectAnyArgsBool = (char)1;
+}
+
+void DEV_Buzzer_Create_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, PWM_Instance_s* pwm, uint32_t tick_hz, float volume, DEV_Buzzer_s* cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_DEV_Buzzer_Create_CALL_INSTANCE));
+  CMOCK_DEV_Buzzer_Create_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_Buzzer_Create_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.DEV_Buzzer_Create_CallInstance = CMock_Guts_MemChain(Mock.DEV_Buzzer_Create_CallInstance, cmock_guts_index);
+  Mock.DEV_Buzzer_Create_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  CMockExpectParameters_DEV_Buzzer_Create(cmock_call_instance, pwm, tick_hz, volume);
+  cmock_call_instance->ReturnVal = cmock_to_return;
+}
+
+void DEV_Buzzer_Create_AddCallback(CMOCK_DEV_Buzzer_Create_CALLBACK Callback)
+{
+  Mock.DEV_Buzzer_Create_IgnoreBool = (char)0;
+  Mock.DEV_Buzzer_Create_CallbackBool = (char)1;
+  Mock.DEV_Buzzer_Create_CallbackCalls = 0;
+  Mock.DEV_Buzzer_Create_CallbackFunctionPointer = Callback;
+}
+
+int DEV_Buzzer_Create_CallCount(void)
+{
+  return Mock.DEV_Buzzer_Create_CallbackCalls;
+}
+
+void DEV_Buzzer_Create_Stub(CMOCK_DEV_Buzzer_Create_CALLBACK Callback)
+{
+  Mock.DEV_Buzzer_Create_IgnoreBool = (char)0;
+  Mock.DEV_Buzzer_Create_CallbackBool = (char)0;
+  Mock.DEV_Buzzer_Create_CallbackCalls = 0;
+  Mock.DEV_Buzzer_Create_CallbackFunctionPointer = Callback;
+}
+
+void DEV_Buzzer_Create_CMockReturnMemThruPtr_pwm(UNITY_LINE_TYPE cmock_line, PWM_Instance_s const* pwm, size_t cmock_size)
+{
+  CMOCK_DEV_Buzzer_Create_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_Buzzer_Create_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.DEV_Buzzer_Create_CallInstance));
+  if (Mock.DEV_Buzzer_Create_IgnoreBool &&
+      (cmock_call_instance == NULL || cmock_call_instance->ReturnThruPtr_pwm_Used))
+  {
+    CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_DEV_Buzzer_Create_CALL_INSTANCE));
+    CMOCK_DEV_Buzzer_Create_CALL_INSTANCE* new_instance = (CMOCK_DEV_Buzzer_Create_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+    UNITY_TEST_ASSERT_NOT_NULL(new_instance, cmock_line, CMockStringOutOfMemory);
+    memset(new_instance, 0, sizeof(*new_instance));
+    new_instance->LineNumber = cmock_line;
+    if (cmock_call_instance != NULL)
+      new_instance->ReturnVal = cmock_call_instance->ReturnVal;
+    Mock.DEV_Buzzer_Create_CallInstance = CMock_Guts_MemChain(Mock.DEV_Buzzer_Create_CallInstance, cmock_guts_index);
+    cmock_call_instance = new_instance;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringPtrPreExp);
+  cmock_call_instance->ReturnThruPtr_pwm_Used = 1;
+  cmock_call_instance->ReturnThruPtr_pwm_Val = pwm;
+  cmock_call_instance->ReturnThruPtr_pwm_Size = cmock_size;
+}
+
+void DEV_Buzzer_Create_CMockIgnoreArg_pwm(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_DEV_Buzzer_Create_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_Buzzer_Create_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.DEV_Buzzer_Create_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_pwm = 1;
+}
+
+void DEV_Buzzer_Create_CMockIgnoreArg_tick_hz(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_DEV_Buzzer_Create_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_Buzzer_Create_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.DEV_Buzzer_Create_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_tick_hz = 1;
+}
+
+void DEV_Buzzer_Create_CMockIgnoreArg_volume(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_DEV_Buzzer_Create_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_Buzzer_Create_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.DEV_Buzzer_Create_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_volume = 1;
+}
+
+void DEV_Buzzer_Tick(DEV_Buzzer_s* buz)
+{
+  UNITY_LINE_TYPE cmock_line = TEST_LINE_NUM;
+  CMOCK_DEV_Buzzer_Tick_CALL_INSTANCE* cmock_call_instance;
+  UNITY_SET_DETAIL(CMockString_DEV_Buzzer_Tick);
+  cmock_call_instance = (CMOCK_DEV_Buzzer_Tick_CALL_INSTANCE*)CMock_Guts_GetAddressFor(Mock.DEV_Buzzer_Tick_CallInstance);
+  Mock.DEV_Buzzer_Tick_CallInstance = CMock_Guts_MemNext(Mock.DEV_Buzzer_Tick_CallInstance);
+  if (Mock.DEV_Buzzer_Tick_IgnoreBool && cmock_call_instance != NULL &&
+      cmock_call_instance->ReturnThruPtr_buz_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(buz, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)buz, (const void*)cmock_call_instance->ReturnThruPtr_buz_Val,
+      cmock_call_instance->ReturnThruPtr_buz_Size);
+  }
+  if (Mock.DEV_Buzzer_Tick_IgnoreBool)
+  {
+    UNITY_CLR_DETAILS();
+    return;
+  }
+  if (!Mock.DEV_Buzzer_Tick_CallbackBool &&
+      Mock.DEV_Buzzer_Tick_CallbackFunctionPointer != NULL)
+  {
+    Mock.DEV_Buzzer_Tick_CallbackFunctionPointer(buz, Mock.DEV_Buzzer_Tick_CallbackCalls++);
+    UNITY_CLR_DETAILS();
+    return;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringCalledMore);
+  cmock_line = cmock_call_instance->LineNumber;
+  if (cmock_call_instance->CallOrder > ++GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledEarly);
+  if (cmock_call_instance->CallOrder < GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLate);
+  if (!cmock_call_instance->ExpectAnyArgsBool)
+  {
+  if (!cmock_call_instance->IgnoreArg_buz)
+  {
+    UNITY_SET_DETAILS(CMockString_DEV_Buzzer_Tick,CMockString_buz);
+    UNITY_TEST_ASSERT_EQUAL_PTR(cmock_call_instance->Expected_buz, buz, cmock_line, CMockStringMismatch);
+  }
+  }
+  if (Mock.DEV_Buzzer_Tick_CallbackFunctionPointer != NULL)
+  {
+    UNITY_SET_DETAIL(CMockString_DEV_Buzzer_Tick);
+    Mock.DEV_Buzzer_Tick_CallbackFunctionPointer(buz, Mock.DEV_Buzzer_Tick_CallbackCalls++);
+  }
+  if (cmock_call_instance->ReturnThruPtr_buz_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(buz, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)buz, (const void*)cmock_call_instance->ReturnThruPtr_buz_Val,
+      cmock_call_instance->ReturnThruPtr_buz_Size);
+  }
+  UNITY_CLR_DETAILS();
+}
+
+void CMockExpectParameters_DEV_Buzzer_Tick(CMOCK_DEV_Buzzer_Tick_CALL_INSTANCE* cmock_call_instance, DEV_Buzzer_s* buz);
+void CMockExpectParameters_DEV_Buzzer_Tick(CMOCK_DEV_Buzzer_Tick_CALL_INSTANCE* cmock_call_instance, DEV_Buzzer_s* buz)
+{
+  cmock_call_instance->Expected_buz = buz;
+  cmock_call_instance->IgnoreArg_buz = 0;
+  cmock_call_instance->ReturnThruPtr_buz_Used = 0;
+}
+
+void DEV_Buzzer_Tick_CMockIgnore(void)
+{
+  Mock.DEV_Buzzer_Tick_IgnoreBool = (char)1;
+}
+
+void DEV_Buzzer_Tick_CMockStopIgnore(void)
+{
+  Mock.DEV_Buzzer_Tick_IgnoreBool = (char)0;
+}
+
+void DEV_Buzzer_Tick_CMockExpectAnyArgs(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_DEV_Buzzer_Tick_CALL_INSTANCE));
+  CMOCK_DEV_Buzzer_Tick_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_Buzzer_Tick_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.DEV_Buzzer_Tick_CallInstance = CMock_Guts_MemChain(Mock.DEV_Buzzer_Tick_CallInstance, cmock_guts_index);
+  Mock.DEV_Buzzer_Tick_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ExpectAnyArgsBool = (char)1;
+}
+
+void DEV_Buzzer_Tick_CMockExpect(UNITY_LINE_TYPE cmock_line, DEV_Buzzer_s* buz)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_DEV_Buzzer_Tick_CALL_INSTANCE));
+  CMOCK_DEV_Buzzer_Tick_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_Buzzer_Tick_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.DEV_Buzzer_Tick_CallInstance = CMock_Guts_MemChain(Mock.DEV_Buzzer_Tick_CallInstance, cmock_guts_index);
+  Mock.DEV_Buzzer_Tick_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  CMockExpectParameters_DEV_Buzzer_Tick(cmock_call_instance, buz);
+}
+
+void DEV_Buzzer_Tick_AddCallback(CMOCK_DEV_Buzzer_Tick_CALLBACK Callback)
+{
+  Mock.DEV_Buzzer_Tick_IgnoreBool = (char)0;
+  Mock.DEV_Buzzer_Tick_CallbackBool = (char)1;
+  Mock.DEV_Buzzer_Tick_CallbackCalls = 0;
+  Mock.DEV_Buzzer_Tick_CallbackFunctionPointer = Callback;
+}
+
+int DEV_Buzzer_Tick_CallCount(void)
+{
+  return Mock.DEV_Buzzer_Tick_CallbackCalls;
+}
+
+void DEV_Buzzer_Tick_Stub(CMOCK_DEV_Buzzer_Tick_CALLBACK Callback)
+{
+  Mock.DEV_Buzzer_Tick_IgnoreBool = (char)0;
+  Mock.DEV_Buzzer_Tick_CallbackBool = (char)0;
+  Mock.DEV_Buzzer_Tick_CallbackCalls = 0;
+  Mock.DEV_Buzzer_Tick_CallbackFunctionPointer = Callback;
+}
+
+void DEV_Buzzer_Tick_CMockReturnMemThruPtr_buz(UNITY_LINE_TYPE cmock_line, DEV_Buzzer_s const* buz, size_t cmock_size)
+{
+  CMOCK_DEV_Buzzer_Tick_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_Buzzer_Tick_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.DEV_Buzzer_Tick_CallInstance));
+  if (Mock.DEV_Buzzer_Tick_IgnoreBool &&
+      (cmock_call_instance == NULL || cmock_call_instance->ReturnThruPtr_buz_Used))
+  {
+    CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_DEV_Buzzer_Tick_CALL_INSTANCE));
+    CMOCK_DEV_Buzzer_Tick_CALL_INSTANCE* new_instance = (CMOCK_DEV_Buzzer_Tick_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+    UNITY_TEST_ASSERT_NOT_NULL(new_instance, cmock_line, CMockStringOutOfMemory);
+    memset(new_instance, 0, sizeof(*new_instance));
+    new_instance->LineNumber = cmock_line;
+    Mock.DEV_Buzzer_Tick_CallInstance = CMock_Guts_MemChain(Mock.DEV_Buzzer_Tick_CallInstance, cmock_guts_index);
+    cmock_call_instance = new_instance;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringPtrPreExp);
+  cmock_call_instance->ReturnThruPtr_buz_Used = 1;
+  cmock_call_instance->ReturnThruPtr_buz_Val = buz;
+  cmock_call_instance->ReturnThruPtr_buz_Size = cmock_size;
+}
+
+void DEV_Buzzer_Tick_CMockIgnoreArg_buz(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_DEV_Buzzer_Tick_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_Buzzer_Tick_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.DEV_Buzzer_Tick_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_buz = 1;
+}
+
+void DEV_Buzzer_PlaySeq(DEV_Buzzer_s* buz, const UTIL_Seq_Frame_s* frames, bool loop)
+{
+  UNITY_LINE_TYPE cmock_line = TEST_LINE_NUM;
+  CMOCK_DEV_Buzzer_PlaySeq_CALL_INSTANCE* cmock_call_instance;
+  UNITY_SET_DETAIL(CMockString_DEV_Buzzer_PlaySeq);
+  cmock_call_instance = (CMOCK_DEV_Buzzer_PlaySeq_CALL_INSTANCE*)CMock_Guts_GetAddressFor(Mock.DEV_Buzzer_PlaySeq_CallInstance);
+  Mock.DEV_Buzzer_PlaySeq_CallInstance = CMock_Guts_MemNext(Mock.DEV_Buzzer_PlaySeq_CallInstance);
+  if (Mock.DEV_Buzzer_PlaySeq_IgnoreBool && cmock_call_instance != NULL &&
+      cmock_call_instance->ReturnThruPtr_buz_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(buz, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)buz, (const void*)cmock_call_instance->ReturnThruPtr_buz_Val,
+      cmock_call_instance->ReturnThruPtr_buz_Size);
+  }
+  if (Mock.DEV_Buzzer_PlaySeq_IgnoreBool)
+  {
+    UNITY_CLR_DETAILS();
+    return;
+  }
+  if (!Mock.DEV_Buzzer_PlaySeq_CallbackBool &&
+      Mock.DEV_Buzzer_PlaySeq_CallbackFunctionPointer != NULL)
+  {
+    Mock.DEV_Buzzer_PlaySeq_CallbackFunctionPointer(buz, frames, loop, Mock.DEV_Buzzer_PlaySeq_CallbackCalls++);
+    UNITY_CLR_DETAILS();
+    return;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringCalledMore);
+  cmock_line = cmock_call_instance->LineNumber;
+  if (cmock_call_instance->CallOrder > ++GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledEarly);
+  if (cmock_call_instance->CallOrder < GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLate);
+  if (!cmock_call_instance->ExpectAnyArgsBool)
+  {
+  if (!cmock_call_instance->IgnoreArg_buz)
+  {
+    UNITY_SET_DETAILS(CMockString_DEV_Buzzer_PlaySeq,CMockString_buz);
+    UNITY_TEST_ASSERT_EQUAL_PTR(cmock_call_instance->Expected_buz, buz, cmock_line, CMockStringMismatch);
+  }
+  if (!cmock_call_instance->IgnoreArg_frames)
+  {
+    UNITY_SET_DETAILS(CMockString_DEV_Buzzer_PlaySeq,CMockString_frames);
+    UNITY_TEST_ASSERT_EQUAL_MEMORY(cmock_call_instance->Expected_frames, frames, sizeof(const UTIL_Seq_Frame_s), cmock_line, CMockStringMismatch);
+  }
+  if (!cmock_call_instance->IgnoreArg_loop)
+  {
+    UNITY_SET_DETAILS(CMockString_DEV_Buzzer_PlaySeq,CMockString_loop);
+    UNITY_TEST_ASSERT_EQUAL_INT(cmock_call_instance->Expected_loop, loop, cmock_line, CMockStringMismatch);
+  }
+  }
+  if (Mock.DEV_Buzzer_PlaySeq_CallbackFunctionPointer != NULL)
+  {
+    UNITY_SET_DETAIL(CMockString_DEV_Buzzer_PlaySeq);
+    Mock.DEV_Buzzer_PlaySeq_CallbackFunctionPointer(buz, frames, loop, Mock.DEV_Buzzer_PlaySeq_CallbackCalls++);
+  }
+  if (cmock_call_instance->ReturnThruPtr_buz_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(buz, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)buz, (const void*)cmock_call_instance->ReturnThruPtr_buz_Val,
+      cmock_call_instance->ReturnThruPtr_buz_Size);
+  }
+  UNITY_CLR_DETAILS();
+}
+
+void CMockExpectParameters_DEV_Buzzer_PlaySeq(CMOCK_DEV_Buzzer_PlaySeq_CALL_INSTANCE* cmock_call_instance, DEV_Buzzer_s* buz, const UTIL_Seq_Frame_s* frames, bool loop);
+void CMockExpectParameters_DEV_Buzzer_PlaySeq(CMOCK_DEV_Buzzer_PlaySeq_CALL_INSTANCE* cmock_call_instance, DEV_Buzzer_s* buz, const UTIL_Seq_Frame_s* frames, bool loop)
+{
+  cmock_call_instance->Expected_buz = buz;
+  cmock_call_instance->IgnoreArg_buz = 0;
+  cmock_call_instance->ReturnThruPtr_buz_Used = 0;
+  cmock_call_instance->Expected_frames = frames;
+  cmock_call_instance->IgnoreArg_frames = 0;
+  cmock_call_instance->Expected_loop = loop;
+  cmock_call_instance->IgnoreArg_loop = 0;
+}
+
+void DEV_Buzzer_PlaySeq_CMockIgnore(void)
+{
+  Mock.DEV_Buzzer_PlaySeq_IgnoreBool = (char)1;
+}
+
+void DEV_Buzzer_PlaySeq_CMockStopIgnore(void)
+{
+  Mock.DEV_Buzzer_PlaySeq_IgnoreBool = (char)0;
+}
+
+void DEV_Buzzer_PlaySeq_CMockExpectAnyArgs(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_DEV_Buzzer_PlaySeq_CALL_INSTANCE));
+  CMOCK_DEV_Buzzer_PlaySeq_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_Buzzer_PlaySeq_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.DEV_Buzzer_PlaySeq_CallInstance = CMock_Guts_MemChain(Mock.DEV_Buzzer_PlaySeq_CallInstance, cmock_guts_index);
+  Mock.DEV_Buzzer_PlaySeq_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ExpectAnyArgsBool = (char)1;
+}
+
+void DEV_Buzzer_PlaySeq_CMockExpect(UNITY_LINE_TYPE cmock_line, DEV_Buzzer_s* buz, const UTIL_Seq_Frame_s* frames, bool loop)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_DEV_Buzzer_PlaySeq_CALL_INSTANCE));
+  CMOCK_DEV_Buzzer_PlaySeq_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_Buzzer_PlaySeq_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.DEV_Buzzer_PlaySeq_CallInstance = CMock_Guts_MemChain(Mock.DEV_Buzzer_PlaySeq_CallInstance, cmock_guts_index);
+  Mock.DEV_Buzzer_PlaySeq_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  CMockExpectParameters_DEV_Buzzer_PlaySeq(cmock_call_instance, buz, frames, loop);
+}
+
+void DEV_Buzzer_PlaySeq_AddCallback(CMOCK_DEV_Buzzer_PlaySeq_CALLBACK Callback)
+{
+  Mock.DEV_Buzzer_PlaySeq_IgnoreBool = (char)0;
+  Mock.DEV_Buzzer_PlaySeq_CallbackBool = (char)1;
+  Mock.DEV_Buzzer_PlaySeq_CallbackCalls = 0;
+  Mock.DEV_Buzzer_PlaySeq_CallbackFunctionPointer = Callback;
+}
+
+int DEV_Buzzer_PlaySeq_CallCount(void)
+{
+  return Mock.DEV_Buzzer_PlaySeq_CallbackCalls;
+}
+
+void DEV_Buzzer_PlaySeq_Stub(CMOCK_DEV_Buzzer_PlaySeq_CALLBACK Callback)
+{
+  Mock.DEV_Buzzer_PlaySeq_IgnoreBool = (char)0;
+  Mock.DEV_Buzzer_PlaySeq_CallbackBool = (char)0;
+  Mock.DEV_Buzzer_PlaySeq_CallbackCalls = 0;
+  Mock.DEV_Buzzer_PlaySeq_CallbackFunctionPointer = Callback;
+}
+
+void DEV_Buzzer_PlaySeq_CMockReturnMemThruPtr_buz(UNITY_LINE_TYPE cmock_line, DEV_Buzzer_s const* buz, size_t cmock_size)
+{
+  CMOCK_DEV_Buzzer_PlaySeq_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_Buzzer_PlaySeq_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.DEV_Buzzer_PlaySeq_CallInstance));
+  if (Mock.DEV_Buzzer_PlaySeq_IgnoreBool &&
+      (cmock_call_instance == NULL || cmock_call_instance->ReturnThruPtr_buz_Used))
+  {
+    CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_DEV_Buzzer_PlaySeq_CALL_INSTANCE));
+    CMOCK_DEV_Buzzer_PlaySeq_CALL_INSTANCE* new_instance = (CMOCK_DEV_Buzzer_PlaySeq_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+    UNITY_TEST_ASSERT_NOT_NULL(new_instance, cmock_line, CMockStringOutOfMemory);
+    memset(new_instance, 0, sizeof(*new_instance));
+    new_instance->LineNumber = cmock_line;
+    Mock.DEV_Buzzer_PlaySeq_CallInstance = CMock_Guts_MemChain(Mock.DEV_Buzzer_PlaySeq_CallInstance, cmock_guts_index);
+    cmock_call_instance = new_instance;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringPtrPreExp);
+  cmock_call_instance->ReturnThruPtr_buz_Used = 1;
+  cmock_call_instance->ReturnThruPtr_buz_Val = buz;
+  cmock_call_instance->ReturnThruPtr_buz_Size = cmock_size;
+}
+
+void DEV_Buzzer_PlaySeq_CMockIgnoreArg_buz(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_DEV_Buzzer_PlaySeq_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_Buzzer_PlaySeq_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.DEV_Buzzer_PlaySeq_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_buz = 1;
+}
+
+void DEV_Buzzer_PlaySeq_CMockIgnoreArg_frames(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_DEV_Buzzer_PlaySeq_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_Buzzer_PlaySeq_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.DEV_Buzzer_PlaySeq_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_frames = 1;
+}
+
+void DEV_Buzzer_PlaySeq_CMockIgnoreArg_loop(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_DEV_Buzzer_PlaySeq_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_Buzzer_PlaySeq_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.DEV_Buzzer_PlaySeq_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_loop = 1;
 }
 
 void UTIL_Seq_Init(UTIL_Seq_s* s)

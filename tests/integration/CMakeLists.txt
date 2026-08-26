@@ -12,7 +12,7 @@ set(INTEGRATION_COMMON_INCLUDES
     ${CMAKE_CURRENT_SOURCE_DIR}/../cmock/src
     ${IMPL}/common
     ${APP}/board ${APP}/telemetry ${APP}/indicator ${APP}/imu
-    ${DEV}/dev_remote ${DEV}/dev_ws2812 ${DEV}/dev_watchdog
+    ${DEV}/dev_remote ${DEV}/dev_ws2812 ${DEV}/dev_watchdog ${DEV}/dev_buzzer
     ${DEV}/dev_bmi088 ${DEV}/dev_dji_motor ${DEV}/dev_dm_motor
     ${PLAT}/bsp/uart ${PLAT}/bsp/spi ${PLAT}/bsp/can ${PLAT}/bsp/dwt
     ${PLAT}/bsp/pwm ${PLAT}/bsp/flash ${PLAT}/bsp/dma_buf
@@ -61,8 +61,10 @@ add_executable(integration_indicator_ws2812_spi
     ${INTEGRATION}/support/host_allocator.c
     ${APP}/indicator/app_indicator.c
     ${DEV}/dev_ws2812/dev_ws2812.c
+    ${DEV}/dev_buzzer/dev_buzzer.c
     ${DEV}/dev_watchdog/dev_watchdog.c
     ${PLAT}/bsp/spi/plat_spi.c
+    ${PLAT}/bsp/pwm/plat_pwm.c
     ${UTIL}/util_seq/util_seq.c)
 integration_mock_support(integration_indicator_ws2812_spi indicator_ws2812_spi mock_indicator_contract.c)
 foreach(case_name spi_callback_trampolines heartbeat_wire fault_priority_and_send_failure)
@@ -85,7 +87,9 @@ add_executable(integration_imu_bmi088_spi_dwt
     ${UTIL}/util_ahrs/util_ahrs.c
     ${UTIL}/util_kf/util_kf.c
     ${UTIL}/util_fast_math/util_fast_math.c
-    ${UTIL}/util_ringbuf/util_ringbuf.c)
+    ${UTIL}/util_ringbuf/util_ringbuf.c
+    ${UTIL}/util_pid/util_pid.c
+    ${UTIL}/util_lpf/util_lpf.c)
 integration_mock_support(integration_imu_bmi088_spi_dwt imu_bmi088_spi_dwt mock_imu_contract.c)
 foreach(case_name sample_to_ahrs_to_telemetry bottom_failure_suspends_offline)
     add_test(NAME integration_imu_bmi088_spi_dwt.${case_name}

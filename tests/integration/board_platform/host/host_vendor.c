@@ -16,5 +16,6 @@ SPI_HandleTypeDef   hspi2              = {.instance = 2u};
 SPI_HandleTypeDef   hspi6              = {.instance = 6u};
 UART_HandleTypeDef  huart10            = {.instance = 10u};
 TIM_HandleTypeDef   htim12             = {.instance = 12u};
+TIM_HandleTypeDef   htim3              = {.instance = 3u};
 GPIO_TypeDef        host_accel_cs_port = {.instance = 1u};
 GPIO_TypeDef        host_gyro_cs_port  = {.instance = 2u};

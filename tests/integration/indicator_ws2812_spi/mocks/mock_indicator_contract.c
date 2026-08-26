@@ -5,6 +5,7 @@
 #include "cmock.h"
 #include "mock_indicator_contract.h"
 
+static const char* CMockString_Board_BuzzerPWM = "Board_BuzzerPWM";
 static const char* CMockString_Board_StatusLed = "Board_StatusLed";
 static const char* CMockString_PLAT_Task_Create = "PLAT_Task_Create";
 static const char* CMockString_PLAT_Task_DelayUntil = "PLAT_Task_DelayUntil";
@@ -31,6 +32,15 @@ typedef struct _CMOCK_Board_StatusLed_CALL_INSTANCE
   int CallOrder;
 
 } CMOCK_Board_StatusLed_CALL_INSTANCE;
+
+typedef struct _CMOCK_Board_BuzzerPWM_CALL_INSTANCE
+{
+  UNITY_LINE_TYPE LineNumber;
+  char ExpectAnyArgsBool;
+  PWM_Instance_s* ReturnVal;
+  int CallOrder;
+
+} CMOCK_Board_BuzzerPWM_CALL_INSTANCE;
 
 typedef struct _CMOCK_PLAT_Task_Create_CALL_INSTANCE
 {
@@ -111,6 +121,12 @@ static struct mock_indicator_contractInstance
   CMOCK_Board_StatusLed_CALLBACK Board_StatusLed_CallbackFunctionPointer;
   int Board_StatusLed_CallbackCalls;
   CMOCK_MEM_INDEX_TYPE Board_StatusLed_CallInstance;
+  char Board_BuzzerPWM_IgnoreBool;
+  PWM_Instance_s* Board_BuzzerPWM_FinalReturn;
+  char Board_BuzzerPWM_CallbackBool;
+  CMOCK_Board_BuzzerPWM_CALLBACK Board_BuzzerPWM_CallbackFunctionPointer;
+  int Board_BuzzerPWM_CallbackCalls;
+  CMOCK_MEM_INDEX_TYPE Board_BuzzerPWM_CallInstance;
   char PLAT_Task_Create_IgnoreBool;
   bool PLAT_Task_Create_FinalReturn;
   char PLAT_Task_Create_CallbackBool;
@@ -152,6 +168,19 @@ void mock_indicator_contract_Verify(void)
     UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
   }
   if (Mock.Board_StatusLed_CallbackFunctionPointer != NULL)
+  {
+    call_instance = CMOCK_GUTS_NONE;
+    (void)call_instance;
+  }
+  call_instance = Mock.Board_BuzzerPWM_CallInstance;
+  if (Mock.Board_BuzzerPWM_IgnoreBool)
+    call_instance = CMOCK_GUTS_NONE;
+  if (CMOCK_GUTS_NONE != call_instance)
+  {
+    UNITY_SET_DETAIL(CMockString_Board_BuzzerPWM);
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
+  }
+  if (Mock.Board_BuzzerPWM_CallbackFunctionPointer != NULL)
   {
     call_instance = CMOCK_GUTS_NONE;
     (void)call_instance;
@@ -314,6 +343,99 @@ void Board_StatusLed_Stub(CMOCK_Board_StatusLed_CALLBACK Callback)
   Mock.Board_StatusLed_CallbackBool = (char)0;
   Mock.Board_StatusLed_CallbackCalls = 0;
   Mock.Board_StatusLed_CallbackFunctionPointer = Callback;
+}
+
+PWM_Instance_s* Board_BuzzerPWM(void)
+{
+  UNITY_LINE_TYPE cmock_line = TEST_LINE_NUM;
+  CMOCK_Board_BuzzerPWM_CALL_INSTANCE* cmock_call_instance;
+  UNITY_SET_DETAIL(CMockString_Board_BuzzerPWM);
+  cmock_call_instance = (CMOCK_Board_BuzzerPWM_CALL_INSTANCE*)CMock_Guts_GetAddressFor(Mock.Board_BuzzerPWM_CallInstance);
+  Mock.Board_BuzzerPWM_CallInstance = CMock_Guts_MemNext(Mock.Board_BuzzerPWM_CallInstance);
+  if (Mock.Board_BuzzerPWM_IgnoreBool)
+  {
+    UNITY_CLR_DETAILS();
+    if (cmock_call_instance == NULL)
+      return Mock.Board_BuzzerPWM_FinalReturn;
+    Mock.Board_BuzzerPWM_FinalReturn = cmock_call_instance->ReturnVal;
+    return cmock_call_instance->ReturnVal;
+  }
+  if (!Mock.Board_BuzzerPWM_CallbackBool &&
+      Mock.Board_BuzzerPWM_CallbackFunctionPointer != NULL)
+  {
+    PWM_Instance_s* cmock_cb_ret = Mock.Board_BuzzerPWM_CallbackFunctionPointer(Mock.Board_BuzzerPWM_CallbackCalls++);
+    UNITY_CLR_DETAILS();
+    return cmock_cb_ret;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringCalledMore);
+  cmock_line = cmock_call_instance->LineNumber;
+  if (cmock_call_instance->CallOrder > ++GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledEarly);
+  if (cmock_call_instance->CallOrder < GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLate);
+  if (Mock.Board_BuzzerPWM_CallbackFunctionPointer != NULL)
+  {
+    UNITY_SET_DETAIL(CMockString_Board_BuzzerPWM);
+    cmock_call_instance->ReturnVal = Mock.Board_BuzzerPWM_CallbackFunctionPointer(Mock.Board_BuzzerPWM_CallbackCalls++);
+  }
+  UNITY_CLR_DETAILS();
+  return cmock_call_instance->ReturnVal;
+}
+
+void Board_BuzzerPWM_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, PWM_Instance_s* cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_Board_BuzzerPWM_CALL_INSTANCE));
+  CMOCK_Board_BuzzerPWM_CALL_INSTANCE* cmock_call_instance = (CMOCK_Board_BuzzerPWM_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.Board_BuzzerPWM_CallInstance = CMock_Guts_MemChain(Mock.Board_BuzzerPWM_CallInstance, cmock_guts_index);
+  Mock.Board_BuzzerPWM_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+  Mock.Board_BuzzerPWM_IgnoreBool = (char)1;
+}
+
+void Board_BuzzerPWM_CMockStopIgnore(void)
+{
+  if(Mock.Board_BuzzerPWM_IgnoreBool)
+    Mock.Board_BuzzerPWM_CallInstance = CMock_Guts_MemNext(Mock.Board_BuzzerPWM_CallInstance);
+  Mock.Board_BuzzerPWM_IgnoreBool = (char)0;
+}
+
+void Board_BuzzerPWM_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, PWM_Instance_s* cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_Board_BuzzerPWM_CALL_INSTANCE));
+  CMOCK_Board_BuzzerPWM_CALL_INSTANCE* cmock_call_instance = (CMOCK_Board_BuzzerPWM_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.Board_BuzzerPWM_CallInstance = CMock_Guts_MemChain(Mock.Board_BuzzerPWM_CallInstance, cmock_guts_index);
+  Mock.Board_BuzzerPWM_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+}
+
+void Board_BuzzerPWM_AddCallback(CMOCK_Board_BuzzerPWM_CALLBACK Callback)
+{
+  Mock.Board_BuzzerPWM_IgnoreBool = (char)0;
+  Mock.Board_BuzzerPWM_CallbackBool = (char)1;
+  Mock.Board_BuzzerPWM_CallbackCalls = 0;
+  Mock.Board_BuzzerPWM_CallbackFunctionPointer = Callback;
+}
+
+int Board_BuzzerPWM_CallCount(void)
+{
+  return Mock.Board_BuzzerPWM_CallbackCalls;
+}
+
+void Board_BuzzerPWM_Stub(CMOCK_Board_BuzzerPWM_CALLBACK Callback)
+{
+  Mock.Board_BuzzerPWM_IgnoreBool = (char)0;
+  Mock.Board_BuzzerPWM_CallbackBool = (char)0;
+  Mock.Board_BuzzerPWM_CallbackCalls = 0;
+  Mock.Board_BuzzerPWM_CallbackFunctionPointer = Callback;
 }
 
 bool PLAT_Task_Create(Task_s* task, PLAT_Task_Entry entry, void* arg, const char* name, void* stack, size_t stack_bytes, uint8_t priority)

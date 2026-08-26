@@ -70,7 +70,10 @@ add_application_test(test_app_indicator
     device_condition_builds_blue_five_flash_pattern
     fault_code_clamps_to_nine_red_flashes
     steady_condition_does_not_restart_sequence
-    output_is_narrowed_to_pixel_bytes)
+    output_is_narrowed_to_pixel_bytes
+    buzzer_ticked_once_per_loop_iteration
+    null_buzzer_leaves_led_working
+    setfault_sounds_alert_once_with_divisible_frames)
 
 add_application_test(test_app_health
     ${APPLICATION}/health/app_health.c
@@ -88,19 +91,36 @@ add_application_test(test_app_imu
     mock_imu_deps.c
     start_task_forwards_parameters
     accessors_before_ready_are_safe
-    all_bmi_failure_statuses_park_and_log
-    ahrs_failure_parks_after_bmi
+    all_bmi_failure_statuses_do_not_create_task_and_raise_fault
+    ahrs_failure_does_not_create_task_and_raises_fault
+    accessors_safe_after_failed_start_task
     success_config_warnings_sample_overrun_and_accessors
     initial_read_failure_skips_alignment_but_runs
     ninety_nine_failures_do_not_raise_fault
     hundred_failures_report_once_and_recovery_clears
-    persistent_failure_after_threshold_faults_only_once)
+    persistent_failure_after_threshold_faults_only_once
+    null_heater_pwm_leaves_attitude_running_and_commands_nothing
+    heater_duty_rises_below_setpoint_and_is_floored_above_it
+    heater_output_never_exceeds_configured_cap
+    heater_out_of_range_temp_commands_zero_duty
+    heater_over_temperature_cuts_output
+    heater_below_cutoff_still_regulates
+    imu_outage_stops_heater
+    heater_steps_at_refresh_rate_not_every_loop_iteration)
+# UTIL_PID_Init/Step run for real here (app_imu.c includes util_pid.h directly,
+# not through imu_deps.h), so the tests exercise actual PID math on the duty
+# output rather than a mocked stand-in. util_lpf and util_fast_math are pulled
+# in because util_pid.c calls into both for its derivative/output filters.
+target_sources(test_app_imu PRIVATE
+    ${UTILS}/util_pid/util_pid.c
+    ${UTILS}/util_lpf/util_lpf.c
+    ${UTILS}/util_fast_math/util_fast_math.c)
 
 add_application_test(test_board_devices
     ${APPLICATION}/board/board_devices.c
     mock_board_deps.c
     accessors_are_null_before_first_init
-    seven_devices_initialize_in_strict_table_order
+    eight_devices_initialize_in_strict_table_order
     each_null_context_is_first_failure_and_short_circuits
     each_platform_init_failure_is_first_and_short_circuits
     reinit_clears_failure_and_rebuilds_all_accessor_state

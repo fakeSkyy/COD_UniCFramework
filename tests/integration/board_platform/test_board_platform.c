@@ -16,7 +16,7 @@
 
 #include "support/alloc/host_alloc_tracker.h"
 
-static int      contexts[8];
+static int      contexts[9];
 static unsigned spi_attaches, uart_attaches, can_attaches;
 static uint32_t dwt_cycle(void* c)
 {
@@ -305,6 +305,7 @@ static void expect_teardown(void)
 {
     HOST_FLASH_DestroyCtx_Expect(NULL);
     HOST_PWM_DestroyCtx_Expect(NULL);
+    HOST_PWM_DestroyCtx_Expect(NULL);
     HOST_UART_DestroyCtx_Expect(NULL);
     HOST_SPI_DestroyCtx_Expect(NULL);
     HOST_SPI_DestroyCtx_Expect(NULL);
@@ -328,7 +329,9 @@ static void expect_all(void)
     HOST_UART_GetOps_ExpectAndReturn(&uart_ops);
     HOST_PWM_CreateCtx_ExpectAndReturn(&htim12, TIM_CHANNEL_2, &contexts[5]);
     HOST_PWM_GetOps_ExpectAndReturn(&pwm_ops);
-    HOST_FLASH_CreateCtx_ExpectAndReturn(7u, 1u, &contexts[6]);
+    HOST_PWM_CreateCtx_ExpectAndReturn(&htim3, TIM_CHANNEL_4, &contexts[6]);
+    HOST_PWM_GetOps_ExpectAndReturn(&pwm_ops);
+    HOST_FLASH_CreateCtx_ExpectAndReturn(7u, 1u, &contexts[7]);
     HOST_FLASH_GetOps_ExpectAndReturn(&flash_ops);
 }
 static void test_real_platform_init_order_accessors_and_can_factory(void)
@@ -342,10 +345,11 @@ static void test_real_platform_init_order_accessors_and_can_factory(void)
     TEST_ASSERT_NOT_NULL(Board_StatusLed());
     TEST_ASSERT_NOT_NULL(Board_DebugUart());
     TEST_ASSERT_NOT_NULL(Board_BuzzerPWM());
+    TEST_ASSERT_NOT_NULL(Board_ImuHeater());
     TEST_ASSERT_NOT_NULL(Board_ParamFlash());
     TEST_ASSERT_EQUAL_UINT(3u, spi_attaches);
     TEST_ASSERT_EQUAL_UINT(1u, uart_attaches);
-    HOST_CAN_CreateCtx_ExpectAndReturn(&hfdcan2, 0x200u, 0x205u, &contexts[7]);
+    HOST_CAN_CreateCtx_ExpectAndReturn(&hfdcan2, 0x200u, 0x205u, &contexts[8]);
     HOST_CAN_GetOps_ExpectAndReturn(&can_ops);
     CAN_Instance_s* can = Board_CANCreate(BOARD_CAN2, 0x200u, 0x205u);
     TEST_ASSERT_NOT_NULL(can);
@@ -357,7 +361,8 @@ static void test_first_context_error_short_circuits_remaining_definitions(void)
      * still holds what the previous test built — its teardown must release
      * those exact pointers, not NULL, mirroring test_reinit_destroys_each_
      * previous_context_exactly_once in the unit suite. */
-    HOST_FLASH_DestroyCtx_Expect(&contexts[6]);
+    HOST_FLASH_DestroyCtx_Expect(&contexts[7]);
+    HOST_PWM_DestroyCtx_Expect(&contexts[6]);
     HOST_PWM_DestroyCtx_Expect(&contexts[5]);
     HOST_UART_DestroyCtx_Expect(&contexts[4]);
     HOST_SPI_DestroyCtx_Expect(&contexts[3]);

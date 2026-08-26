@@ -67,6 +67,19 @@ void Board_Timebase_AddCallback(CMOCK_Board_Timebase_CALLBACK Callback);
 void Board_Timebase_Stub(CMOCK_Board_Timebase_CALLBACK Callback);
 #define Board_Timebase_StubWithCallback Board_Timebase_Stub
 int Board_Timebase_CallCount(void);
+#define Board_ImuHeater_Ignore() TEST_FAIL_MESSAGE("Board_ImuHeater requires _IgnoreAndReturn");
+#define Board_ImuHeater_IgnoreAndReturn(cmock_retval) Board_ImuHeater_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void Board_ImuHeater_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, PWM_Instance_s* cmock_to_return);
+#define Board_ImuHeater_StopIgnore() Board_ImuHeater_CMockStopIgnore()
+void Board_ImuHeater_CMockStopIgnore(void);
+#define Board_ImuHeater_Expect() TEST_FAIL_MESSAGE("Board_ImuHeater requires _ExpectAndReturn");
+#define Board_ImuHeater_ExpectAndReturn(cmock_retval) Board_ImuHeater_CMockExpectAndReturn(__LINE__, cmock_retval)
+void Board_ImuHeater_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, PWM_Instance_s* cmock_to_return);
+typedef PWM_Instance_s* (* CMOCK_Board_ImuHeater_CALLBACK)(int cmock_num_calls);
+void Board_ImuHeater_AddCallback(CMOCK_Board_ImuHeater_CALLBACK Callback);
+void Board_ImuHeater_Stub(CMOCK_Board_ImuHeater_CALLBACK Callback);
+#define Board_ImuHeater_StubWithCallback Board_ImuHeater_Stub
+int Board_ImuHeater_CallCount(void);
 #define DEV_BMI088_Init_Ignore() TEST_FAIL_MESSAGE("DEV_BMI088_Init requires _IgnoreAndReturn");
 #define DEV_BMI088_Init_IgnoreAndReturn(cmock_retval) DEV_BMI088_Init_CMockIgnoreAndReturn(__LINE__, cmock_retval)
 void DEV_BMI088_Init_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, DEV_BMI088_Status_e cmock_to_return);
@@ -350,6 +363,52 @@ void App_Indicator_SetFault_Stub(CMOCK_App_Indicator_SetFault_CALLBACK Callback)
 int App_Indicator_SetFault_CallCount(void);
 #define App_Indicator_SetFault_IgnoreArg_code() App_Indicator_SetFault_CMockIgnoreArg_code(__LINE__)
 void App_Indicator_SetFault_CMockIgnoreArg_code(UNITY_LINE_TYPE cmock_line);
+#define PLAT_PWM_SetDutyPercent_IgnoreAndReturn(cmock_retval) TEST_FAIL_MESSAGE("PLAT_PWM_SetDutyPercent requires _Ignore (not AndReturn)");
+#define PLAT_PWM_SetDutyPercent_Ignore() PLAT_PWM_SetDutyPercent_CMockIgnore()
+void PLAT_PWM_SetDutyPercent_CMockIgnore(void);
+#define PLAT_PWM_SetDutyPercent_StopIgnore() PLAT_PWM_SetDutyPercent_CMockStopIgnore()
+void PLAT_PWM_SetDutyPercent_CMockStopIgnore(void);
+#define PLAT_PWM_SetDutyPercent_ExpectAnyArgsAndReturn(cmock_retval) TEST_FAIL_MESSAGE("PLAT_PWM_SetDutyPercent requires _ExpectAnyArgs (not AndReturn)");
+#define PLAT_PWM_SetDutyPercent_ExpectAnyArgs() PLAT_PWM_SetDutyPercent_CMockExpectAnyArgs(__LINE__)
+void PLAT_PWM_SetDutyPercent_CMockExpectAnyArgs(UNITY_LINE_TYPE cmock_line);
+#define PLAT_PWM_SetDutyPercent_ExpectAndReturn(pwm, percent, cmock_retval) TEST_FAIL_MESSAGE("PLAT_PWM_SetDutyPercent requires _Expect (not AndReturn)");
+#define PLAT_PWM_SetDutyPercent_Expect(pwm, percent) PLAT_PWM_SetDutyPercent_CMockExpect(__LINE__, pwm, percent)
+void PLAT_PWM_SetDutyPercent_CMockExpect(UNITY_LINE_TYPE cmock_line, PWM_Instance_s* pwm, float percent);
+typedef void (* CMOCK_PLAT_PWM_SetDutyPercent_CALLBACK)(PWM_Instance_s* pwm, float percent, int cmock_num_calls);
+void PLAT_PWM_SetDutyPercent_AddCallback(CMOCK_PLAT_PWM_SetDutyPercent_CALLBACK Callback);
+void PLAT_PWM_SetDutyPercent_Stub(CMOCK_PLAT_PWM_SetDutyPercent_CALLBACK Callback);
+#define PLAT_PWM_SetDutyPercent_StubWithCallback PLAT_PWM_SetDutyPercent_Stub
+int PLAT_PWM_SetDutyPercent_CallCount(void);
+#define PLAT_PWM_SetDutyPercent_ReturnThruPtr_pwm(pwm) PLAT_PWM_SetDutyPercent_CMockReturnMemThruPtr_pwm(__LINE__, pwm, sizeof(PWM_Instance_s))
+#define PLAT_PWM_SetDutyPercent_ReturnArrayThruPtr_pwm(pwm, cmock_len) PLAT_PWM_SetDutyPercent_CMockReturnMemThruPtr_pwm(__LINE__, pwm, (cmock_len * sizeof(*pwm)))
+#define PLAT_PWM_SetDutyPercent_ReturnMemThruPtr_pwm(pwm, cmock_size) PLAT_PWM_SetDutyPercent_CMockReturnMemThruPtr_pwm(__LINE__, pwm, (cmock_size))
+void PLAT_PWM_SetDutyPercent_CMockReturnMemThruPtr_pwm(UNITY_LINE_TYPE cmock_line, PWM_Instance_s const* pwm, size_t cmock_size);
+#define PLAT_PWM_SetDutyPercent_IgnoreArg_pwm() PLAT_PWM_SetDutyPercent_CMockIgnoreArg_pwm(__LINE__)
+void PLAT_PWM_SetDutyPercent_CMockIgnoreArg_pwm(UNITY_LINE_TYPE cmock_line);
+#define PLAT_PWM_SetDutyPercent_IgnoreArg_percent() PLAT_PWM_SetDutyPercent_CMockIgnoreArg_percent(__LINE__)
+void PLAT_PWM_SetDutyPercent_CMockIgnoreArg_percent(UNITY_LINE_TYPE cmock_line);
+#define PLAT_PWM_Start_Ignore() TEST_FAIL_MESSAGE("PLAT_PWM_Start requires _IgnoreAndReturn");
+#define PLAT_PWM_Start_IgnoreAndReturn(cmock_retval) PLAT_PWM_Start_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void PLAT_PWM_Start_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return);
+#define PLAT_PWM_Start_StopIgnore() PLAT_PWM_Start_CMockStopIgnore()
+void PLAT_PWM_Start_CMockStopIgnore(void);
+#define PLAT_PWM_Start_ExpectAnyArgs() TEST_FAIL_MESSAGE("PLAT_PWM_Start requires _ExpectAnyArgsAndReturn");
+#define PLAT_PWM_Start_ExpectAnyArgsAndReturn(cmock_retval) PLAT_PWM_Start_CMockExpectAnyArgsAndReturn(__LINE__, cmock_retval)
+void PLAT_PWM_Start_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return);
+#define PLAT_PWM_Start_Expect(pwm) TEST_FAIL_MESSAGE("PLAT_PWM_Start requires _ExpectAndReturn");
+#define PLAT_PWM_Start_ExpectAndReturn(pwm, cmock_retval) PLAT_PWM_Start_CMockExpectAndReturn(__LINE__, pwm, cmock_retval)
+void PLAT_PWM_Start_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, PWM_Instance_s* pwm, bool cmock_to_return);
+typedef bool (* CMOCK_PLAT_PWM_Start_CALLBACK)(PWM_Instance_s* pwm, int cmock_num_calls);
+void PLAT_PWM_Start_AddCallback(CMOCK_PLAT_PWM_Start_CALLBACK Callback);
+void PLAT_PWM_Start_Stub(CMOCK_PLAT_PWM_Start_CALLBACK Callback);
+#define PLAT_PWM_Start_StubWithCallback PLAT_PWM_Start_Stub
+int PLAT_PWM_Start_CallCount(void);
+#define PLAT_PWM_Start_ReturnThruPtr_pwm(pwm) PLAT_PWM_Start_CMockReturnMemThruPtr_pwm(__LINE__, pwm, sizeof(PWM_Instance_s))
+#define PLAT_PWM_Start_ReturnArrayThruPtr_pwm(pwm, cmock_len) PLAT_PWM_Start_CMockReturnMemThruPtr_pwm(__LINE__, pwm, (cmock_len * sizeof(*pwm)))
+#define PLAT_PWM_Start_ReturnMemThruPtr_pwm(pwm, cmock_size) PLAT_PWM_Start_CMockReturnMemThruPtr_pwm(__LINE__, pwm, (cmock_size))
+void PLAT_PWM_Start_CMockReturnMemThruPtr_pwm(UNITY_LINE_TYPE cmock_line, PWM_Instance_s const* pwm, size_t cmock_size);
+#define PLAT_PWM_Start_IgnoreArg_pwm() PLAT_PWM_Start_CMockIgnoreArg_pwm(__LINE__)
+void PLAT_PWM_Start_CMockIgnoreArg_pwm(UNITY_LINE_TYPE cmock_line);
 #define PLAT_Task_Create_Ignore() TEST_FAIL_MESSAGE("PLAT_Task_Create requires _IgnoreAndReturn");
 #define PLAT_Task_Create_IgnoreAndReturn(cmock_retval) PLAT_Task_Create_CMockIgnoreAndReturn(__LINE__, cmock_retval)
 void PLAT_Task_Create_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return);
@@ -429,28 +488,6 @@ void PLAT_Task_DelayUntil_CMockReturnMemThruPtr_prev_tick(UNITY_LINE_TYPE cmock_
 void PLAT_Task_DelayUntil_CMockIgnoreArg_prev_tick(UNITY_LINE_TYPE cmock_line);
 #define PLAT_Task_DelayUntil_IgnoreArg_period_ms() PLAT_Task_DelayUntil_CMockIgnoreArg_period_ms(__LINE__)
 void PLAT_Task_DelayUntil_CMockIgnoreArg_period_ms(UNITY_LINE_TYPE cmock_line);
-#define PLAT_Task_Suspend_IgnoreAndReturn(cmock_retval) TEST_FAIL_MESSAGE("PLAT_Task_Suspend requires _Ignore (not AndReturn)");
-#define PLAT_Task_Suspend_Ignore() PLAT_Task_Suspend_CMockIgnore()
-void PLAT_Task_Suspend_CMockIgnore(void);
-#define PLAT_Task_Suspend_StopIgnore() PLAT_Task_Suspend_CMockStopIgnore()
-void PLAT_Task_Suspend_CMockStopIgnore(void);
-#define PLAT_Task_Suspend_ExpectAnyArgsAndReturn(cmock_retval) TEST_FAIL_MESSAGE("PLAT_Task_Suspend requires _ExpectAnyArgs (not AndReturn)");
-#define PLAT_Task_Suspend_ExpectAnyArgs() PLAT_Task_Suspend_CMockExpectAnyArgs(__LINE__)
-void PLAT_Task_Suspend_CMockExpectAnyArgs(UNITY_LINE_TYPE cmock_line);
-#define PLAT_Task_Suspend_ExpectAndReturn(task, cmock_retval) TEST_FAIL_MESSAGE("PLAT_Task_Suspend requires _Expect (not AndReturn)");
-#define PLAT_Task_Suspend_Expect(task) PLAT_Task_Suspend_CMockExpect(__LINE__, task)
-void PLAT_Task_Suspend_CMockExpect(UNITY_LINE_TYPE cmock_line, Task_s* task);
-typedef void (* CMOCK_PLAT_Task_Suspend_CALLBACK)(Task_s* task, int cmock_num_calls);
-void PLAT_Task_Suspend_AddCallback(CMOCK_PLAT_Task_Suspend_CALLBACK Callback);
-void PLAT_Task_Suspend_Stub(CMOCK_PLAT_Task_Suspend_CALLBACK Callback);
-#define PLAT_Task_Suspend_StubWithCallback PLAT_Task_Suspend_Stub
-int PLAT_Task_Suspend_CallCount(void);
-#define PLAT_Task_Suspend_ReturnThruPtr_task(task) PLAT_Task_Suspend_CMockReturnMemThruPtr_task(__LINE__, task, sizeof(Task_s))
-#define PLAT_Task_Suspend_ReturnArrayThruPtr_task(task, cmock_len) PLAT_Task_Suspend_CMockReturnMemThruPtr_task(__LINE__, task, (cmock_len * sizeof(*task)))
-#define PLAT_Task_Suspend_ReturnMemThruPtr_task(task, cmock_size) PLAT_Task_Suspend_CMockReturnMemThruPtr_task(__LINE__, task, (cmock_size))
-void PLAT_Task_Suspend_CMockReturnMemThruPtr_task(UNITY_LINE_TYPE cmock_line, Task_s const* task, size_t cmock_size);
-#define PLAT_Task_Suspend_IgnoreArg_task() PLAT_Task_Suspend_CMockIgnoreArg_task(__LINE__)
-void PLAT_Task_Suspend_CMockIgnoreArg_task(UNITY_LINE_TYPE cmock_line);
 #define UTIL_Log_Write_IgnoreAndReturn(cmock_retval) TEST_FAIL_MESSAGE("UTIL_Log_Write requires _Ignore (not AndReturn)");
 #define UTIL_Log_Write_Ignore() UTIL_Log_Write_CMockIgnore()
 void UTIL_Log_Write_CMockIgnore(void);

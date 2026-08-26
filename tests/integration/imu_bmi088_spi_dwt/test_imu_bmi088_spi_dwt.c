@@ -324,6 +324,12 @@ void setUp(void)
     Board_ImuGyro_IgnoreAndReturn(&gyro_spi);
     Board_Timebase_IgnoreAndReturn(&timebase);
     Board_DebugUart_IgnoreAndReturn(&uart);
+    /* Not exercised by this integration test: it targets the sensor-to-AHRS-
+     * to-telemetry chain, and the heater is unrelated to that. NULL takes
+     * heater_init's non-fatal early-return branch, which is what proves it
+     * never reaches UTIL_PID_Init/PLAT_PWM_Start — no stub is installed for
+     * either, so CMock fails the test if production code called them. */
+    Board_ImuHeater_IgnoreAndReturn(NULL);
     PLAT_Task_Create_StubWithCallback(task_create);
     PLAT_Task_TickNow_StubWithCallback(task_tick);
     PLAT_Task_DelayUntil_StubWithCallback(task_delay);
@@ -378,11 +384,23 @@ static void test_sample_to_ahrs_to_telemetry(void)
     TEST_ASSERT_EQUAL_HEX8(0x7Fu, telemetry_wire[31]);
     TEST_ASSERT_TRUE(DEV_Watchdog_Count() >= 1u);
 }
+/**
+ * @brief A dead sensor at bring-up must not create the attitude task at all.
+ *
+ * app_imu.c moved DEV_BMI088_Init ahead of PLAT_Task_Create (App_Imu_StartTask):
+ * a bring-up failure is now reported and the task is simply never created,
+ * rather than the old design of starting the task and letting it discover the
+ * failure and suspend itself. So the SPI backend is made to fail from the
+ * first transfer, and the assertion is the absence of a task: task_entry
+ * stays NULL, and PLAT_Task_Create's own stub -- task_create -- would fail
+ * this test on the TEST_ASSERT_EQUAL_STRING/size_t/UINT8 checks if it were
+ * ever called for this scenario, so those checks are never reached.
+ */
 static void test_bottom_failure_suspends_offline(void)
 {
     spi_available = false;
-    loop_limit    = 0u;
-    TEST_ASSERT_EQUAL_INT(2, run_task());
+    TEST_ASSERT_TRUE(App_Imu_StartTask(5u));
+    TEST_ASSERT_NULL(task_entry);
     TEST_ASSERT_FALSE(App_Imu_Online());
     TEST_ASSERT_NULL(App_Imu_Quat());
     TEST_ASSERT_EQUAL_UINT(0u, telemetry_sends);

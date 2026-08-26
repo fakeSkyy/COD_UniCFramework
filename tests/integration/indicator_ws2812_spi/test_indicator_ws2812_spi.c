@@ -8,6 +8,7 @@
 #include "app_indicator.h"
 #include "dev_ws2812.h"
 #include "mock_indicator_contract.h"
+#include "plat_pwm.h"
 #include "plat_spi.h"
 #include "unity.h"
 
@@ -36,6 +37,42 @@ static const uint8_t*  user_rx_data;
 static uint16_t        user_rx_len;
 static uint32_t        user_err_bits;
 static unsigned        callback_sequence;
+static PWM_Instance_s  pwm;
+static bool            pwm_running;
+static uint32_t        pwm_period;
+static uint32_t        pwm_compare;
+static uint32_t        pwm_freq;
+
+static bool pwm_start(void* ctx)
+{
+    (void) ctx;
+    pwm_running = true;
+    return true;
+}
+static void pwm_stop(void* ctx)
+{
+    (void) ctx;
+    pwm_running = false;
+}
+static void pwm_set_compare(void* ctx, uint32_t ccr)
+{
+    (void) ctx;
+    pwm_compare = ccr;
+}
+static uint32_t pwm_get_period(void* ctx)
+{
+    (void) ctx;
+    return pwm_period;
+}
+static uint32_t pwm_set_frequency(void* ctx, uint32_t freq_hz)
+{
+    (void) ctx;
+    pwm_freq   = freq_hz;
+    pwm_period = 1000u;
+    return pwm_period;
+}
+static const PWM_Ops_s pwm_ops = {pwm_start, pwm_stop, pwm_set_compare, pwm_get_period,
+                                  pwm_set_frequency};
 
 static bool transmit(void* ctx, const uint8_t* data, uint16_t len, uint32_t timeout)
 {
@@ -161,7 +198,12 @@ void setUp(void)
     user_rx_len       = 0u;
     user_err_bits     = 0u;
     callback_sequence = 0u;
+    pwm_running       = false;
+    pwm_period        = 1000u;
+    pwm_compare       = 0u;
+    pwm_freq          = 0u;
     TEST_ASSERT_TRUE(PLAT_SPI_Init(&spi, &ops, &backend_ctx));
+    TEST_ASSERT_TRUE(PLAT_PWM_Init(&pwm, &pwm_ops, &pwm));
     PLAT_Task_Create_StubWithCallback(capture_create);
     PLAT_Task_TickNow_StubWithCallback(tick_cb);
     PLAT_Task_DelayUntil_StubWithCallback(delay_cb);
@@ -178,6 +220,7 @@ static void run_task(unsigned loops)
     TEST_ASSERT_TRUE(App_Indicator_StartTask(0u));
     TEST_ASSERT_NOT_NULL(task_entry);
     Board_StatusLed_ExpectAndReturn(&spi);
+    Board_BuzzerPWM_ExpectAndReturn(&pwm);
     if (setjmp(done) == 0)
     {
         task_entry(task_arg);

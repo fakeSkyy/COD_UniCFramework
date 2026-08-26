@@ -41,6 +41,19 @@ void Board_StatusLed_AddCallback(CMOCK_Board_StatusLed_CALLBACK Callback);
 void Board_StatusLed_Stub(CMOCK_Board_StatusLed_CALLBACK Callback);
 #define Board_StatusLed_StubWithCallback Board_StatusLed_Stub
 int Board_StatusLed_CallCount(void);
+#define Board_BuzzerPWM_Ignore() TEST_FAIL_MESSAGE("Board_BuzzerPWM requires _IgnoreAndReturn");
+#define Board_BuzzerPWM_IgnoreAndReturn(cmock_retval) Board_BuzzerPWM_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void Board_BuzzerPWM_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, PWM_Instance_s* cmock_to_return);
+#define Board_BuzzerPWM_StopIgnore() Board_BuzzerPWM_CMockStopIgnore()
+void Board_BuzzerPWM_CMockStopIgnore(void);
+#define Board_BuzzerPWM_Expect() TEST_FAIL_MESSAGE("Board_BuzzerPWM requires _ExpectAndReturn");
+#define Board_BuzzerPWM_ExpectAndReturn(cmock_retval) Board_BuzzerPWM_CMockExpectAndReturn(__LINE__, cmock_retval)
+void Board_BuzzerPWM_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, PWM_Instance_s* cmock_to_return);
+typedef PWM_Instance_s* (* CMOCK_Board_BuzzerPWM_CALLBACK)(int cmock_num_calls);
+void Board_BuzzerPWM_AddCallback(CMOCK_Board_BuzzerPWM_CALLBACK Callback);
+void Board_BuzzerPWM_Stub(CMOCK_Board_BuzzerPWM_CALLBACK Callback);
+#define Board_BuzzerPWM_StubWithCallback Board_BuzzerPWM_Stub
+int Board_BuzzerPWM_CallCount(void);
 #define DEV_WS2812_Init_Ignore() TEST_FAIL_MESSAGE("DEV_WS2812_Init requires _IgnoreAndReturn");
 #define DEV_WS2812_Init_IgnoreAndReturn(cmock_retval) DEV_WS2812_Init_CMockIgnoreAndReturn(__LINE__, cmock_retval)
 void DEV_WS2812_Init_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return);
@@ -155,6 +168,80 @@ void DEV_Watchdog_Register_CMockReturnMemThruPtr_wd(UNITY_LINE_TYPE cmock_line, 
 void DEV_Watchdog_Register_CMockIgnoreArg_wd(UNITY_LINE_TYPE cmock_line);
 #define DEV_Watchdog_Register_IgnoreArg_name() DEV_Watchdog_Register_CMockIgnoreArg_name(__LINE__)
 void DEV_Watchdog_Register_CMockIgnoreArg_name(UNITY_LINE_TYPE cmock_line);
+#define DEV_Buzzer_Create_Ignore() TEST_FAIL_MESSAGE("DEV_Buzzer_Create requires _IgnoreAndReturn");
+#define DEV_Buzzer_Create_IgnoreAndReturn(cmock_retval) DEV_Buzzer_Create_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void DEV_Buzzer_Create_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, DEV_Buzzer_s* cmock_to_return);
+#define DEV_Buzzer_Create_StopIgnore() DEV_Buzzer_Create_CMockStopIgnore()
+void DEV_Buzzer_Create_CMockStopIgnore(void);
+#define DEV_Buzzer_Create_ExpectAnyArgs() TEST_FAIL_MESSAGE("DEV_Buzzer_Create requires _ExpectAnyArgsAndReturn");
+#define DEV_Buzzer_Create_ExpectAnyArgsAndReturn(cmock_retval) DEV_Buzzer_Create_CMockExpectAnyArgsAndReturn(__LINE__, cmock_retval)
+void DEV_Buzzer_Create_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, DEV_Buzzer_s* cmock_to_return);
+#define DEV_Buzzer_Create_Expect(pwm, tick_hz, volume) TEST_FAIL_MESSAGE("DEV_Buzzer_Create requires _ExpectAndReturn");
+#define DEV_Buzzer_Create_ExpectAndReturn(pwm, tick_hz, volume, cmock_retval) DEV_Buzzer_Create_CMockExpectAndReturn(__LINE__, pwm, tick_hz, volume, cmock_retval)
+void DEV_Buzzer_Create_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, PWM_Instance_s* pwm, uint32_t tick_hz, float volume, DEV_Buzzer_s* cmock_to_return);
+typedef DEV_Buzzer_s* (* CMOCK_DEV_Buzzer_Create_CALLBACK)(PWM_Instance_s* pwm, uint32_t tick_hz, float volume, int cmock_num_calls);
+void DEV_Buzzer_Create_AddCallback(CMOCK_DEV_Buzzer_Create_CALLBACK Callback);
+void DEV_Buzzer_Create_Stub(CMOCK_DEV_Buzzer_Create_CALLBACK Callback);
+#define DEV_Buzzer_Create_StubWithCallback DEV_Buzzer_Create_Stub
+int DEV_Buzzer_Create_CallCount(void);
+#define DEV_Buzzer_Create_ReturnThruPtr_pwm(pwm) DEV_Buzzer_Create_CMockReturnMemThruPtr_pwm(__LINE__, pwm, sizeof(PWM_Instance_s))
+#define DEV_Buzzer_Create_ReturnArrayThruPtr_pwm(pwm, cmock_len) DEV_Buzzer_Create_CMockReturnMemThruPtr_pwm(__LINE__, pwm, (cmock_len * sizeof(*pwm)))
+#define DEV_Buzzer_Create_ReturnMemThruPtr_pwm(pwm, cmock_size) DEV_Buzzer_Create_CMockReturnMemThruPtr_pwm(__LINE__, pwm, (cmock_size))
+void DEV_Buzzer_Create_CMockReturnMemThruPtr_pwm(UNITY_LINE_TYPE cmock_line, PWM_Instance_s const* pwm, size_t cmock_size);
+#define DEV_Buzzer_Create_IgnoreArg_pwm() DEV_Buzzer_Create_CMockIgnoreArg_pwm(__LINE__)
+void DEV_Buzzer_Create_CMockIgnoreArg_pwm(UNITY_LINE_TYPE cmock_line);
+#define DEV_Buzzer_Create_IgnoreArg_tick_hz() DEV_Buzzer_Create_CMockIgnoreArg_tick_hz(__LINE__)
+void DEV_Buzzer_Create_CMockIgnoreArg_tick_hz(UNITY_LINE_TYPE cmock_line);
+#define DEV_Buzzer_Create_IgnoreArg_volume() DEV_Buzzer_Create_CMockIgnoreArg_volume(__LINE__)
+void DEV_Buzzer_Create_CMockIgnoreArg_volume(UNITY_LINE_TYPE cmock_line);
+#define DEV_Buzzer_Tick_IgnoreAndReturn(cmock_retval) TEST_FAIL_MESSAGE("DEV_Buzzer_Tick requires _Ignore (not AndReturn)");
+#define DEV_Buzzer_Tick_Ignore() DEV_Buzzer_Tick_CMockIgnore()
+void DEV_Buzzer_Tick_CMockIgnore(void);
+#define DEV_Buzzer_Tick_StopIgnore() DEV_Buzzer_Tick_CMockStopIgnore()
+void DEV_Buzzer_Tick_CMockStopIgnore(void);
+#define DEV_Buzzer_Tick_ExpectAnyArgsAndReturn(cmock_retval) TEST_FAIL_MESSAGE("DEV_Buzzer_Tick requires _ExpectAnyArgs (not AndReturn)");
+#define DEV_Buzzer_Tick_ExpectAnyArgs() DEV_Buzzer_Tick_CMockExpectAnyArgs(__LINE__)
+void DEV_Buzzer_Tick_CMockExpectAnyArgs(UNITY_LINE_TYPE cmock_line);
+#define DEV_Buzzer_Tick_ExpectAndReturn(buz, cmock_retval) TEST_FAIL_MESSAGE("DEV_Buzzer_Tick requires _Expect (not AndReturn)");
+#define DEV_Buzzer_Tick_Expect(buz) DEV_Buzzer_Tick_CMockExpect(__LINE__, buz)
+void DEV_Buzzer_Tick_CMockExpect(UNITY_LINE_TYPE cmock_line, DEV_Buzzer_s* buz);
+typedef void (* CMOCK_DEV_Buzzer_Tick_CALLBACK)(DEV_Buzzer_s* buz, int cmock_num_calls);
+void DEV_Buzzer_Tick_AddCallback(CMOCK_DEV_Buzzer_Tick_CALLBACK Callback);
+void DEV_Buzzer_Tick_Stub(CMOCK_DEV_Buzzer_Tick_CALLBACK Callback);
+#define DEV_Buzzer_Tick_StubWithCallback DEV_Buzzer_Tick_Stub
+int DEV_Buzzer_Tick_CallCount(void);
+#define DEV_Buzzer_Tick_ReturnThruPtr_buz(buz) DEV_Buzzer_Tick_CMockReturnMemThruPtr_buz(__LINE__, buz, sizeof(*buz))
+#define DEV_Buzzer_Tick_ReturnArrayThruPtr_buz(buz, cmock_len) DEV_Buzzer_Tick_CMockReturnMemThruPtr_buz(__LINE__, buz, (cmock_len * sizeof(*buz)))
+#define DEV_Buzzer_Tick_ReturnMemThruPtr_buz(buz, cmock_size) DEV_Buzzer_Tick_CMockReturnMemThruPtr_buz(__LINE__, buz, (cmock_size))
+void DEV_Buzzer_Tick_CMockReturnMemThruPtr_buz(UNITY_LINE_TYPE cmock_line, DEV_Buzzer_s const* buz, size_t cmock_size);
+#define DEV_Buzzer_Tick_IgnoreArg_buz() DEV_Buzzer_Tick_CMockIgnoreArg_buz(__LINE__)
+void DEV_Buzzer_Tick_CMockIgnoreArg_buz(UNITY_LINE_TYPE cmock_line);
+#define DEV_Buzzer_PlaySeq_IgnoreAndReturn(cmock_retval) TEST_FAIL_MESSAGE("DEV_Buzzer_PlaySeq requires _Ignore (not AndReturn)");
+#define DEV_Buzzer_PlaySeq_Ignore() DEV_Buzzer_PlaySeq_CMockIgnore()
+void DEV_Buzzer_PlaySeq_CMockIgnore(void);
+#define DEV_Buzzer_PlaySeq_StopIgnore() DEV_Buzzer_PlaySeq_CMockStopIgnore()
+void DEV_Buzzer_PlaySeq_CMockStopIgnore(void);
+#define DEV_Buzzer_PlaySeq_ExpectAnyArgsAndReturn(cmock_retval) TEST_FAIL_MESSAGE("DEV_Buzzer_PlaySeq requires _ExpectAnyArgs (not AndReturn)");
+#define DEV_Buzzer_PlaySeq_ExpectAnyArgs() DEV_Buzzer_PlaySeq_CMockExpectAnyArgs(__LINE__)
+void DEV_Buzzer_PlaySeq_CMockExpectAnyArgs(UNITY_LINE_TYPE cmock_line);
+#define DEV_Buzzer_PlaySeq_ExpectAndReturn(buz, frames, loop, cmock_retval) TEST_FAIL_MESSAGE("DEV_Buzzer_PlaySeq requires _Expect (not AndReturn)");
+#define DEV_Buzzer_PlaySeq_Expect(buz, frames, loop) DEV_Buzzer_PlaySeq_CMockExpect(__LINE__, buz, frames, loop)
+void DEV_Buzzer_PlaySeq_CMockExpect(UNITY_LINE_TYPE cmock_line, DEV_Buzzer_s* buz, const UTIL_Seq_Frame_s* frames, bool loop);
+typedef void (* CMOCK_DEV_Buzzer_PlaySeq_CALLBACK)(DEV_Buzzer_s* buz, const UTIL_Seq_Frame_s* frames, bool loop, int cmock_num_calls);
+void DEV_Buzzer_PlaySeq_AddCallback(CMOCK_DEV_Buzzer_PlaySeq_CALLBACK Callback);
+void DEV_Buzzer_PlaySeq_Stub(CMOCK_DEV_Buzzer_PlaySeq_CALLBACK Callback);
+#define DEV_Buzzer_PlaySeq_StubWithCallback DEV_Buzzer_PlaySeq_Stub
+int DEV_Buzzer_PlaySeq_CallCount(void);
+#define DEV_Buzzer_PlaySeq_ReturnThruPtr_buz(buz) DEV_Buzzer_PlaySeq_CMockReturnMemThruPtr_buz(__LINE__, buz, sizeof(*buz))
+#define DEV_Buzzer_PlaySeq_ReturnArrayThruPtr_buz(buz, cmock_len) DEV_Buzzer_PlaySeq_CMockReturnMemThruPtr_buz(__LINE__, buz, (cmock_len * sizeof(*buz)))
+#define DEV_Buzzer_PlaySeq_ReturnMemThruPtr_buz(buz, cmock_size) DEV_Buzzer_PlaySeq_CMockReturnMemThruPtr_buz(__LINE__, buz, (cmock_size))
+void DEV_Buzzer_PlaySeq_CMockReturnMemThruPtr_buz(UNITY_LINE_TYPE cmock_line, DEV_Buzzer_s const* buz, size_t cmock_size);
+#define DEV_Buzzer_PlaySeq_IgnoreArg_buz() DEV_Buzzer_PlaySeq_CMockIgnoreArg_buz(__LINE__)
+void DEV_Buzzer_PlaySeq_CMockIgnoreArg_buz(UNITY_LINE_TYPE cmock_line);
+#define DEV_Buzzer_PlaySeq_IgnoreArg_frames() DEV_Buzzer_PlaySeq_CMockIgnoreArg_frames(__LINE__)
+void DEV_Buzzer_PlaySeq_CMockIgnoreArg_frames(UNITY_LINE_TYPE cmock_line);
+#define DEV_Buzzer_PlaySeq_IgnoreArg_loop() DEV_Buzzer_PlaySeq_CMockIgnoreArg_loop(__LINE__)
+void DEV_Buzzer_PlaySeq_CMockIgnoreArg_loop(UNITY_LINE_TYPE cmock_line);
 #define UTIL_Seq_Init_IgnoreAndReturn(cmock_retval) TEST_FAIL_MESSAGE("UTIL_Seq_Init requires _Ignore (not AndReturn)");
 #define UTIL_Seq_Init_Ignore() UTIL_Seq_Init_CMockIgnore()
 void UTIL_Seq_Init_CMockIgnore(void);

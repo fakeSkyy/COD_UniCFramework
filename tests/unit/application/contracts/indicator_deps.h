@@ -8,18 +8,23 @@
 #ifndef INDICATOR_DEPS_H
 #define INDICATOR_DEPS_H
 
+#include "dev_buzzer.h"
 #include "dev_ws2812.h"
 #include "plat_task.h"
 #include "util_log.h"
 #include "util_seq.h"
 
 SPI_Instance_s* Board_StatusLed(void);
+PWM_Instance_s* Board_BuzzerPWM(void);
 bool DEV_WS2812_Init(DEV_WS2812_s* dev, SPI_Instance_s* spi, uint8_t* buf, uint16_t bytes,
                      uint16_t count);
 void DEV_WS2812_SetPixel(DEV_WS2812_s* dev, uint16_t index, uint8_t r, uint8_t g, uint8_t b);
 bool DEV_WS2812_Show(DEV_WS2812_s* dev);
 bool DEV_Watchdog_Register(DEV_Watchdog_s* wd, const char* name);
-void UTIL_Seq_Init(UTIL_Seq_s* s);
+DEV_Buzzer_s* DEV_Buzzer_Create(PWM_Instance_s* pwm, uint32_t tick_hz, float volume);
+void          DEV_Buzzer_Tick(DEV_Buzzer_s* buz);
+void          DEV_Buzzer_PlaySeq(DEV_Buzzer_s* buz, const UTIL_Seq_Frame_s* frames, bool loop);
+void          UTIL_Seq_Init(UTIL_Seq_s* s);
 bool UTIL_Seq_Play(UTIL_Seq_s* s, const UTIL_Seq_Frame_s* frames, bool loop, uint32_t now_ms);
 bool UTIL_Seq_Step(UTIL_Seq_s* s, uint32_t now_ms);
 const uint16_t* UTIL_Seq_Out(const UTIL_Seq_s* s);

@@ -28,12 +28,14 @@ enum
     DEVICE_STATUS_LED,
     DEVICE_DEBUG_UART,
     DEVICE_BUZZER_PWM,
+    DEVICE_IMU_HEATER,
     DEVICE_PARAM_FLASH,
     DEVICE_COUNT
 };
 
 static const char* const device_names[DEVICE_COUNT] = {
-    "timebase", "imu_accel", "imu_gyro", "status_led", "debug_uart", "buzzer_pwm", "param_flash",
+    "timebase",   "imu_accel",  "imu_gyro",   "status_led",
+    "debug_uart", "buzzer_pwm", "imu_heater", "param_flash",
 };
 
 static unsigned       contexts[DEVICE_COUNT];
@@ -76,6 +78,8 @@ static void* accessor(unsigned device)
         return Board_DebugUart();
     case DEVICE_BUZZER_PWM:
         return Board_BuzzerPWM();
+    case DEVICE_IMU_HEATER:
+        return Board_ImuHeater();
     case DEVICE_PARAM_FLASH:
         return Board_ParamFlash();
     default:
@@ -145,6 +149,15 @@ static void expect_device(unsigned device, bool ctx_ok, bool init_ok)
         }
         break;
 
+    case DEVICE_IMU_HEATER:
+        IMPL_STM32_PWM_CreateCtx_ExpectAndReturn(&htim3, TIM_CHANNEL_4, ctx);
+        if (ctx_ok)
+        {
+            IMPL_STM32_PWM_GetOps_ExpectAndReturn(&pwm_ops);
+            PLAT_PWM_Init_ExpectAnyArgsAndReturn(init_ok);
+        }
+        break;
+
     case DEVICE_PARAM_FLASH:
         IMPL_STM32_FLASH_CreateCtx_ExpectAndReturn(IMPL_FLASH_PARAM_SECTOR, 1u, ctx);
         if (ctx_ok)
@@ -190,6 +203,9 @@ static void expect_teardown(void)
             IMPL_STM32_UART_DestroyCtx_ExpectAnyArgs();
             break;
         case DEVICE_BUZZER_PWM:
+            IMPL_STM32_PWM_DestroyCtx_ExpectAnyArgs();
+            break;
+        case DEVICE_IMU_HEATER:
             IMPL_STM32_PWM_DestroyCtx_ExpectAnyArgs();
             break;
         case DEVICE_PARAM_FLASH:
@@ -245,7 +261,7 @@ static void test_accessors_are_null_before_first_init(void)
     TEST_ASSERT_NULL(Board_FailedDevice());
 }
 
-static void test_seven_devices_initialize_in_strict_table_order(void)
+static void test_eight_devices_initialize_in_strict_table_order(void)
 {
     expect_success();
     TEST_ASSERT_TRUE(Board_Init());
@@ -347,6 +363,7 @@ static void test_reinit_destroys_each_previous_context_exactly_once(void)
      * rather than expect_teardown's _ExpectAnyArgs, and checks reverse table
      * order at the same time via enforce_strict_ordering. */
     IMPL_STM32_FLASH_DestroyCtx_Expect(&contexts[DEVICE_PARAM_FLASH]);
+    IMPL_STM32_PWM_DestroyCtx_Expect(&contexts[DEVICE_IMU_HEATER]);
     IMPL_STM32_PWM_DestroyCtx_Expect(&contexts[DEVICE_BUZZER_PWM]);
     IMPL_STM32_UART_DestroyCtx_Expect(&contexts[DEVICE_DEBUG_UART]);
     IMPL_STM32_SPI_DestroyCtx_Expect(&contexts[DEVICE_STATUS_LED]);
@@ -367,14 +384,15 @@ static void test_midway_failure_leaves_contexts_that_the_next_call_still_release
      * must cover by testing the stored context pointer rather than _up: an
      * entry can have a context with no _up, and the next call must still
      * release it. Devices after status_led (debug_uart, buzzer_pwm,
-     * param_flash) never ran, so their contexts are NULL and their DestroyCtx
-     * calls fire but touch nothing. */
+     * imu_heater, param_flash) never ran, so their contexts are NULL and their
+     * DestroyCtx calls fire but touch nothing. */
     expect_failure(DEVICE_STATUS_LED, false);
     TEST_ASSERT_FALSE(Board_Init());
     TEST_ASSERT_EQUAL_STRING("status_led", Board_FailedDevice());
     reset_mocks();
 
     IMPL_STM32_FLASH_DestroyCtx_Expect(NULL);
+    IMPL_STM32_PWM_DestroyCtx_Expect(NULL);
     IMPL_STM32_PWM_DestroyCtx_Expect(NULL);
     IMPL_STM32_UART_DestroyCtx_Expect(NULL);
     IMPL_STM32_SPI_DestroyCtx_Expect(&contexts[DEVICE_STATUS_LED]);
@@ -414,6 +432,7 @@ static void test_third_consecutive_init_frees_nothing_twice(void)
      * pointer from the first call had survived un-NULLed and been freed a
      * second time. */
     IMPL_STM32_FLASH_DestroyCtx_Expect(&contexts[DEVICE_PARAM_FLASH]);
+    IMPL_STM32_PWM_DestroyCtx_Expect(&contexts[DEVICE_IMU_HEATER]);
     IMPL_STM32_PWM_DestroyCtx_Expect(&contexts[DEVICE_BUZZER_PWM]);
     IMPL_STM32_UART_DestroyCtx_Expect(&contexts[DEVICE_DEBUG_UART]);
     IMPL_STM32_SPI_DestroyCtx_Expect(&contexts[DEVICE_STATUS_LED]);
@@ -436,7 +455,7 @@ int main(int argc, char** argv)
 {
     APP_CASES_BEGIN();
     APP_CASE(accessors_are_null_before_first_init);
-    APP_CASE(seven_devices_initialize_in_strict_table_order);
+    APP_CASE(eight_devices_initialize_in_strict_table_order);
     APP_CASE(each_null_context_is_first_failure_and_short_circuits);
     APP_CASE(each_platform_init_failure_is_first_and_short_circuits);
     APP_CASE(reinit_clears_failure_and_rebuilds_all_accessor_state);

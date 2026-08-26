@@ -9,6 +9,7 @@
 #define IMU_DEPS_H
 
 #include "dev_bmi088.h"
+#include "plat_pwm.h"
 #include "plat_task.h"
 #include "util_ahrs.h"
 #include "util_log.h"
@@ -16,6 +17,7 @@
 SPI_Instance_s*     Board_ImuAccel(void);
 SPI_Instance_s*     Board_ImuGyro(void);
 DWT_Instance_s*     Board_Timebase(void);
+PWM_Instance_s*     Board_ImuHeater(void);
 DEV_BMI088_Status_e DEV_BMI088_Init(DEV_BMI088_s* imu, const DEV_BMI088_Cfg_s* cfg);
 bool                DEV_BMI088_CalibrateGyro(DEV_BMI088_s* imu, uint16_t samples);
 bool                DEV_BMI088_Read(DEV_BMI088_s* imu);
@@ -28,11 +30,12 @@ float    PLAT_DWT_GetDeltaT(DWT_Instance_s* dwt, uint32_t* tick_last);
 bool     App_Telemetry_Init(void);
 void     App_Telemetry_Step(float roll, float pitch, float yaw, const float* rate, float temp);
 void     App_Indicator_SetFault(uint8_t code);
+void     PLAT_PWM_SetDutyPercent(PWM_Instance_s* pwm, float percent);
+bool     PLAT_PWM_Start(PWM_Instance_s* pwm);
 bool PLAT_Task_Create(Task_s* task, PLAT_Task_Entry entry, void* arg, const char* name, void* stack,
                       size_t stack_bytes, uint8_t priority);
 uint32_t PLAT_Task_TickNow(void);
 bool     PLAT_Task_DelayUntil(uint32_t* prev_tick, uint32_t period_ms);
-void     PLAT_Task_Suspend(Task_s* task);
 void     UTIL_Log_Write(UTIL_Log_Level_e level, const char* tag, const char* fmt, ...);
 
 #endif /* IMU_DEPS_H */

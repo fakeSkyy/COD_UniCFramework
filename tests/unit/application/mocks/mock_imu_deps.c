@@ -10,6 +10,7 @@ static const char* CMockString_App_Telemetry_Init = "App_Telemetry_Init";
 static const char* CMockString_App_Telemetry_Step = "App_Telemetry_Step";
 static const char* CMockString_Board_ImuAccel = "Board_ImuAccel";
 static const char* CMockString_Board_ImuGyro = "Board_ImuGyro";
+static const char* CMockString_Board_ImuHeater = "Board_ImuHeater";
 static const char* CMockString_Board_Timebase = "Board_Timebase";
 static const char* CMockString_DEV_BMI088_CalibrateGyro = "DEV_BMI088_CalibrateGyro";
 static const char* CMockString_DEV_BMI088_Init = "DEV_BMI088_Init";
@@ -17,9 +18,10 @@ static const char* CMockString_DEV_BMI088_Read = "DEV_BMI088_Read";
 static const char* CMockString_DEV_Watchdog_Register = "DEV_Watchdog_Register";
 static const char* CMockString_PLAT_DWT_GetDeltaT = "PLAT_DWT_GetDeltaT";
 static const char* CMockString_PLAT_DWT_GetTick = "PLAT_DWT_GetTick";
+static const char* CMockString_PLAT_PWM_SetDutyPercent = "PLAT_PWM_SetDutyPercent";
+static const char* CMockString_PLAT_PWM_Start = "PLAT_PWM_Start";
 static const char* CMockString_PLAT_Task_Create = "PLAT_Task_Create";
 static const char* CMockString_PLAT_Task_DelayUntil = "PLAT_Task_DelayUntil";
-static const char* CMockString_PLAT_Task_Suspend = "PLAT_Task_Suspend";
 static const char* CMockString_PLAT_Task_TickNow = "PLAT_Task_TickNow";
 static const char* CMockString_UTIL_AHRS_AlignToAccel = "UTIL_AHRS_AlignToAccel";
 static const char* CMockString_UTIL_AHRS_Init = "UTIL_AHRS_Init";
@@ -40,10 +42,12 @@ static const char* CMockString_gyro = "gyro";
 static const char* CMockString_imu = "imu";
 static const char* CMockString_level = "level";
 static const char* CMockString_name = "name";
+static const char* CMockString_percent = "percent";
 static const char* CMockString_period_ms = "period_ms";
 static const char* CMockString_pitch = "pitch";
 static const char* CMockString_prev_tick = "prev_tick";
 static const char* CMockString_priority = "priority";
+static const char* CMockString_pwm = "pwm";
 static const char* CMockString_rate = "rate";
 static const char* CMockString_roll = "roll";
 static const char* CMockString_samples = "samples";
@@ -82,6 +86,15 @@ typedef struct _CMOCK_Board_Timebase_CALL_INSTANCE
   int CallOrder;
 
 } CMOCK_Board_Timebase_CALL_INSTANCE;
+
+typedef struct _CMOCK_Board_ImuHeater_CALL_INSTANCE
+{
+  UNITY_LINE_TYPE LineNumber;
+  char ExpectAnyArgsBool;
+  PWM_Instance_s* ReturnVal;
+  int CallOrder;
+
+} CMOCK_Board_ImuHeater_CALL_INSTANCE;
 
 typedef struct _CMOCK_DEV_BMI088_Init_CALL_INSTANCE
 {
@@ -272,6 +285,35 @@ typedef struct _CMOCK_App_Indicator_SetFault_CALL_INSTANCE
 
 } CMOCK_App_Indicator_SetFault_CALL_INSTANCE;
 
+typedef struct _CMOCK_PLAT_PWM_SetDutyPercent_CALL_INSTANCE
+{
+  UNITY_LINE_TYPE LineNumber;
+  char ExpectAnyArgsBool;
+  int CallOrder;
+  PWM_Instance_s* Expected_pwm;
+  float Expected_percent;
+  char ReturnThruPtr_pwm_Used;
+  PWM_Instance_s const* ReturnThruPtr_pwm_Val;
+  size_t ReturnThruPtr_pwm_Size;
+  char IgnoreArg_pwm;
+  char IgnoreArg_percent;
+
+} CMOCK_PLAT_PWM_SetDutyPercent_CALL_INSTANCE;
+
+typedef struct _CMOCK_PLAT_PWM_Start_CALL_INSTANCE
+{
+  UNITY_LINE_TYPE LineNumber;
+  char ExpectAnyArgsBool;
+  bool ReturnVal;
+  int CallOrder;
+  PWM_Instance_s* Expected_pwm;
+  char ReturnThruPtr_pwm_Used;
+  PWM_Instance_s const* ReturnThruPtr_pwm_Val;
+  size_t ReturnThruPtr_pwm_Size;
+  char IgnoreArg_pwm;
+
+} CMOCK_PLAT_PWM_Start_CALL_INSTANCE;
+
 typedef struct _CMOCK_PLAT_Task_Create_CALL_INSTANCE
 {
   UNITY_LINE_TYPE LineNumber;
@@ -329,19 +371,6 @@ typedef struct _CMOCK_PLAT_Task_DelayUntil_CALL_INSTANCE
 
 } CMOCK_PLAT_Task_DelayUntil_CALL_INSTANCE;
 
-typedef struct _CMOCK_PLAT_Task_Suspend_CALL_INSTANCE
-{
-  UNITY_LINE_TYPE LineNumber;
-  char ExpectAnyArgsBool;
-  int CallOrder;
-  Task_s* Expected_task;
-  char ReturnThruPtr_task_Used;
-  Task_s const* ReturnThruPtr_task_Val;
-  size_t ReturnThruPtr_task_Size;
-  char IgnoreArg_task;
-
-} CMOCK_PLAT_Task_Suspend_CALL_INSTANCE;
-
 typedef struct _CMOCK_UTIL_Log_Write_CALL_INSTANCE
 {
   UNITY_LINE_TYPE LineNumber;
@@ -376,6 +405,12 @@ static struct mock_imu_depsInstance
   CMOCK_Board_Timebase_CALLBACK Board_Timebase_CallbackFunctionPointer;
   int Board_Timebase_CallbackCalls;
   CMOCK_MEM_INDEX_TYPE Board_Timebase_CallInstance;
+  char Board_ImuHeater_IgnoreBool;
+  PWM_Instance_s* Board_ImuHeater_FinalReturn;
+  char Board_ImuHeater_CallbackBool;
+  CMOCK_Board_ImuHeater_CALLBACK Board_ImuHeater_CallbackFunctionPointer;
+  int Board_ImuHeater_CallbackCalls;
+  CMOCK_MEM_INDEX_TYPE Board_ImuHeater_CallInstance;
   char DEV_BMI088_Init_IgnoreBool;
   DEV_BMI088_Status_e DEV_BMI088_Init_FinalReturn;
   char DEV_BMI088_Init_CallbackBool;
@@ -446,6 +481,17 @@ static struct mock_imu_depsInstance
   CMOCK_App_Indicator_SetFault_CALLBACK App_Indicator_SetFault_CallbackFunctionPointer;
   int App_Indicator_SetFault_CallbackCalls;
   CMOCK_MEM_INDEX_TYPE App_Indicator_SetFault_CallInstance;
+  char PLAT_PWM_SetDutyPercent_IgnoreBool;
+  char PLAT_PWM_SetDutyPercent_CallbackBool;
+  CMOCK_PLAT_PWM_SetDutyPercent_CALLBACK PLAT_PWM_SetDutyPercent_CallbackFunctionPointer;
+  int PLAT_PWM_SetDutyPercent_CallbackCalls;
+  CMOCK_MEM_INDEX_TYPE PLAT_PWM_SetDutyPercent_CallInstance;
+  char PLAT_PWM_Start_IgnoreBool;
+  bool PLAT_PWM_Start_FinalReturn;
+  char PLAT_PWM_Start_CallbackBool;
+  CMOCK_PLAT_PWM_Start_CALLBACK PLAT_PWM_Start_CallbackFunctionPointer;
+  int PLAT_PWM_Start_CallbackCalls;
+  CMOCK_MEM_INDEX_TYPE PLAT_PWM_Start_CallInstance;
   char PLAT_Task_Create_IgnoreBool;
   bool PLAT_Task_Create_FinalReturn;
   char PLAT_Task_Create_CallbackBool;
@@ -464,11 +510,6 @@ static struct mock_imu_depsInstance
   CMOCK_PLAT_Task_DelayUntil_CALLBACK PLAT_Task_DelayUntil_CallbackFunctionPointer;
   int PLAT_Task_DelayUntil_CallbackCalls;
   CMOCK_MEM_INDEX_TYPE PLAT_Task_DelayUntil_CallInstance;
-  char PLAT_Task_Suspend_IgnoreBool;
-  char PLAT_Task_Suspend_CallbackBool;
-  CMOCK_PLAT_Task_Suspend_CALLBACK PLAT_Task_Suspend_CallbackFunctionPointer;
-  int PLAT_Task_Suspend_CallbackCalls;
-  CMOCK_MEM_INDEX_TYPE PLAT_Task_Suspend_CallInstance;
   char UTIL_Log_Write_IgnoreBool;
   char UTIL_Log_Write_CallbackBool;
   CMOCK_UTIL_Log_Write_CALLBACK UTIL_Log_Write_CallbackFunctionPointer;
@@ -518,6 +559,19 @@ void mock_imu_deps_Verify(void)
     UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
   }
   if (Mock.Board_Timebase_CallbackFunctionPointer != NULL)
+  {
+    call_instance = CMOCK_GUTS_NONE;
+    (void)call_instance;
+  }
+  call_instance = Mock.Board_ImuHeater_CallInstance;
+  if (Mock.Board_ImuHeater_IgnoreBool)
+    call_instance = CMOCK_GUTS_NONE;
+  if (CMOCK_GUTS_NONE != call_instance)
+  {
+    UNITY_SET_DETAIL(CMockString_Board_ImuHeater);
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
+  }
+  if (Mock.Board_ImuHeater_CallbackFunctionPointer != NULL)
   {
     call_instance = CMOCK_GUTS_NONE;
     (void)call_instance;
@@ -678,6 +732,32 @@ void mock_imu_deps_Verify(void)
     call_instance = CMOCK_GUTS_NONE;
     (void)call_instance;
   }
+  call_instance = Mock.PLAT_PWM_SetDutyPercent_CallInstance;
+  if (Mock.PLAT_PWM_SetDutyPercent_IgnoreBool)
+    call_instance = CMOCK_GUTS_NONE;
+  if (CMOCK_GUTS_NONE != call_instance)
+  {
+    UNITY_SET_DETAIL(CMockString_PLAT_PWM_SetDutyPercent);
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
+  }
+  if (Mock.PLAT_PWM_SetDutyPercent_CallbackFunctionPointer != NULL)
+  {
+    call_instance = CMOCK_GUTS_NONE;
+    (void)call_instance;
+  }
+  call_instance = Mock.PLAT_PWM_Start_CallInstance;
+  if (Mock.PLAT_PWM_Start_IgnoreBool)
+    call_instance = CMOCK_GUTS_NONE;
+  if (CMOCK_GUTS_NONE != call_instance)
+  {
+    UNITY_SET_DETAIL(CMockString_PLAT_PWM_Start);
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
+  }
+  if (Mock.PLAT_PWM_Start_CallbackFunctionPointer != NULL)
+  {
+    call_instance = CMOCK_GUTS_NONE;
+    (void)call_instance;
+  }
   call_instance = Mock.PLAT_Task_Create_CallInstance;
   if (Mock.PLAT_Task_Create_IgnoreBool)
     call_instance = CMOCK_GUTS_NONE;
@@ -713,19 +793,6 @@ void mock_imu_deps_Verify(void)
     UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
   }
   if (Mock.PLAT_Task_DelayUntil_CallbackFunctionPointer != NULL)
-  {
-    call_instance = CMOCK_GUTS_NONE;
-    (void)call_instance;
-  }
-  call_instance = Mock.PLAT_Task_Suspend_CallInstance;
-  if (Mock.PLAT_Task_Suspend_IgnoreBool)
-    call_instance = CMOCK_GUTS_NONE;
-  if (CMOCK_GUTS_NONE != call_instance)
-  {
-    UNITY_SET_DETAIL(CMockString_PLAT_Task_Suspend);
-    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
-  }
-  if (Mock.PLAT_Task_Suspend_CallbackFunctionPointer != NULL)
   {
     call_instance = CMOCK_GUTS_NONE;
     (void)call_instance;
@@ -1035,6 +1102,99 @@ void Board_Timebase_Stub(CMOCK_Board_Timebase_CALLBACK Callback)
   Mock.Board_Timebase_CallbackBool = (char)0;
   Mock.Board_Timebase_CallbackCalls = 0;
   Mock.Board_Timebase_CallbackFunctionPointer = Callback;
+}
+
+PWM_Instance_s* Board_ImuHeater(void)
+{
+  UNITY_LINE_TYPE cmock_line = TEST_LINE_NUM;
+  CMOCK_Board_ImuHeater_CALL_INSTANCE* cmock_call_instance;
+  UNITY_SET_DETAIL(CMockString_Board_ImuHeater);
+  cmock_call_instance = (CMOCK_Board_ImuHeater_CALL_INSTANCE*)CMock_Guts_GetAddressFor(Mock.Board_ImuHeater_CallInstance);
+  Mock.Board_ImuHeater_CallInstance = CMock_Guts_MemNext(Mock.Board_ImuHeater_CallInstance);
+  if (Mock.Board_ImuHeater_IgnoreBool)
+  {
+    UNITY_CLR_DETAILS();
+    if (cmock_call_instance == NULL)
+      return Mock.Board_ImuHeater_FinalReturn;
+    Mock.Board_ImuHeater_FinalReturn = cmock_call_instance->ReturnVal;
+    return cmock_call_instance->ReturnVal;
+  }
+  if (!Mock.Board_ImuHeater_CallbackBool &&
+      Mock.Board_ImuHeater_CallbackFunctionPointer != NULL)
+  {
+    PWM_Instance_s* cmock_cb_ret = Mock.Board_ImuHeater_CallbackFunctionPointer(Mock.Board_ImuHeater_CallbackCalls++);
+    UNITY_CLR_DETAILS();
+    return cmock_cb_ret;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringCalledMore);
+  cmock_line = cmock_call_instance->LineNumber;
+  if (cmock_call_instance->CallOrder > ++GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledEarly);
+  if (cmock_call_instance->CallOrder < GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLate);
+  if (Mock.Board_ImuHeater_CallbackFunctionPointer != NULL)
+  {
+    UNITY_SET_DETAIL(CMockString_Board_ImuHeater);
+    cmock_call_instance->ReturnVal = Mock.Board_ImuHeater_CallbackFunctionPointer(Mock.Board_ImuHeater_CallbackCalls++);
+  }
+  UNITY_CLR_DETAILS();
+  return cmock_call_instance->ReturnVal;
+}
+
+void Board_ImuHeater_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, PWM_Instance_s* cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_Board_ImuHeater_CALL_INSTANCE));
+  CMOCK_Board_ImuHeater_CALL_INSTANCE* cmock_call_instance = (CMOCK_Board_ImuHeater_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.Board_ImuHeater_CallInstance = CMock_Guts_MemChain(Mock.Board_ImuHeater_CallInstance, cmock_guts_index);
+  Mock.Board_ImuHeater_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+  Mock.Board_ImuHeater_IgnoreBool = (char)1;
+}
+
+void Board_ImuHeater_CMockStopIgnore(void)
+{
+  if(Mock.Board_ImuHeater_IgnoreBool)
+    Mock.Board_ImuHeater_CallInstance = CMock_Guts_MemNext(Mock.Board_ImuHeater_CallInstance);
+  Mock.Board_ImuHeater_IgnoreBool = (char)0;
+}
+
+void Board_ImuHeater_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, PWM_Instance_s* cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_Board_ImuHeater_CALL_INSTANCE));
+  CMOCK_Board_ImuHeater_CALL_INSTANCE* cmock_call_instance = (CMOCK_Board_ImuHeater_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.Board_ImuHeater_CallInstance = CMock_Guts_MemChain(Mock.Board_ImuHeater_CallInstance, cmock_guts_index);
+  Mock.Board_ImuHeater_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+}
+
+void Board_ImuHeater_AddCallback(CMOCK_Board_ImuHeater_CALLBACK Callback)
+{
+  Mock.Board_ImuHeater_IgnoreBool = (char)0;
+  Mock.Board_ImuHeater_CallbackBool = (char)1;
+  Mock.Board_ImuHeater_CallbackCalls = 0;
+  Mock.Board_ImuHeater_CallbackFunctionPointer = Callback;
+}
+
+int Board_ImuHeater_CallCount(void)
+{
+  return Mock.Board_ImuHeater_CallbackCalls;
+}
+
+void Board_ImuHeater_Stub(CMOCK_Board_ImuHeater_CALLBACK Callback)
+{
+  Mock.Board_ImuHeater_IgnoreBool = (char)0;
+  Mock.Board_ImuHeater_CallbackBool = (char)0;
+  Mock.Board_ImuHeater_CallbackCalls = 0;
+  Mock.Board_ImuHeater_CallbackFunctionPointer = Callback;
 }
 
 DEV_BMI088_Status_e DEV_BMI088_Init(DEV_BMI088_s* imu, const DEV_BMI088_Cfg_s* cfg)
@@ -3149,6 +3309,335 @@ void App_Indicator_SetFault_CMockIgnoreArg_code(UNITY_LINE_TYPE cmock_line)
   cmock_call_instance->IgnoreArg_code = 1;
 }
 
+void PLAT_PWM_SetDutyPercent(PWM_Instance_s* pwm, float percent)
+{
+  UNITY_LINE_TYPE cmock_line = TEST_LINE_NUM;
+  CMOCK_PLAT_PWM_SetDutyPercent_CALL_INSTANCE* cmock_call_instance;
+  UNITY_SET_DETAIL(CMockString_PLAT_PWM_SetDutyPercent);
+  cmock_call_instance = (CMOCK_PLAT_PWM_SetDutyPercent_CALL_INSTANCE*)CMock_Guts_GetAddressFor(Mock.PLAT_PWM_SetDutyPercent_CallInstance);
+  Mock.PLAT_PWM_SetDutyPercent_CallInstance = CMock_Guts_MemNext(Mock.PLAT_PWM_SetDutyPercent_CallInstance);
+  if (Mock.PLAT_PWM_SetDutyPercent_IgnoreBool && cmock_call_instance != NULL &&
+      cmock_call_instance->ReturnThruPtr_pwm_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(pwm, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)pwm, (const void*)cmock_call_instance->ReturnThruPtr_pwm_Val,
+      cmock_call_instance->ReturnThruPtr_pwm_Size);
+  }
+  if (Mock.PLAT_PWM_SetDutyPercent_IgnoreBool)
+  {
+    UNITY_CLR_DETAILS();
+    return;
+  }
+  if (!Mock.PLAT_PWM_SetDutyPercent_CallbackBool &&
+      Mock.PLAT_PWM_SetDutyPercent_CallbackFunctionPointer != NULL)
+  {
+    Mock.PLAT_PWM_SetDutyPercent_CallbackFunctionPointer(pwm, percent, Mock.PLAT_PWM_SetDutyPercent_CallbackCalls++);
+    UNITY_CLR_DETAILS();
+    return;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringCalledMore);
+  cmock_line = cmock_call_instance->LineNumber;
+  if (cmock_call_instance->CallOrder > ++GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledEarly);
+  if (cmock_call_instance->CallOrder < GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLate);
+  if (!cmock_call_instance->ExpectAnyArgsBool)
+  {
+  if (!cmock_call_instance->IgnoreArg_pwm)
+  {
+    UNITY_SET_DETAILS(CMockString_PLAT_PWM_SetDutyPercent,CMockString_pwm);
+    UNITY_TEST_ASSERT_EQUAL_MEMORY(cmock_call_instance->Expected_pwm, pwm, sizeof(PWM_Instance_s), cmock_line, CMockStringMismatch);
+  }
+  if (!cmock_call_instance->IgnoreArg_percent)
+  {
+    UNITY_SET_DETAILS(CMockString_PLAT_PWM_SetDutyPercent,CMockString_percent);
+    UNITY_TEST_ASSERT_EQUAL_FLOAT(cmock_call_instance->Expected_percent, percent, cmock_line, CMockStringMismatch);
+  }
+  }
+  if (Mock.PLAT_PWM_SetDutyPercent_CallbackFunctionPointer != NULL)
+  {
+    UNITY_SET_DETAIL(CMockString_PLAT_PWM_SetDutyPercent);
+    Mock.PLAT_PWM_SetDutyPercent_CallbackFunctionPointer(pwm, percent, Mock.PLAT_PWM_SetDutyPercent_CallbackCalls++);
+  }
+  if (cmock_call_instance->ReturnThruPtr_pwm_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(pwm, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)pwm, (const void*)cmock_call_instance->ReturnThruPtr_pwm_Val,
+      cmock_call_instance->ReturnThruPtr_pwm_Size);
+  }
+  UNITY_CLR_DETAILS();
+}
+
+void CMockExpectParameters_PLAT_PWM_SetDutyPercent(CMOCK_PLAT_PWM_SetDutyPercent_CALL_INSTANCE* cmock_call_instance, PWM_Instance_s* pwm, float percent);
+void CMockExpectParameters_PLAT_PWM_SetDutyPercent(CMOCK_PLAT_PWM_SetDutyPercent_CALL_INSTANCE* cmock_call_instance, PWM_Instance_s* pwm, float percent)
+{
+  cmock_call_instance->Expected_pwm = pwm;
+  cmock_call_instance->IgnoreArg_pwm = 0;
+  cmock_call_instance->ReturnThruPtr_pwm_Used = 0;
+  cmock_call_instance->Expected_percent = percent;
+  cmock_call_instance->IgnoreArg_percent = 0;
+}
+
+void PLAT_PWM_SetDutyPercent_CMockIgnore(void)
+{
+  Mock.PLAT_PWM_SetDutyPercent_IgnoreBool = (char)1;
+}
+
+void PLAT_PWM_SetDutyPercent_CMockStopIgnore(void)
+{
+  Mock.PLAT_PWM_SetDutyPercent_IgnoreBool = (char)0;
+}
+
+void PLAT_PWM_SetDutyPercent_CMockExpectAnyArgs(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_PLAT_PWM_SetDutyPercent_CALL_INSTANCE));
+  CMOCK_PLAT_PWM_SetDutyPercent_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_PWM_SetDutyPercent_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.PLAT_PWM_SetDutyPercent_CallInstance = CMock_Guts_MemChain(Mock.PLAT_PWM_SetDutyPercent_CallInstance, cmock_guts_index);
+  Mock.PLAT_PWM_SetDutyPercent_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ExpectAnyArgsBool = (char)1;
+}
+
+void PLAT_PWM_SetDutyPercent_CMockExpect(UNITY_LINE_TYPE cmock_line, PWM_Instance_s* pwm, float percent)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_PLAT_PWM_SetDutyPercent_CALL_INSTANCE));
+  CMOCK_PLAT_PWM_SetDutyPercent_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_PWM_SetDutyPercent_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.PLAT_PWM_SetDutyPercent_CallInstance = CMock_Guts_MemChain(Mock.PLAT_PWM_SetDutyPercent_CallInstance, cmock_guts_index);
+  Mock.PLAT_PWM_SetDutyPercent_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  CMockExpectParameters_PLAT_PWM_SetDutyPercent(cmock_call_instance, pwm, percent);
+}
+
+void PLAT_PWM_SetDutyPercent_AddCallback(CMOCK_PLAT_PWM_SetDutyPercent_CALLBACK Callback)
+{
+  Mock.PLAT_PWM_SetDutyPercent_IgnoreBool = (char)0;
+  Mock.PLAT_PWM_SetDutyPercent_CallbackBool = (char)1;
+  Mock.PLAT_PWM_SetDutyPercent_CallbackCalls = 0;
+  Mock.PLAT_PWM_SetDutyPercent_CallbackFunctionPointer = Callback;
+}
+
+int PLAT_PWM_SetDutyPercent_CallCount(void)
+{
+  return Mock.PLAT_PWM_SetDutyPercent_CallbackCalls;
+}
+
+void PLAT_PWM_SetDutyPercent_Stub(CMOCK_PLAT_PWM_SetDutyPercent_CALLBACK Callback)
+{
+  Mock.PLAT_PWM_SetDutyPercent_IgnoreBool = (char)0;
+  Mock.PLAT_PWM_SetDutyPercent_CallbackBool = (char)0;
+  Mock.PLAT_PWM_SetDutyPercent_CallbackCalls = 0;
+  Mock.PLAT_PWM_SetDutyPercent_CallbackFunctionPointer = Callback;
+}
+
+void PLAT_PWM_SetDutyPercent_CMockReturnMemThruPtr_pwm(UNITY_LINE_TYPE cmock_line, PWM_Instance_s const* pwm, size_t cmock_size)
+{
+  CMOCK_PLAT_PWM_SetDutyPercent_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_PWM_SetDutyPercent_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.PLAT_PWM_SetDutyPercent_CallInstance));
+  if (Mock.PLAT_PWM_SetDutyPercent_IgnoreBool &&
+      (cmock_call_instance == NULL || cmock_call_instance->ReturnThruPtr_pwm_Used))
+  {
+    CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_PLAT_PWM_SetDutyPercent_CALL_INSTANCE));
+    CMOCK_PLAT_PWM_SetDutyPercent_CALL_INSTANCE* new_instance = (CMOCK_PLAT_PWM_SetDutyPercent_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+    UNITY_TEST_ASSERT_NOT_NULL(new_instance, cmock_line, CMockStringOutOfMemory);
+    memset(new_instance, 0, sizeof(*new_instance));
+    new_instance->LineNumber = cmock_line;
+    Mock.PLAT_PWM_SetDutyPercent_CallInstance = CMock_Guts_MemChain(Mock.PLAT_PWM_SetDutyPercent_CallInstance, cmock_guts_index);
+    cmock_call_instance = new_instance;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringPtrPreExp);
+  cmock_call_instance->ReturnThruPtr_pwm_Used = 1;
+  cmock_call_instance->ReturnThruPtr_pwm_Val = pwm;
+  cmock_call_instance->ReturnThruPtr_pwm_Size = cmock_size;
+}
+
+void PLAT_PWM_SetDutyPercent_CMockIgnoreArg_pwm(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_PLAT_PWM_SetDutyPercent_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_PWM_SetDutyPercent_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.PLAT_PWM_SetDutyPercent_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_pwm = 1;
+}
+
+void PLAT_PWM_SetDutyPercent_CMockIgnoreArg_percent(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_PLAT_PWM_SetDutyPercent_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_PWM_SetDutyPercent_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.PLAT_PWM_SetDutyPercent_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_percent = 1;
+}
+
+bool PLAT_PWM_Start(PWM_Instance_s* pwm)
+{
+  UNITY_LINE_TYPE cmock_line = TEST_LINE_NUM;
+  CMOCK_PLAT_PWM_Start_CALL_INSTANCE* cmock_call_instance;
+  UNITY_SET_DETAIL(CMockString_PLAT_PWM_Start);
+  cmock_call_instance = (CMOCK_PLAT_PWM_Start_CALL_INSTANCE*)CMock_Guts_GetAddressFor(Mock.PLAT_PWM_Start_CallInstance);
+  Mock.PLAT_PWM_Start_CallInstance = CMock_Guts_MemNext(Mock.PLAT_PWM_Start_CallInstance);
+  if (Mock.PLAT_PWM_Start_IgnoreBool && cmock_call_instance != NULL &&
+      cmock_call_instance->ReturnThruPtr_pwm_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(pwm, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)pwm, (const void*)cmock_call_instance->ReturnThruPtr_pwm_Val,
+      cmock_call_instance->ReturnThruPtr_pwm_Size);
+  }
+  if (Mock.PLAT_PWM_Start_IgnoreBool)
+  {
+    UNITY_CLR_DETAILS();
+    if (cmock_call_instance == NULL)
+      return Mock.PLAT_PWM_Start_FinalReturn;
+    Mock.PLAT_PWM_Start_FinalReturn = cmock_call_instance->ReturnVal;
+    return cmock_call_instance->ReturnVal;
+  }
+  if (!Mock.PLAT_PWM_Start_CallbackBool &&
+      Mock.PLAT_PWM_Start_CallbackFunctionPointer != NULL)
+  {
+    bool cmock_cb_ret = Mock.PLAT_PWM_Start_CallbackFunctionPointer(pwm, Mock.PLAT_PWM_Start_CallbackCalls++);
+    UNITY_CLR_DETAILS();
+    return cmock_cb_ret;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringCalledMore);
+  cmock_line = cmock_call_instance->LineNumber;
+  if (cmock_call_instance->CallOrder > ++GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledEarly);
+  if (cmock_call_instance->CallOrder < GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLate);
+  if (!cmock_call_instance->ExpectAnyArgsBool)
+  {
+  if (!cmock_call_instance->IgnoreArg_pwm)
+  {
+    UNITY_SET_DETAILS(CMockString_PLAT_PWM_Start,CMockString_pwm);
+    UNITY_TEST_ASSERT_EQUAL_MEMORY(cmock_call_instance->Expected_pwm, pwm, sizeof(PWM_Instance_s), cmock_line, CMockStringMismatch);
+  }
+  }
+  if (Mock.PLAT_PWM_Start_CallbackFunctionPointer != NULL)
+  {
+    UNITY_SET_DETAIL(CMockString_PLAT_PWM_Start);
+    cmock_call_instance->ReturnVal = Mock.PLAT_PWM_Start_CallbackFunctionPointer(pwm, Mock.PLAT_PWM_Start_CallbackCalls++);
+  }
+  if (cmock_call_instance->ReturnThruPtr_pwm_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(pwm, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)pwm, (const void*)cmock_call_instance->ReturnThruPtr_pwm_Val,
+      cmock_call_instance->ReturnThruPtr_pwm_Size);
+  }
+  UNITY_CLR_DETAILS();
+  return cmock_call_instance->ReturnVal;
+}
+
+void CMockExpectParameters_PLAT_PWM_Start(CMOCK_PLAT_PWM_Start_CALL_INSTANCE* cmock_call_instance, PWM_Instance_s* pwm);
+void CMockExpectParameters_PLAT_PWM_Start(CMOCK_PLAT_PWM_Start_CALL_INSTANCE* cmock_call_instance, PWM_Instance_s* pwm)
+{
+  cmock_call_instance->Expected_pwm = pwm;
+  cmock_call_instance->IgnoreArg_pwm = 0;
+  cmock_call_instance->ReturnThruPtr_pwm_Used = 0;
+}
+
+void PLAT_PWM_Start_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_PLAT_PWM_Start_CALL_INSTANCE));
+  CMOCK_PLAT_PWM_Start_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_PWM_Start_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.PLAT_PWM_Start_CallInstance = CMock_Guts_MemChain(Mock.PLAT_PWM_Start_CallInstance, cmock_guts_index);
+  Mock.PLAT_PWM_Start_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+  Mock.PLAT_PWM_Start_IgnoreBool = (char)1;
+}
+
+void PLAT_PWM_Start_CMockStopIgnore(void)
+{
+  if(Mock.PLAT_PWM_Start_IgnoreBool)
+    Mock.PLAT_PWM_Start_CallInstance = CMock_Guts_MemNext(Mock.PLAT_PWM_Start_CallInstance);
+  Mock.PLAT_PWM_Start_IgnoreBool = (char)0;
+}
+
+void PLAT_PWM_Start_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_PLAT_PWM_Start_CALL_INSTANCE));
+  CMOCK_PLAT_PWM_Start_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_PWM_Start_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.PLAT_PWM_Start_CallInstance = CMock_Guts_MemChain(Mock.PLAT_PWM_Start_CallInstance, cmock_guts_index);
+  Mock.PLAT_PWM_Start_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+  cmock_call_instance->ExpectAnyArgsBool = (char)1;
+}
+
+void PLAT_PWM_Start_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, PWM_Instance_s* pwm, bool cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_PLAT_PWM_Start_CALL_INSTANCE));
+  CMOCK_PLAT_PWM_Start_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_PWM_Start_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.PLAT_PWM_Start_CallInstance = CMock_Guts_MemChain(Mock.PLAT_PWM_Start_CallInstance, cmock_guts_index);
+  Mock.PLAT_PWM_Start_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  CMockExpectParameters_PLAT_PWM_Start(cmock_call_instance, pwm);
+  cmock_call_instance->ReturnVal = cmock_to_return;
+}
+
+void PLAT_PWM_Start_AddCallback(CMOCK_PLAT_PWM_Start_CALLBACK Callback)
+{
+  Mock.PLAT_PWM_Start_IgnoreBool = (char)0;
+  Mock.PLAT_PWM_Start_CallbackBool = (char)1;
+  Mock.PLAT_PWM_Start_CallbackCalls = 0;
+  Mock.PLAT_PWM_Start_CallbackFunctionPointer = Callback;
+}
+
+int PLAT_PWM_Start_CallCount(void)
+{
+  return Mock.PLAT_PWM_Start_CallbackCalls;
+}
+
+void PLAT_PWM_Start_Stub(CMOCK_PLAT_PWM_Start_CALLBACK Callback)
+{
+  Mock.PLAT_PWM_Start_IgnoreBool = (char)0;
+  Mock.PLAT_PWM_Start_CallbackBool = (char)0;
+  Mock.PLAT_PWM_Start_CallbackCalls = 0;
+  Mock.PLAT_PWM_Start_CallbackFunctionPointer = Callback;
+}
+
+void PLAT_PWM_Start_CMockReturnMemThruPtr_pwm(UNITY_LINE_TYPE cmock_line, PWM_Instance_s const* pwm, size_t cmock_size)
+{
+  CMOCK_PLAT_PWM_Start_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_PWM_Start_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.PLAT_PWM_Start_CallInstance));
+  if (Mock.PLAT_PWM_Start_IgnoreBool &&
+      (cmock_call_instance == NULL || cmock_call_instance->ReturnThruPtr_pwm_Used))
+  {
+    CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_PLAT_PWM_Start_CALL_INSTANCE));
+    CMOCK_PLAT_PWM_Start_CALL_INSTANCE* new_instance = (CMOCK_PLAT_PWM_Start_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+    UNITY_TEST_ASSERT_NOT_NULL(new_instance, cmock_line, CMockStringOutOfMemory);
+    memset(new_instance, 0, sizeof(*new_instance));
+    new_instance->LineNumber = cmock_line;
+    if (cmock_call_instance != NULL)
+      new_instance->ReturnVal = cmock_call_instance->ReturnVal;
+    Mock.PLAT_PWM_Start_CallInstance = CMock_Guts_MemChain(Mock.PLAT_PWM_Start_CallInstance, cmock_guts_index);
+    cmock_call_instance = new_instance;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringPtrPreExp);
+  cmock_call_instance->ReturnThruPtr_pwm_Used = 1;
+  cmock_call_instance->ReturnThruPtr_pwm_Val = pwm;
+  cmock_call_instance->ReturnThruPtr_pwm_Size = cmock_size;
+}
+
+void PLAT_PWM_Start_CMockIgnoreArg_pwm(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_PLAT_PWM_Start_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_PWM_Start_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.PLAT_PWM_Start_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_pwm = 1;
+}
+
 bool PLAT_Task_Create(Task_s* task, PLAT_Task_Entry entry, void* arg, const char* name, void* stack, size_t stack_bytes, uint8_t priority)
 {
   UNITY_LINE_TYPE cmock_line = TEST_LINE_NUM;
@@ -3749,154 +4238,6 @@ void PLAT_Task_DelayUntil_CMockIgnoreArg_period_ms(UNITY_LINE_TYPE cmock_line)
   CMOCK_PLAT_Task_DelayUntil_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_Task_DelayUntil_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.PLAT_Task_DelayUntil_CallInstance));
   UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
   cmock_call_instance->IgnoreArg_period_ms = 1;
-}
-
-void PLAT_Task_Suspend(Task_s* task)
-{
-  UNITY_LINE_TYPE cmock_line = TEST_LINE_NUM;
-  CMOCK_PLAT_Task_Suspend_CALL_INSTANCE* cmock_call_instance;
-  UNITY_SET_DETAIL(CMockString_PLAT_Task_Suspend);
-  cmock_call_instance = (CMOCK_PLAT_Task_Suspend_CALL_INSTANCE*)CMock_Guts_GetAddressFor(Mock.PLAT_Task_Suspend_CallInstance);
-  Mock.PLAT_Task_Suspend_CallInstance = CMock_Guts_MemNext(Mock.PLAT_Task_Suspend_CallInstance);
-  if (Mock.PLAT_Task_Suspend_IgnoreBool && cmock_call_instance != NULL &&
-      cmock_call_instance->ReturnThruPtr_task_Used)
-  {
-    UNITY_TEST_ASSERT_NOT_NULL(task, cmock_line, CMockStringPtrIsNULL);
-    CMOCK_MEMCPY((void*)task, (const void*)cmock_call_instance->ReturnThruPtr_task_Val,
-      cmock_call_instance->ReturnThruPtr_task_Size);
-  }
-  if (Mock.PLAT_Task_Suspend_IgnoreBool)
-  {
-    UNITY_CLR_DETAILS();
-    return;
-  }
-  if (!Mock.PLAT_Task_Suspend_CallbackBool &&
-      Mock.PLAT_Task_Suspend_CallbackFunctionPointer != NULL)
-  {
-    Mock.PLAT_Task_Suspend_CallbackFunctionPointer(task, Mock.PLAT_Task_Suspend_CallbackCalls++);
-    UNITY_CLR_DETAILS();
-    return;
-  }
-  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringCalledMore);
-  cmock_line = cmock_call_instance->LineNumber;
-  if (cmock_call_instance->CallOrder > ++GlobalVerifyOrder)
-    UNITY_TEST_FAIL(cmock_line, CMockStringCalledEarly);
-  if (cmock_call_instance->CallOrder < GlobalVerifyOrder)
-    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLate);
-  if (!cmock_call_instance->ExpectAnyArgsBool)
-  {
-  if (!cmock_call_instance->IgnoreArg_task)
-  {
-    UNITY_SET_DETAILS(CMockString_PLAT_Task_Suspend,CMockString_task);
-    UNITY_TEST_ASSERT_EQUAL_MEMORY(cmock_call_instance->Expected_task, task, sizeof(Task_s), cmock_line, CMockStringMismatch);
-  }
-  }
-  if (Mock.PLAT_Task_Suspend_CallbackFunctionPointer != NULL)
-  {
-    UNITY_SET_DETAIL(CMockString_PLAT_Task_Suspend);
-    Mock.PLAT_Task_Suspend_CallbackFunctionPointer(task, Mock.PLAT_Task_Suspend_CallbackCalls++);
-  }
-  if (cmock_call_instance->ReturnThruPtr_task_Used)
-  {
-    UNITY_TEST_ASSERT_NOT_NULL(task, cmock_line, CMockStringPtrIsNULL);
-    CMOCK_MEMCPY((void*)task, (const void*)cmock_call_instance->ReturnThruPtr_task_Val,
-      cmock_call_instance->ReturnThruPtr_task_Size);
-  }
-  UNITY_CLR_DETAILS();
-}
-
-void CMockExpectParameters_PLAT_Task_Suspend(CMOCK_PLAT_Task_Suspend_CALL_INSTANCE* cmock_call_instance, Task_s* task);
-void CMockExpectParameters_PLAT_Task_Suspend(CMOCK_PLAT_Task_Suspend_CALL_INSTANCE* cmock_call_instance, Task_s* task)
-{
-  cmock_call_instance->Expected_task = task;
-  cmock_call_instance->IgnoreArg_task = 0;
-  cmock_call_instance->ReturnThruPtr_task_Used = 0;
-}
-
-void PLAT_Task_Suspend_CMockIgnore(void)
-{
-  Mock.PLAT_Task_Suspend_IgnoreBool = (char)1;
-}
-
-void PLAT_Task_Suspend_CMockStopIgnore(void)
-{
-  Mock.PLAT_Task_Suspend_IgnoreBool = (char)0;
-}
-
-void PLAT_Task_Suspend_CMockExpectAnyArgs(UNITY_LINE_TYPE cmock_line)
-{
-  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_PLAT_Task_Suspend_CALL_INSTANCE));
-  CMOCK_PLAT_Task_Suspend_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_Task_Suspend_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
-  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
-  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
-  Mock.PLAT_Task_Suspend_CallInstance = CMock_Guts_MemChain(Mock.PLAT_Task_Suspend_CallInstance, cmock_guts_index);
-  Mock.PLAT_Task_Suspend_IgnoreBool = (char)0;
-  cmock_call_instance->LineNumber = cmock_line;
-  cmock_call_instance->CallOrder = ++GlobalExpectCount;
-  cmock_call_instance->ExpectAnyArgsBool = (char)0;
-  cmock_call_instance->ExpectAnyArgsBool = (char)1;
-}
-
-void PLAT_Task_Suspend_CMockExpect(UNITY_LINE_TYPE cmock_line, Task_s* task)
-{
-  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_PLAT_Task_Suspend_CALL_INSTANCE));
-  CMOCK_PLAT_Task_Suspend_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_Task_Suspend_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
-  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
-  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
-  Mock.PLAT_Task_Suspend_CallInstance = CMock_Guts_MemChain(Mock.PLAT_Task_Suspend_CallInstance, cmock_guts_index);
-  Mock.PLAT_Task_Suspend_IgnoreBool = (char)0;
-  cmock_call_instance->LineNumber = cmock_line;
-  cmock_call_instance->CallOrder = ++GlobalExpectCount;
-  cmock_call_instance->ExpectAnyArgsBool = (char)0;
-  CMockExpectParameters_PLAT_Task_Suspend(cmock_call_instance, task);
-}
-
-void PLAT_Task_Suspend_AddCallback(CMOCK_PLAT_Task_Suspend_CALLBACK Callback)
-{
-  Mock.PLAT_Task_Suspend_IgnoreBool = (char)0;
-  Mock.PLAT_Task_Suspend_CallbackBool = (char)1;
-  Mock.PLAT_Task_Suspend_CallbackCalls = 0;
-  Mock.PLAT_Task_Suspend_CallbackFunctionPointer = Callback;
-}
-
-int PLAT_Task_Suspend_CallCount(void)
-{
-  return Mock.PLAT_Task_Suspend_CallbackCalls;
-}
-
-void PLAT_Task_Suspend_Stub(CMOCK_PLAT_Task_Suspend_CALLBACK Callback)
-{
-  Mock.PLAT_Task_Suspend_IgnoreBool = (char)0;
-  Mock.PLAT_Task_Suspend_CallbackBool = (char)0;
-  Mock.PLAT_Task_Suspend_CallbackCalls = 0;
-  Mock.PLAT_Task_Suspend_CallbackFunctionPointer = Callback;
-}
-
-void PLAT_Task_Suspend_CMockReturnMemThruPtr_task(UNITY_LINE_TYPE cmock_line, Task_s const* task, size_t cmock_size)
-{
-  CMOCK_PLAT_Task_Suspend_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_Task_Suspend_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.PLAT_Task_Suspend_CallInstance));
-  if (Mock.PLAT_Task_Suspend_IgnoreBool &&
-      (cmock_call_instance == NULL || cmock_call_instance->ReturnThruPtr_task_Used))
-  {
-    CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_PLAT_Task_Suspend_CALL_INSTANCE));
-    CMOCK_PLAT_Task_Suspend_CALL_INSTANCE* new_instance = (CMOCK_PLAT_Task_Suspend_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
-    UNITY_TEST_ASSERT_NOT_NULL(new_instance, cmock_line, CMockStringOutOfMemory);
-    memset(new_instance, 0, sizeof(*new_instance));
-    new_instance->LineNumber = cmock_line;
-    Mock.PLAT_Task_Suspend_CallInstance = CMock_Guts_MemChain(Mock.PLAT_Task_Suspend_CallInstance, cmock_guts_index);
-    cmock_call_instance = new_instance;
-  }
-  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringPtrPreExp);
-  cmock_call_instance->ReturnThruPtr_task_Used = 1;
-  cmock_call_instance->ReturnThruPtr_task_Val = task;
-  cmock_call_instance->ReturnThruPtr_task_Size = cmock_size;
-}
-
-void PLAT_Task_Suspend_CMockIgnoreArg_task(UNITY_LINE_TYPE cmock_line)
-{
-  CMOCK_PLAT_Task_Suspend_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_Task_Suspend_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.PLAT_Task_Suspend_CallInstance));
-  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
-  cmock_call_instance->IgnoreArg_task = 1;
 }
 
 void UTIL_Log_Write(UTIL_Log_Level_e level, const char* tag, const char* fmt, ...)
