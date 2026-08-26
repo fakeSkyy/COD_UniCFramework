@@ -161,6 +161,24 @@ float App_Imu_HeaterDuty(void);
 bool App_Imu_HeaterRegulating(void);
 
 /**
+ * @brief Whether the gyro is running on an adopted calibration.
+ *
+ * False means bring-up rejected the measurement — the sensor was moving, or the bus
+ * dropped too many samples — and the gyro is using whatever bias it already had,
+ * which on a cold boot is zero. Roll and pitch are unaffected, since gravity
+ * observes them; yaw is the casualty, and it dead-reckons on the raw offset. On this
+ * board that measured 0.074 deg/s uncalibrated against about 0.02 deg/s calibrated,
+ * so 45 degrees of heading error over ten minutes rather than 12.
+ *
+ * Worth asking about before trusting App_Imu_Yaw over any span: a rejected
+ * calibration is not an error the loop recovers from, and nothing retries it.
+ * INDICATOR_FAULT is raised for the same reason.
+ *
+ * @return true when a bias was measured and adopted.
+ */
+bool App_Imu_Calibrated(void);
+
+/**
  * @brief The heater's duty ceiling, percent.
  *
  * Exposed so a caller — a diagnostic dump, or a test asserting the loop respects its

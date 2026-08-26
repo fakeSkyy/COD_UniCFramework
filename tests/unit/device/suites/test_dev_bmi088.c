@@ -24,6 +24,7 @@ static bool           select_ok;
 static bool           wrong_acc_id;
 static bool           wrong_gyro_id;
 static bool           stationary_gyro;
+static bool           noisy_gyro;
 static unsigned       accel_dummy_reads;
 static unsigned       delay_1ms_count;
 
@@ -96,7 +97,30 @@ static bool spi_receive(SPI_Instance_s* spi, uint8_t* rx, uint16_t len, uint32_t
         const uint8_t moving[8] = {
             BMI088_GYRO_CHIP_ID_VALUE, 0u, 0xE8u, 0x03u, 0x18u, 0xFCu, 0x00u, 0x00u};
         const uint8_t still[8] = {BMI088_GYRO_CHIP_ID_VALUE, 0u, 0u, 0u, 0u, 0u, 0u, 0u};
-        memcpy(rx, stationary_gyro ? still : moving, sizeof(moving));
+
+        if (noisy_gyro)
+        {
+            /* A still sensor that nonetheless reads noise: x alternates +/-40 LSB
+             * about zero, every other sample. At the 2000 dps range one LSB is
+             * 0.001065 rad/s, so that is a standard deviation of 0.0426 rad/s and a
+             * peak-to-peak of 0.0852 — inside the 0.05 rad/s deviation limit and well
+             * outside what a 0.05 peak-to-peak limit would have allowed. This is the
+             * real board's behaviour: bench noise produced spreads of 0.065 to 0.088
+             * across the three axes while the means stayed two orders of magnitude
+             * inside their own limit. */
+            static bool   phase;
+            const int16_t v = phase ? 40 : -40;
+
+            phase = !phase;
+
+            memcpy(rx, still, sizeof(still));
+            rx[2] = (uint8_t) ((uint16_t) v & 0xFFu);
+            rx[3] = (uint8_t) (((uint16_t) v >> 8) & 0xFFu);
+        }
+        else
+        {
+            memcpy(rx, stationary_gyro ? still : moving, sizeof(moving));
+        }
     }
     else if (die == 0u && reg == BMI088_ACC_TEMP_MSB && len == 2u)
     {
@@ -160,6 +184,7 @@ void setUp(void)
     select_ok    = true;
     wrong_acc_id = wrong_gyro_id = false;
     stationary_gyro              = false;
+    noisy_gyro                   = false;
     accel_dummy_reads = delay_1ms_count = 0u;
 }
 
@@ -264,6 +289,50 @@ static void test_calibration_clamps_to_minimum_and_adopts_still_mean(void)
     TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, imu.gyro_bias[1]);
 }
 
+/**
+ * @brief Noise alone must not reject a calibration.
+ *
+ * The regression this exists for: the acceptance test used peak-to-peak, which grows
+ * with the sample count while the underlying noise does not, so every calibration on
+ * real hardware was rejected and the gyro ran on a zero bias — 45 degrees of yaw over
+ * ten minutes. The stub's +/-40 LSB alternation has a deviation of 0.0426 rad/s
+ * (inside the 0.05 limit) and a peak-to-peak of 0.0852 (outside a 0.05 one), so this
+ * case passes only under the deviation test.
+ */
+static void test_calibration_accepts_a_still_but_noisy_gyro(void)
+{
+    DEV_BMI088_s     imu;
+    DEV_BMI088_Cfg_s conf = cfg();
+    install_spi_script();
+    TEST_ASSERT_EQUAL(DEV_BMI088_OK, DEV_BMI088_Init(&imu, &conf));
+    noisy_gyro = true;
+    TEST_ASSERT_TRUE(DEV_BMI088_CalibrateGyro(&imu, 200u));
+    TEST_ASSERT_TRUE(DEV_BMI088_IsCalibrated(&imu));
+    /* The alternation is symmetric, so the mean it adopts is essentially zero — what
+     * matters here is that it was adopted at all rather than what value it holds. */
+    TEST_ASSERT_FLOAT_WITHIN(0.005f, 0.0f, imu.gyro_bias[0]);
+}
+
+/**
+ * @brief A deviation past the limit is still rejected.
+ *
+ * Pins the other side of the boundary so widening the threshold to fix the above
+ * cannot quietly disable the stillness test altogether. The stub's "moving" sample is
+ * a steady 1000 LSB, which fails on the mean as well — both tests firing on obvious
+ * motion is the intended behaviour.
+ */
+static void test_calibration_still_rejects_a_moving_gyro(void)
+{
+    DEV_BMI088_s     imu;
+    DEV_BMI088_Cfg_s conf = cfg();
+    install_spi_script();
+    TEST_ASSERT_EQUAL(DEV_BMI088_OK, DEV_BMI088_Init(&imu, &conf));
+    stationary_gyro = false;
+    TEST_ASSERT_FALSE(DEV_BMI088_CalibrateGyro(&imu, 200u));
+    TEST_ASSERT_FALSE(DEV_BMI088_IsCalibrated(&imu));
+    TEST_ASSERT_EQUAL_FLOAT(0.0f, imu.gyro_bias[0]);
+}
+
 static void test_bias_updates_only_finite_axes_and_get_handles_null(void)
 {
     DEV_BMI088_s imu    = {0};
@@ -291,6 +360,8 @@ int main(void)
     RUN_TEST(test_read_parses_signed_samples_temperature_bias_and_kicks_watchdog);
     RUN_TEST(test_read_failure_preserves_cached_sample_and_counts_error);
     RUN_TEST(test_calibration_clamps_to_minimum_and_adopts_still_mean);
+    RUN_TEST(test_calibration_accepts_a_still_but_noisy_gyro);
+    RUN_TEST(test_calibration_still_rejects_a_moving_gyro);
     RUN_TEST(test_bias_updates_only_finite_axes_and_get_handles_null);
     return UNITY_END();
 }

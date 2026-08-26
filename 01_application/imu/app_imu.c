@@ -121,6 +121,17 @@
 #define IMU_INIT_FAULT_CODE 2u
 
 /**
+ * @brief Fault code this module blinks when the gyro is running uncalibrated.
+ *
+ * 3, the next unused code — 1 is a read outage, 2 a failed bring-up, both above.
+ * Distinct from those two because the failure is partial in a way neither is: the
+ * attitude loop runs, the sensor answers, roll and pitch are correct, and only yaw
+ * is degraded. Sharing a code with either would make the flash count stop
+ * distinguishing "no IMU at all" from "an IMU whose heading you should not trust".
+ */
+#define IMU_UNCALIBRATED_FAULT_CODE 3u
+
+/**
  * @brief Loop period as the scheduler sees it, milliseconds.
  *
  * The same rate as IMU_PERIOD_MS, stated in the unit PLAT_Task_DelayUntil takes.
@@ -544,7 +555,20 @@ static bool imu_init(void)
      * it is reported and the loop starts anyway. */
     if (!DEV_BMI088_CalibrateGyro(&imu, IMU_CALIB_SAMPLES))
     {
-        UTIL_LOG_W("imu", "gyro calibration skipped (moving or bus error); yaw will drift faster");
+        /* Raised as a fault, not merely logged. A rejected calibration leaves the gyro
+         * running on whatever bias it already had — zero, on a cold boot — and yaw then
+         * dead-reckons on the raw offset. Measured on this board, that is 0.074 deg/s,
+         * or 45 degrees of heading over ten minutes, against roughly 0.02 deg/s once a
+         * calibration is adopted.
+         *
+         * The log line alone was not enough, and that is exactly how this went unnoticed:
+         * every calibration on this board was being rejected, the warning went to an RTT
+         * viewer nobody had attached, the scheduler started, the heartbeat blinked, and
+         * App_Imu_Online() returned true. It surfaced only because a probe was attached
+         * to read gyro_bias for an unrelated measurement, and all three axes read
+         * 0.00000000. A degraded state with no visible signal is one nobody looks for. */
+        UTIL_LOG_W("imu", "gyro calibration rejected (moving or bus error); yaw will drift");
+        App_Indicator_SetFault(IMU_UNCALIBRATED_FAULT_CODE);
     }
 
     /* One read before aligning, so the alignment sees a real sample rather than the
@@ -938,3 +962,5 @@ float App_Imu_HeaterDuty(void) { return heater_duty; }
 bool App_Imu_HeaterRegulating(void) { return heater_regulating; }
 
 float App_Imu_HeaterDutyCap(void) { return IMU_HEATER_DUTY_CAP_PERCENT; }
+
+bool App_Imu_Calibrated(void) { return ready && DEV_BMI088_IsCalibrated(&imu); }

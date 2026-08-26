@@ -8,6 +8,8 @@
 #include "dev_bmi088.h"
 
 #include "dev_bmi088_reg.h"
+#include <math.h>
+
 #include "util_fast_math.h"
 
 /* ========================================================================= */
@@ -34,13 +36,22 @@
 #define CALIB_MAX_SAMPLES 5000u
 
 /**
- * @brief Largest peak-to-peak spread, in rad/s, that still counts as still.
+ * @brief Largest sample standard deviation, in rad/s, that still counts as still.
  *
- * A stationary MEMS gyro at 2000 dps range shows a few hundredths of a rad/s of
- * noise. Real motion during the window is an order of magnitude larger, so this
- * separates the two without being so tight that noise alone trips it.
+ * Standard deviation rather than peak-to-peak, because peak-to-peak grows with the
+ * sample count while the underlying noise does not: the extremes of 2000 draws sit
+ * near +/-3.5 sigma, so a spread test that passes a 200-sample window fails a 2000
+ * one for no physical reason. That is not hypothetical — it is what this file did.
+ * Measured on the bench at 0.0132 rad/s of gyro noise, every axis produced a
+ * peak-to-peak of 0.065 to 0.088 against a 0.05 ceiling and every calibration was
+ * rejected, while the means came in two orders of magnitude inside their own limit
+ * and proved the board had been sitting still the whole time.
+ *
+ * 0.05 rad/s is about 3.8x that measured noise, so stillness passes with real
+ * margin, while a nudge (0.1 rad/s and up) still fails. Unlike the old test, this
+ * threshold means the same thing whatever IMU_CALIB_SAMPLES is set to.
  */
-#define CALIB_STILL_SPREAD 0.05f
+#define CALIB_STILL_STD 0.05f
 
 /**
  * @brief Largest mean magnitude, in rad/s, that a bias may plausibly have.
@@ -567,9 +578,8 @@ bool DEV_BMI088_CalibrateGyro(DEV_BMI088_s* imu, uint16_t samples)
     imu->gyro_bias[1] = 0.0f;
     imu->gyro_bias[2] = 0.0f;
 
-    float sum[3] = {0.0f, 0.0f, 0.0f};
-    float lo[3]  = {1.0e30f, 1.0e30f, 1.0e30f};
-    float hi[3]  = {-1.0e30f, -1.0e30f, -1.0e30f};
+    float sum[3]   = {0.0f, 0.0f, 0.0f};
+    float sumsq[3] = {0.0f, 0.0f, 0.0f};
 
     uint32_t taken = 0u;
 
@@ -582,15 +592,7 @@ bool DEV_BMI088_CalibrateGyro(DEV_BMI088_s* imu, uint16_t samples)
                 float v = imu->gyro[i];
 
                 sum[i] += v;
-
-                if (v < lo[i])
-                {
-                    lo[i] = v;
-                }
-                if (v > hi[i])
-                {
-                    hi[i] = v;
-                }
+                sumsq[i] += v * v;
             }
             taken++;
         }
@@ -616,14 +618,22 @@ bool DEV_BMI088_CalibrateGyro(DEV_BMI088_s* imu, uint16_t samples)
         mean[i] = sum[i] * inv;
     }
 
-    /* Two independent stillness tests, because each catches what the other
-     * misses. A large spread means the sensor was shaken; a large mean with a
-     * small spread means it was turning steadily, which no spread test can see.
+    /* Two independent stillness tests, because each catches what the other misses.
+     * A large deviation means the sensor was shaken; a large mean with a small
+     * deviation means it was turning steadily, which no deviation test can see.
      * Either way the average is contaminated with real rotation, and adopting it
      * would make the gyro report that motion as zero from then on. */
     for (uint8_t i = 0u; i < 3u; i++)
     {
-        if (!UTIL_IsFinitef(mean[i]) || (hi[i] - lo[i]) > CALIB_STILL_SPREAD ||
+        /* var = E[v^2] - E[v]^2. Clamped at zero before the root because that
+         * identity is the cancellation-prone form of the variance: with a mean far
+         * larger than the spread, the two terms are nearly equal and rounding can
+         * land the difference just below zero, where sqrtf would return NaN and the
+         * comparison below would silently pass. */
+        const float var = sumsq[i] * inv - mean[i] * mean[i];
+        const float std = (var > 0.0f) ? sqrtf(var) : 0.0f;
+
+        if (!UTIL_IsFinitef(mean[i]) || !UTIL_IsFinitef(std) || std > CALIB_STILL_STD ||
             UTIL_Absf(mean[i]) > CALIB_MAX_BIAS)
         {
             imu->gyro_bias[0] = saved[0];
