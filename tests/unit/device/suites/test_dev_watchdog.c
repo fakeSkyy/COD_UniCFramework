@@ -348,6 +348,58 @@ static void test_watchdog_reset_clears_the_table(void)
     TEST_ASSERT_NULL(DEV_Watchdog_Find("dev"));
 }
 
+/* The exact field failure this guard exists for: a driver kicked from the DWT
+ * timeline while the supervisor read the FreeRTOS tick. A probe caught last_kick
+ * 2238 ms ahead of now, the unsigned age wrapped to ~4.29e9, and a healthy BMI088
+ * reported as lost for as long as the board stayed powered. */
+static void test_watchdog_future_kick_is_a_clock_error_not_an_expiry(void)
+{
+    DEV_Watchdog_s wd;
+
+    DEV_Watchdog_Init(&wd, "imu", 100u);
+    DEV_Watchdog_Register(&wd, NULL);
+
+    /* Kicked at 135512, tested at 133274 -- the real numbers read off the board. */
+    DEV_Watchdog_Kick(&wd, 135512u);
+
+    TEST_ASSERT_FALSE(DEV_Watchdog_Expired(&wd, 133274u));
+    TEST_ASSERT_EQUAL_UINT32(0u, DEV_Watchdog_Step(133274u));
+    TEST_ASSERT_FALSE(DEV_Watchdog_AnyFailed());
+    TEST_ASSERT_NULL(DEV_Watchdog_FailedDevice());
+    TEST_ASSERT_TRUE(DEV_Watchdog_ClockErrors() > 0u);
+}
+
+/* The guard must not swallow a real timeout: an age just under the sanity ceiling
+ * is still an age, and a device silent that long is genuinely gone. */
+static void test_watchdog_large_but_sane_age_still_expires(void)
+{
+    DEV_Watchdog_s wd;
+
+    DEV_Watchdog_Init(&wd, "dev", 100u);
+    DEV_Watchdog_Register(&wd, NULL);
+    DEV_Watchdog_Kick(&wd, 0u);
+
+    TEST_ASSERT_TRUE(DEV_Watchdog_Expired(&wd, DEV_WATCHDOG_AGE_SANE_MAX));
+    TEST_ASSERT_EQUAL_UINT32(0u, DEV_Watchdog_ClockErrors());
+}
+
+/* Reset clears the counter, so a suite that provoked a clock error does not leave
+ * the next case believing the clocks are still crossed. */
+static void test_watchdog_reset_clears_clock_errors(void)
+{
+    DEV_Watchdog_s wd;
+
+    DEV_Watchdog_Init(&wd, "dev", 100u);
+    DEV_Watchdog_Register(&wd, NULL);
+    DEV_Watchdog_Kick(&wd, 5000u);
+    (void) DEV_Watchdog_Step(1000u);
+    TEST_ASSERT_TRUE(DEV_Watchdog_ClockErrors() > 0u);
+
+    DEV_Watchdog_Reset();
+
+    TEST_ASSERT_EQUAL_UINT32(0u, DEV_Watchdog_ClockErrors());
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -356,6 +408,9 @@ int main(void)
     RUN_TEST(test_watchdog_kick_clears_expiry);
     RUN_TEST(test_watchdog_zero_timeout_never_expires);
     RUN_TEST(test_watchdog_survives_millisecond_counter_wrap);
+    RUN_TEST(test_watchdog_future_kick_is_a_clock_error_not_an_expiry);
+    RUN_TEST(test_watchdog_large_but_sane_age_still_expires);
+    RUN_TEST(test_watchdog_reset_clears_clock_errors);
     RUN_TEST(test_watchdog_null_node_is_tolerated);
 
     RUN_TEST(test_watchdog_register_requires_a_name);

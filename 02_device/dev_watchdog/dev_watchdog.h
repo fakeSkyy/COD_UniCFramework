@@ -75,6 +75,20 @@
 #define DEV_WATCHDOG_MAX 16u
 
 /**
+ * @brief Largest age, in ms, that is treated as a real measurement.
+ *
+ * About 24.9 days: half the 49.7-day range of a 32-bit millisecond counter, so any
+ * age beyond it is a kick timestamped in the future rather than a device that has
+ * been silent for weeks. See DEV_Watchdog_Expired for why that is worth
+ * distinguishing, and DEV_Watchdog_ClockErrors for how to see it happening.
+ *
+ * A robot that has genuinely been powered for 24.9 days with a device silent the
+ * whole time is not a case this trades away: such a device reported failed on the
+ * first period and has been failed ever since.
+ */
+#define DEV_WATCHDOG_AGE_SANE_MAX 2147483648u
+
+/**
  * @brief Liveness state for one device, embedded in that device's instance.
  *
  * Embedded rather than allocated so the node shares the device's lifetime
@@ -228,6 +242,19 @@ const DEV_Watchdog_s* DEV_Watchdog_Find(const char* name);
  * @return Count, 0 to DEV_WATCHDOG_MAX.
  */
 uint32_t DEV_Watchdog_Count(void);
+
+/**
+ * @brief How many times an age was rejected as impossible.
+ *
+ * Nonzero means a caller of DEV_Watchdog_Step read a different clock than the
+ * drivers kick with, so no age this module reports can be trusted. It is a
+ * firmware wiring mistake, not a device fault, and it does not clear by itself --
+ * check it before believing a green report, and before blaming a device that
+ * reports as lost while its own driver says it is fine.
+ *
+ * @return Count since start-up or the last DEV_Watchdog_Reset.
+ */
+uint32_t DEV_Watchdog_ClockErrors(void);
 
 /**
  * @brief Iterate every registered node.

@@ -44,11 +44,34 @@ static bool capture_create(Task_s* task, PLAT_Task_Entry entry, void* arg, const
     return create_result;
 }
 
+/* Stands in for the DWT instance. Only its address is used. */
+static int timebase_token;
+
 static uint32_t tick_now(int calls) { return 100u + (uint32_t) calls; }
+
+/* A non-NULL token: the task only ever passes it back to PLAT_DWT_GetTimeline_ms,
+ * which is mocked too, so its target is never dereferenced. */
+static DWT_Instance_s* timebase_stub(int calls)
+{
+    (void) calls;
+    return (DWT_Instance_s*) &timebase_token;
+}
+
+/* The clock the supervisor must read. Deliberately offset far from tick_now's
+ * values so a regression that goes back to the FreeRTOS tick fails the assertion
+ * in watchdog_step rather than passing by coincidence -- reading the wrong clock
+ * is the bug this suite now exists to catch. */
+static uint64_t timeline_ms(DWT_Instance_s* dwt, int calls)
+{
+    TEST_ASSERT_EQUAL_PTR((DWT_Instance_s*) &timebase_token, dwt);
+    return 900000u + (uint64_t) calls;
+}
 
 static uint32_t watchdog_step(uint32_t now, int calls)
 {
-    TEST_ASSERT_EQUAL_UINT32(101u + (uint32_t) calls, now);
+    /* The DWT timeline, not the FreeRTOS tick: an age is only meaningful when the
+     * kick and the test read one clock, and every driver kicks from this one. */
+    TEST_ASSERT_EQUAL_UINT32(900000u + (uint32_t) calls, now);
     return failed_values[calls];
 }
 
@@ -126,6 +149,8 @@ static void run_task(unsigned loops)
     DEV_Watchdog_Count_IgnoreAndReturn(0u);
     DEV_Watchdog_ForEach_StubWithCallback(empty_foreach);
     PLAT_Task_TickNow_StubWithCallback(tick_now);
+    Board_Timebase_StubWithCallback(timebase_stub);
+    PLAT_DWT_GetTimeline_ms_StubWithCallback(timeline_ms);
     DEV_Watchdog_Step_StubWithCallback(watchdog_step);
     DEV_Watchdog_FailedDevice_StubWithCallback(first_failed);
     App_Indicator_Set_StubWithCallback(indicator_set);

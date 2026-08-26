@@ -108,6 +108,41 @@ void PLAT_Task_DelayUntil_CMockReturnMemThruPtr_prev_tick(UNITY_LINE_TYPE cmock_
 void PLAT_Task_DelayUntil_CMockIgnoreArg_prev_tick(UNITY_LINE_TYPE cmock_line);
 #define PLAT_Task_DelayUntil_IgnoreArg_period_ms() PLAT_Task_DelayUntil_CMockIgnoreArg_period_ms(__LINE__)
 void PLAT_Task_DelayUntil_CMockIgnoreArg_period_ms(UNITY_LINE_TYPE cmock_line);
+#define Board_Timebase_Ignore() TEST_FAIL_MESSAGE("Board_Timebase requires _IgnoreAndReturn");
+#define Board_Timebase_IgnoreAndReturn(cmock_retval) Board_Timebase_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void Board_Timebase_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, DWT_Instance_s* cmock_to_return);
+#define Board_Timebase_StopIgnore() Board_Timebase_CMockStopIgnore()
+void Board_Timebase_CMockStopIgnore(void);
+#define Board_Timebase_Expect() TEST_FAIL_MESSAGE("Board_Timebase requires _ExpectAndReturn");
+#define Board_Timebase_ExpectAndReturn(cmock_retval) Board_Timebase_CMockExpectAndReturn(__LINE__, cmock_retval)
+void Board_Timebase_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, DWT_Instance_s* cmock_to_return);
+typedef DWT_Instance_s* (* CMOCK_Board_Timebase_CALLBACK)(int cmock_num_calls);
+void Board_Timebase_AddCallback(CMOCK_Board_Timebase_CALLBACK Callback);
+void Board_Timebase_Stub(CMOCK_Board_Timebase_CALLBACK Callback);
+#define Board_Timebase_StubWithCallback Board_Timebase_Stub
+int Board_Timebase_CallCount(void);
+#define PLAT_DWT_GetTimeline_ms_Ignore() TEST_FAIL_MESSAGE("PLAT_DWT_GetTimeline_ms requires _IgnoreAndReturn");
+#define PLAT_DWT_GetTimeline_ms_IgnoreAndReturn(cmock_retval) PLAT_DWT_GetTimeline_ms_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void PLAT_DWT_GetTimeline_ms_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, uint64_t cmock_to_return);
+#define PLAT_DWT_GetTimeline_ms_StopIgnore() PLAT_DWT_GetTimeline_ms_CMockStopIgnore()
+void PLAT_DWT_GetTimeline_ms_CMockStopIgnore(void);
+#define PLAT_DWT_GetTimeline_ms_ExpectAnyArgs() TEST_FAIL_MESSAGE("PLAT_DWT_GetTimeline_ms requires _ExpectAnyArgsAndReturn");
+#define PLAT_DWT_GetTimeline_ms_ExpectAnyArgsAndReturn(cmock_retval) PLAT_DWT_GetTimeline_ms_CMockExpectAnyArgsAndReturn(__LINE__, cmock_retval)
+void PLAT_DWT_GetTimeline_ms_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, uint64_t cmock_to_return);
+#define PLAT_DWT_GetTimeline_ms_Expect(dwt) TEST_FAIL_MESSAGE("PLAT_DWT_GetTimeline_ms requires _ExpectAndReturn");
+#define PLAT_DWT_GetTimeline_ms_ExpectAndReturn(dwt, cmock_retval) PLAT_DWT_GetTimeline_ms_CMockExpectAndReturn(__LINE__, dwt, cmock_retval)
+void PLAT_DWT_GetTimeline_ms_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, DWT_Instance_s* dwt, uint64_t cmock_to_return);
+typedef uint64_t (* CMOCK_PLAT_DWT_GetTimeline_ms_CALLBACK)(DWT_Instance_s* dwt, int cmock_num_calls);
+void PLAT_DWT_GetTimeline_ms_AddCallback(CMOCK_PLAT_DWT_GetTimeline_ms_CALLBACK Callback);
+void PLAT_DWT_GetTimeline_ms_Stub(CMOCK_PLAT_DWT_GetTimeline_ms_CALLBACK Callback);
+#define PLAT_DWT_GetTimeline_ms_StubWithCallback PLAT_DWT_GetTimeline_ms_Stub
+int PLAT_DWT_GetTimeline_ms_CallCount(void);
+#define PLAT_DWT_GetTimeline_ms_ReturnThruPtr_dwt(dwt) PLAT_DWT_GetTimeline_ms_CMockReturnMemThruPtr_dwt(__LINE__, dwt, sizeof(DWT_Instance_s))
+#define PLAT_DWT_GetTimeline_ms_ReturnArrayThruPtr_dwt(dwt, cmock_len) PLAT_DWT_GetTimeline_ms_CMockReturnMemThruPtr_dwt(__LINE__, dwt, (cmock_len * sizeof(*dwt)))
+#define PLAT_DWT_GetTimeline_ms_ReturnMemThruPtr_dwt(dwt, cmock_size) PLAT_DWT_GetTimeline_ms_CMockReturnMemThruPtr_dwt(__LINE__, dwt, (cmock_size))
+void PLAT_DWT_GetTimeline_ms_CMockReturnMemThruPtr_dwt(UNITY_LINE_TYPE cmock_line, DWT_Instance_s const* dwt, size_t cmock_size);
+#define PLAT_DWT_GetTimeline_ms_IgnoreArg_dwt() PLAT_DWT_GetTimeline_ms_CMockIgnoreArg_dwt(__LINE__)
+void PLAT_DWT_GetTimeline_ms_CMockIgnoreArg_dwt(UNITY_LINE_TYPE cmock_line);
 #define DEV_Watchdog_Count_Ignore() TEST_FAIL_MESSAGE("DEV_Watchdog_Count requires _IgnoreAndReturn");
 #define DEV_Watchdog_Count_IgnoreAndReturn(cmock_retval) DEV_Watchdog_Count_CMockIgnoreAndReturn(__LINE__, cmock_retval)
 void DEV_Watchdog_Count_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, uint32_t cmock_to_return);

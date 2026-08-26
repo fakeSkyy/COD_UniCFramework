@@ -6,16 +6,19 @@
 #include "mock_health_deps.h"
 
 static const char* CMockString_App_Indicator_Set = "App_Indicator_Set";
+static const char* CMockString_Board_Timebase = "Board_Timebase";
 static const char* CMockString_DEV_Watchdog_Count = "DEV_Watchdog_Count";
 static const char* CMockString_DEV_Watchdog_FailedDevice = "DEV_Watchdog_FailedDevice";
 static const char* CMockString_DEV_Watchdog_ForEach = "DEV_Watchdog_ForEach";
 static const char* CMockString_DEV_Watchdog_Step = "DEV_Watchdog_Step";
+static const char* CMockString_PLAT_DWT_GetTimeline_ms = "PLAT_DWT_GetTimeline_ms";
 static const char* CMockString_PLAT_Task_Create = "PLAT_Task_Create";
 static const char* CMockString_PLAT_Task_DelayUntil = "PLAT_Task_DelayUntil";
 static const char* CMockString_PLAT_Task_TickNow = "PLAT_Task_TickNow";
 static const char* CMockString_UTIL_Log_Write = "UTIL_Log_Write";
 static const char* CMockString_arg = "arg";
 static const char* CMockString_cond = "cond";
+static const char* CMockString_dwt = "dwt";
 static const char* CMockString_entry = "entry";
 static const char* CMockString_fmt = "fmt";
 static const char* CMockString_fn = "fn";
@@ -87,6 +90,29 @@ typedef struct _CMOCK_PLAT_Task_DelayUntil_CALL_INSTANCE
   char IgnoreArg_period_ms;
 
 } CMOCK_PLAT_Task_DelayUntil_CALL_INSTANCE;
+
+typedef struct _CMOCK_Board_Timebase_CALL_INSTANCE
+{
+  UNITY_LINE_TYPE LineNumber;
+  char ExpectAnyArgsBool;
+  DWT_Instance_s* ReturnVal;
+  int CallOrder;
+
+} CMOCK_Board_Timebase_CALL_INSTANCE;
+
+typedef struct _CMOCK_PLAT_DWT_GetTimeline_ms_CALL_INSTANCE
+{
+  UNITY_LINE_TYPE LineNumber;
+  char ExpectAnyArgsBool;
+  uint64_t ReturnVal;
+  int CallOrder;
+  DWT_Instance_s* Expected_dwt;
+  char ReturnThruPtr_dwt_Used;
+  DWT_Instance_s const* ReturnThruPtr_dwt_Val;
+  size_t ReturnThruPtr_dwt_Size;
+  char IgnoreArg_dwt;
+
+} CMOCK_PLAT_DWT_GetTimeline_ms_CALL_INSTANCE;
 
 typedef struct _CMOCK_DEV_Watchdog_Count_CALL_INSTANCE
 {
@@ -178,6 +204,18 @@ static struct mock_health_depsInstance
   CMOCK_PLAT_Task_DelayUntil_CALLBACK PLAT_Task_DelayUntil_CallbackFunctionPointer;
   int PLAT_Task_DelayUntil_CallbackCalls;
   CMOCK_MEM_INDEX_TYPE PLAT_Task_DelayUntil_CallInstance;
+  char Board_Timebase_IgnoreBool;
+  DWT_Instance_s* Board_Timebase_FinalReturn;
+  char Board_Timebase_CallbackBool;
+  CMOCK_Board_Timebase_CALLBACK Board_Timebase_CallbackFunctionPointer;
+  int Board_Timebase_CallbackCalls;
+  CMOCK_MEM_INDEX_TYPE Board_Timebase_CallInstance;
+  char PLAT_DWT_GetTimeline_ms_IgnoreBool;
+  uint64_t PLAT_DWT_GetTimeline_ms_FinalReturn;
+  char PLAT_DWT_GetTimeline_ms_CallbackBool;
+  CMOCK_PLAT_DWT_GetTimeline_ms_CALLBACK PLAT_DWT_GetTimeline_ms_CallbackFunctionPointer;
+  int PLAT_DWT_GetTimeline_ms_CallbackCalls;
+  CMOCK_MEM_INDEX_TYPE PLAT_DWT_GetTimeline_ms_CallInstance;
   char DEV_Watchdog_Count_IgnoreBool;
   uint32_t DEV_Watchdog_Count_FinalReturn;
   char DEV_Watchdog_Count_CallbackBool;
@@ -255,6 +293,32 @@ void mock_health_deps_Verify(void)
     UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
   }
   if (Mock.PLAT_Task_DelayUntil_CallbackFunctionPointer != NULL)
+  {
+    call_instance = CMOCK_GUTS_NONE;
+    (void)call_instance;
+  }
+  call_instance = Mock.Board_Timebase_CallInstance;
+  if (Mock.Board_Timebase_IgnoreBool)
+    call_instance = CMOCK_GUTS_NONE;
+  if (CMOCK_GUTS_NONE != call_instance)
+  {
+    UNITY_SET_DETAIL(CMockString_Board_Timebase);
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
+  }
+  if (Mock.Board_Timebase_CallbackFunctionPointer != NULL)
+  {
+    call_instance = CMOCK_GUTS_NONE;
+    (void)call_instance;
+  }
+  call_instance = Mock.PLAT_DWT_GetTimeline_ms_CallInstance;
+  if (Mock.PLAT_DWT_GetTimeline_ms_IgnoreBool)
+    call_instance = CMOCK_GUTS_NONE;
+  if (CMOCK_GUTS_NONE != call_instance)
+  {
+    UNITY_SET_DETAIL(CMockString_PLAT_DWT_GetTimeline_ms);
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
+  }
+  if (Mock.PLAT_DWT_GetTimeline_ms_CallbackFunctionPointer != NULL)
   {
     call_instance = CMOCK_GUTS_NONE;
     (void)call_instance;
@@ -952,6 +1016,268 @@ void PLAT_Task_DelayUntil_CMockIgnoreArg_period_ms(UNITY_LINE_TYPE cmock_line)
   CMOCK_PLAT_Task_DelayUntil_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_Task_DelayUntil_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.PLAT_Task_DelayUntil_CallInstance));
   UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
   cmock_call_instance->IgnoreArg_period_ms = 1;
+}
+
+DWT_Instance_s* Board_Timebase(void)
+{
+  UNITY_LINE_TYPE cmock_line = TEST_LINE_NUM;
+  CMOCK_Board_Timebase_CALL_INSTANCE* cmock_call_instance;
+  UNITY_SET_DETAIL(CMockString_Board_Timebase);
+  cmock_call_instance = (CMOCK_Board_Timebase_CALL_INSTANCE*)CMock_Guts_GetAddressFor(Mock.Board_Timebase_CallInstance);
+  Mock.Board_Timebase_CallInstance = CMock_Guts_MemNext(Mock.Board_Timebase_CallInstance);
+  if (Mock.Board_Timebase_IgnoreBool)
+  {
+    UNITY_CLR_DETAILS();
+    if (cmock_call_instance == NULL)
+      return Mock.Board_Timebase_FinalReturn;
+    Mock.Board_Timebase_FinalReturn = cmock_call_instance->ReturnVal;
+    return cmock_call_instance->ReturnVal;
+  }
+  if (!Mock.Board_Timebase_CallbackBool &&
+      Mock.Board_Timebase_CallbackFunctionPointer != NULL)
+  {
+    DWT_Instance_s* cmock_cb_ret = Mock.Board_Timebase_CallbackFunctionPointer(Mock.Board_Timebase_CallbackCalls++);
+    UNITY_CLR_DETAILS();
+    return cmock_cb_ret;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringCalledMore);
+  cmock_line = cmock_call_instance->LineNumber;
+  if (cmock_call_instance->CallOrder > ++GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledEarly);
+  if (cmock_call_instance->CallOrder < GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLate);
+  if (Mock.Board_Timebase_CallbackFunctionPointer != NULL)
+  {
+    UNITY_SET_DETAIL(CMockString_Board_Timebase);
+    cmock_call_instance->ReturnVal = Mock.Board_Timebase_CallbackFunctionPointer(Mock.Board_Timebase_CallbackCalls++);
+  }
+  UNITY_CLR_DETAILS();
+  return cmock_call_instance->ReturnVal;
+}
+
+void Board_Timebase_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, DWT_Instance_s* cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_Board_Timebase_CALL_INSTANCE));
+  CMOCK_Board_Timebase_CALL_INSTANCE* cmock_call_instance = (CMOCK_Board_Timebase_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.Board_Timebase_CallInstance = CMock_Guts_MemChain(Mock.Board_Timebase_CallInstance, cmock_guts_index);
+  Mock.Board_Timebase_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+  Mock.Board_Timebase_IgnoreBool = (char)1;
+}
+
+void Board_Timebase_CMockStopIgnore(void)
+{
+  if(Mock.Board_Timebase_IgnoreBool)
+    Mock.Board_Timebase_CallInstance = CMock_Guts_MemNext(Mock.Board_Timebase_CallInstance);
+  Mock.Board_Timebase_IgnoreBool = (char)0;
+}
+
+void Board_Timebase_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, DWT_Instance_s* cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_Board_Timebase_CALL_INSTANCE));
+  CMOCK_Board_Timebase_CALL_INSTANCE* cmock_call_instance = (CMOCK_Board_Timebase_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.Board_Timebase_CallInstance = CMock_Guts_MemChain(Mock.Board_Timebase_CallInstance, cmock_guts_index);
+  Mock.Board_Timebase_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+}
+
+void Board_Timebase_AddCallback(CMOCK_Board_Timebase_CALLBACK Callback)
+{
+  Mock.Board_Timebase_IgnoreBool = (char)0;
+  Mock.Board_Timebase_CallbackBool = (char)1;
+  Mock.Board_Timebase_CallbackCalls = 0;
+  Mock.Board_Timebase_CallbackFunctionPointer = Callback;
+}
+
+int Board_Timebase_CallCount(void)
+{
+  return Mock.Board_Timebase_CallbackCalls;
+}
+
+void Board_Timebase_Stub(CMOCK_Board_Timebase_CALLBACK Callback)
+{
+  Mock.Board_Timebase_IgnoreBool = (char)0;
+  Mock.Board_Timebase_CallbackBool = (char)0;
+  Mock.Board_Timebase_CallbackCalls = 0;
+  Mock.Board_Timebase_CallbackFunctionPointer = Callback;
+}
+
+uint64_t PLAT_DWT_GetTimeline_ms(DWT_Instance_s* dwt)
+{
+  UNITY_LINE_TYPE cmock_line = TEST_LINE_NUM;
+  CMOCK_PLAT_DWT_GetTimeline_ms_CALL_INSTANCE* cmock_call_instance;
+  UNITY_SET_DETAIL(CMockString_PLAT_DWT_GetTimeline_ms);
+  cmock_call_instance = (CMOCK_PLAT_DWT_GetTimeline_ms_CALL_INSTANCE*)CMock_Guts_GetAddressFor(Mock.PLAT_DWT_GetTimeline_ms_CallInstance);
+  Mock.PLAT_DWT_GetTimeline_ms_CallInstance = CMock_Guts_MemNext(Mock.PLAT_DWT_GetTimeline_ms_CallInstance);
+  if (Mock.PLAT_DWT_GetTimeline_ms_IgnoreBool && cmock_call_instance != NULL &&
+      cmock_call_instance->ReturnThruPtr_dwt_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(dwt, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)dwt, (const void*)cmock_call_instance->ReturnThruPtr_dwt_Val,
+      cmock_call_instance->ReturnThruPtr_dwt_Size);
+  }
+  if (Mock.PLAT_DWT_GetTimeline_ms_IgnoreBool)
+  {
+    UNITY_CLR_DETAILS();
+    if (cmock_call_instance == NULL)
+      return Mock.PLAT_DWT_GetTimeline_ms_FinalReturn;
+    memcpy((void*)(&Mock.PLAT_DWT_GetTimeline_ms_FinalReturn), (const void*)(&cmock_call_instance->ReturnVal),
+         sizeof(uint64_t[sizeof(cmock_call_instance->ReturnVal) == sizeof(uint64_t) ? 1 : -1])); /* add uint64_t to :treat_as_array if this causes an error */
+    return cmock_call_instance->ReturnVal;
+  }
+  if (!Mock.PLAT_DWT_GetTimeline_ms_CallbackBool &&
+      Mock.PLAT_DWT_GetTimeline_ms_CallbackFunctionPointer != NULL)
+  {
+    uint64_t cmock_cb_ret = Mock.PLAT_DWT_GetTimeline_ms_CallbackFunctionPointer(dwt, Mock.PLAT_DWT_GetTimeline_ms_CallbackCalls++);
+    UNITY_CLR_DETAILS();
+    return cmock_cb_ret;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringCalledMore);
+  cmock_line = cmock_call_instance->LineNumber;
+  if (cmock_call_instance->CallOrder > ++GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledEarly);
+  if (cmock_call_instance->CallOrder < GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLate);
+  if (!cmock_call_instance->ExpectAnyArgsBool)
+  {
+  if (!cmock_call_instance->IgnoreArg_dwt)
+  {
+    UNITY_SET_DETAILS(CMockString_PLAT_DWT_GetTimeline_ms,CMockString_dwt);
+    UNITY_TEST_ASSERT_EQUAL_MEMORY(cmock_call_instance->Expected_dwt, dwt, sizeof(DWT_Instance_s), cmock_line, CMockStringMismatch);
+  }
+  }
+  if (Mock.PLAT_DWT_GetTimeline_ms_CallbackFunctionPointer != NULL)
+  {
+    UNITY_SET_DETAIL(CMockString_PLAT_DWT_GetTimeline_ms);
+    cmock_call_instance->ReturnVal = Mock.PLAT_DWT_GetTimeline_ms_CallbackFunctionPointer(dwt, Mock.PLAT_DWT_GetTimeline_ms_CallbackCalls++);
+  }
+  if (cmock_call_instance->ReturnThruPtr_dwt_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(dwt, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)dwt, (const void*)cmock_call_instance->ReturnThruPtr_dwt_Val,
+      cmock_call_instance->ReturnThruPtr_dwt_Size);
+  }
+  UNITY_CLR_DETAILS();
+  return cmock_call_instance->ReturnVal;
+}
+
+void CMockExpectParameters_PLAT_DWT_GetTimeline_ms(CMOCK_PLAT_DWT_GetTimeline_ms_CALL_INSTANCE* cmock_call_instance, DWT_Instance_s* dwt);
+void CMockExpectParameters_PLAT_DWT_GetTimeline_ms(CMOCK_PLAT_DWT_GetTimeline_ms_CALL_INSTANCE* cmock_call_instance, DWT_Instance_s* dwt)
+{
+  cmock_call_instance->Expected_dwt = dwt;
+  cmock_call_instance->IgnoreArg_dwt = 0;
+  cmock_call_instance->ReturnThruPtr_dwt_Used = 0;
+}
+
+void PLAT_DWT_GetTimeline_ms_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, uint64_t cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_PLAT_DWT_GetTimeline_ms_CALL_INSTANCE));
+  CMOCK_PLAT_DWT_GetTimeline_ms_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_DWT_GetTimeline_ms_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.PLAT_DWT_GetTimeline_ms_CallInstance = CMock_Guts_MemChain(Mock.PLAT_DWT_GetTimeline_ms_CallInstance, cmock_guts_index);
+  Mock.PLAT_DWT_GetTimeline_ms_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+  Mock.PLAT_DWT_GetTimeline_ms_IgnoreBool = (char)1;
+}
+
+void PLAT_DWT_GetTimeline_ms_CMockStopIgnore(void)
+{
+  if(Mock.PLAT_DWT_GetTimeline_ms_IgnoreBool)
+    Mock.PLAT_DWT_GetTimeline_ms_CallInstance = CMock_Guts_MemNext(Mock.PLAT_DWT_GetTimeline_ms_CallInstance);
+  Mock.PLAT_DWT_GetTimeline_ms_IgnoreBool = (char)0;
+}
+
+void PLAT_DWT_GetTimeline_ms_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, uint64_t cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_PLAT_DWT_GetTimeline_ms_CALL_INSTANCE));
+  CMOCK_PLAT_DWT_GetTimeline_ms_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_DWT_GetTimeline_ms_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.PLAT_DWT_GetTimeline_ms_CallInstance = CMock_Guts_MemChain(Mock.PLAT_DWT_GetTimeline_ms_CallInstance, cmock_guts_index);
+  Mock.PLAT_DWT_GetTimeline_ms_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+  cmock_call_instance->ExpectAnyArgsBool = (char)1;
+}
+
+void PLAT_DWT_GetTimeline_ms_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, DWT_Instance_s* dwt, uint64_t cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_PLAT_DWT_GetTimeline_ms_CALL_INSTANCE));
+  CMOCK_PLAT_DWT_GetTimeline_ms_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_DWT_GetTimeline_ms_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.PLAT_DWT_GetTimeline_ms_CallInstance = CMock_Guts_MemChain(Mock.PLAT_DWT_GetTimeline_ms_CallInstance, cmock_guts_index);
+  Mock.PLAT_DWT_GetTimeline_ms_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  CMockExpectParameters_PLAT_DWT_GetTimeline_ms(cmock_call_instance, dwt);
+  memcpy((void*)(&cmock_call_instance->ReturnVal), (const void*)(&cmock_to_return),
+         sizeof(uint64_t[sizeof(cmock_to_return) == sizeof(uint64_t) ? 1 : -1])); /* add uint64_t to :treat_as_array if this causes an error */
+}
+
+void PLAT_DWT_GetTimeline_ms_AddCallback(CMOCK_PLAT_DWT_GetTimeline_ms_CALLBACK Callback)
+{
+  Mock.PLAT_DWT_GetTimeline_ms_IgnoreBool = (char)0;
+  Mock.PLAT_DWT_GetTimeline_ms_CallbackBool = (char)1;
+  Mock.PLAT_DWT_GetTimeline_ms_CallbackCalls = 0;
+  Mock.PLAT_DWT_GetTimeline_ms_CallbackFunctionPointer = Callback;
+}
+
+int PLAT_DWT_GetTimeline_ms_CallCount(void)
+{
+  return Mock.PLAT_DWT_GetTimeline_ms_CallbackCalls;
+}
+
+void PLAT_DWT_GetTimeline_ms_Stub(CMOCK_PLAT_DWT_GetTimeline_ms_CALLBACK Callback)
+{
+  Mock.PLAT_DWT_GetTimeline_ms_IgnoreBool = (char)0;
+  Mock.PLAT_DWT_GetTimeline_ms_CallbackBool = (char)0;
+  Mock.PLAT_DWT_GetTimeline_ms_CallbackCalls = 0;
+  Mock.PLAT_DWT_GetTimeline_ms_CallbackFunctionPointer = Callback;
+}
+
+void PLAT_DWT_GetTimeline_ms_CMockReturnMemThruPtr_dwt(UNITY_LINE_TYPE cmock_line, DWT_Instance_s const* dwt, size_t cmock_size)
+{
+  CMOCK_PLAT_DWT_GetTimeline_ms_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_DWT_GetTimeline_ms_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.PLAT_DWT_GetTimeline_ms_CallInstance));
+  if (Mock.PLAT_DWT_GetTimeline_ms_IgnoreBool &&
+      (cmock_call_instance == NULL || cmock_call_instance->ReturnThruPtr_dwt_Used))
+  {
+    CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_PLAT_DWT_GetTimeline_ms_CALL_INSTANCE));
+    CMOCK_PLAT_DWT_GetTimeline_ms_CALL_INSTANCE* new_instance = (CMOCK_PLAT_DWT_GetTimeline_ms_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+    UNITY_TEST_ASSERT_NOT_NULL(new_instance, cmock_line, CMockStringOutOfMemory);
+    memset(new_instance, 0, sizeof(*new_instance));
+    new_instance->LineNumber = cmock_line;
+    if (cmock_call_instance != NULL)
+      new_instance->ReturnVal = cmock_call_instance->ReturnVal;
+    Mock.PLAT_DWT_GetTimeline_ms_CallInstance = CMock_Guts_MemChain(Mock.PLAT_DWT_GetTimeline_ms_CallInstance, cmock_guts_index);
+    cmock_call_instance = new_instance;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringPtrPreExp);
+  cmock_call_instance->ReturnThruPtr_dwt_Used = 1;
+  cmock_call_instance->ReturnThruPtr_dwt_Val = dwt;
+  cmock_call_instance->ReturnThruPtr_dwt_Size = cmock_size;
+}
+
+void PLAT_DWT_GetTimeline_ms_CMockIgnoreArg_dwt(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_PLAT_DWT_GetTimeline_ms_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_DWT_GetTimeline_ms_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.PLAT_DWT_GetTimeline_ms_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_dwt = 1;
 }
 
 uint32_t DEV_Watchdog_Count(void)

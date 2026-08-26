@@ -11,7 +11,9 @@
 #include <stdint.h>
 
 #include "app_indicator.h"
+#include "board.h"
 #include "dev_watchdog.h"
+#include "plat_dwt.h"
 #include "plat_task.h"
 #include "util_log.h"
 
@@ -66,6 +68,15 @@ static Task_s  task;
  */
 static uint32_t prev_failed;
 
+/**
+ * @brief Whether the missing-timebase error has been logged.
+ *
+ * Same edge-not-level reason as prev_failed: without this the loop would emit the
+ * line fifty times a second, and the RTT writes would become their own reason for
+ * a missed deadline.
+ */
+static bool clock_missing_reported;
+
 /* ========================================================================= */
 /*  Reporting                                                                */
 /* ========================================================================= */
@@ -112,9 +123,55 @@ static void health_task(void* arg)
      * check when a device is missing. */
     App_Health_Report();
 
+    /* Resolved once, not per iteration: it is a table lookup behind a flag, and a
+     * timebase that came up cannot go away. NULL only if the DWT peripheral itself
+     * failed Board_Init, in which case this task cannot judge any age at all --
+     * see the fallback inside the loop. */
+    DWT_Instance_s* const timebase = Board_Timebase();
+
     for (;;)
     {
-        const uint32_t failed = DEV_Watchdog_Step(PLAT_Task_TickNow());
+        /* PLAT_DWT_GetTimeline_ms, not PLAT_Task_TickNow: a watchdog age is only
+         * meaningful when the kick and the test read the same clock, and every
+         * driver kicks from the DWT timeline (dev_bmi088.c does, and a CAN or SPI
+         * completion callback is an interrupt where a free-running counter is the
+         * safe thing to read). This task used to read the FreeRTOS tick instead,
+         * and the two do not share an epoch: the DWT starts counting in Board_Init,
+         * the tick only at PLAT_Task_StartScheduler, so the DWT runs a constant
+         * offset ahead -- measured on this board at 2238 ms, the same figure at two
+         * uptimes an hour apart, most of it the two seconds App_Imu_StartTask spends
+         * averaging the gyro bias before the scheduler exists. A kick timestamped
+         * ahead of now makes the unsigned age subtraction wrap to ~4.29e9 ms, so
+         * every node read as expired and the status LED reported a healthy IMU as
+         * lost for as long as the board stayed powered.
+         *
+         * Truncated to 32 bits deliberately: DEV_Watchdog_Kick takes uint32_t and
+         * the registry's age arithmetic is unsigned-wraparound by design, so both
+         * sides agree across the 49.7-day rollover as long as both truncate the
+         * same 64-bit timeline. */
+        uint32_t failed;
+
+        if (timebase == NULL)
+        {
+            /* No clock, so no age can be judged. Reporting every node as healthy
+             * would be the one answer that hides a real failure, and reporting them
+             * all as failed would blame the devices for the timebase's problem --
+             * so raise DEVICE_LOST without stepping the registry, and say why once.
+             * Board_Init failing on the DWT is fatal upstream anyway; this path
+             * exists so that this task never reports a green board it cannot check. */
+            App_Indicator_Set(INDICATOR_DEVICE_LOST, true);
+
+            if (!clock_missing_reported)
+            {
+                UTIL_LOG_E("health", "no timebase; device supervision is not running");
+                clock_missing_reported = true;
+            }
+
+            (void) PLAT_Task_DelayUntil(&cursor, HEALTH_PERIOD_MS);
+            continue;
+        }
+
+        failed = DEV_Watchdog_Step((uint32_t) PLAT_DWT_GetTimeline_ms(timebase));
 
         /* Level-triggered and idempotent, so setting it every period is fine —
          * App_Indicator_Set takes the condition, not an edge. */
