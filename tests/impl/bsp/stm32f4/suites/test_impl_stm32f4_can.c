@@ -280,14 +280,118 @@ static void test_error_maps_all_families_resets_hal_and_routes_to_node(void)
                             err_bits);
 }
 
+/**
+ * @brief A range claim routes every identifier in the span to one node.
+ *
+ * The bxCAN backend enumerates the span rather than masking it, because 0x201..0x204
+ * is neither a power-of-two length nor aligned, so the narrowest covering mask would
+ * also admit 0x200..0x207. What the caller gets is still one node, one callback and
+ * one teardown — the span costs filter slots, not nodes.
+ */
+static void test_range_claim_routes_every_identifier_in_the_span(void)
+{
+    IMPL_malloc_ExpectAnyArgsAndReturn(storage_a.bytes);
+    void* ctx = IMPL_STM32_CAN_CreateCtxRange(&hcan, 0x200u, 0x201u, 0x204u);
+    TEST_ASSERT_NOT_NULL(ctx);
+
+    const CAN_Ops_s* ops = IMPL_STM32_CAN_GetOps();
+    ops->attach_cb(ctx, rx_cb, err_cb, &hcan);
+
+    const uint32_t inside[] = {0x201u, 0x202u, 0x203u, 0x204u};
+
+    for (unsigned i = 0u; i < (sizeof inside / sizeof inside[0]); i++)
+    {
+        CAN_RxHeaderTypeDef header     = {.StdId = inside[i], .IDE = CAN_ID_STD, .DLC = 1u};
+        uint8_t             payload[8] = {(uint8_t) (i + 1u)};
+
+        HAL_CAN_GetRxFifoFillLevel_ExpectAndReturn(&hcan, CAN_RX_FIFO0, 1u);
+        HAL_CAN_GetRxMessage_ExpectAnyArgsAndReturn(HAL_OK);
+        HAL_CAN_GetRxMessage_ReturnThruPtr_header(&header);
+        HAL_CAN_GetRxMessage_ReturnArrayThruPtr_data(payload, 8u);
+        HAL_CAN_GetRxFifoFillLevel_ExpectAndReturn(&hcan, CAN_RX_FIFO0, 0u);
+        HAL_CAN_RxFifo0MsgPendingCallback(&hcan);
+
+        TEST_ASSERT_EQUAL_HEX32(inside[i], rx_id);
+        TEST_ASSERT_EQUAL_HEX8((uint8_t) (i + 1u), rx_first);
+    }
+
+    /* Just outside must not route: rx_id keeps the last in-span value. */
+    CAN_RxHeaderTypeDef outside    = {.StdId = 0x205u, .IDE = CAN_ID_STD, .DLC = 1u};
+    uint8_t             payload[8] = {0xEEu};
+    HAL_CAN_GetRxFifoFillLevel_ExpectAndReturn(&hcan, CAN_RX_FIFO0, 1u);
+    HAL_CAN_GetRxMessage_ExpectAnyArgsAndReturn(HAL_OK);
+    HAL_CAN_GetRxMessage_ReturnThruPtr_header(&outside);
+    HAL_CAN_GetRxMessage_ReturnArrayThruPtr_data(payload, 8u);
+    HAL_CAN_GetRxFifoFillLevel_ExpectAndReturn(&hcan, CAN_RX_FIFO0, 0u);
+    HAL_CAN_RxFifo0MsgPendingCallback(&hcan);
+
+    TEST_ASSERT_EQUAL_HEX32(0x204u, rx_id);
+    TEST_ASSERT_EQUAL_HEX8(4u, rx_first);
+}
+
+/**
+ * @brief An identifier inside a claimed span cannot be claimed again, and an inverted
+ *        range is refused.
+ */
+static void test_range_overlap_and_inversion_are_refused(void)
+{
+    IMPL_malloc_ExpectAnyArgsAndReturn(storage_a.bytes);
+    TEST_ASSERT_NOT_NULL(IMPL_STM32_CAN_CreateCtxRange(&hcan, 0x200u, 0x201u, 0x204u));
+
+    TEST_ASSERT_NULL(IMPL_STM32_CAN_CreateCtx(&hcan, 0x200u, 0x203u));
+    TEST_ASSERT_NULL(IMPL_STM32_CAN_CreateCtxRange(&hcan, 0x200u, 0x204u, 0x206u));
+    TEST_ASSERT_NULL(IMPL_STM32_CAN_CreateCtxRange(&hcan, 0x200u, 0x204u, 0x201u));
+
+    IMPL_malloc_ExpectAnyArgsAndReturn(storage_b.bytes);
+    TEST_ASSERT_NOT_NULL(IMPL_STM32_CAN_CreateCtxRange(&hcan, 0x200u, 0x205u, 0x206u));
+}
+
+/**
+ * @brief Destroying a range node retires every identifier it claimed.
+ *
+ * Retiring only the first would leave the rest of the span routed to freed memory that
+ * the receive interrupt dereferences — the same defect the single-identifier teardown
+ * exists to prevent, one span wide.
+ */
+static void test_destroying_a_range_node_retires_the_whole_span(void)
+{
+    IMPL_malloc_ExpectAnyArgsAndReturn(storage_a.bytes);
+    void*            ctx = IMPL_STM32_CAN_CreateCtxRange(&hcan, 0x200u, 0x201u, 0x204u);
+    const CAN_Ops_s* ops = IMPL_STM32_CAN_GetOps();
+    ops->attach_cb(ctx, rx_cb, err_cb, &hcan);
+
+    IMPL_free_Expect(storage_a.bytes);
+    IMPL_STM32_CAN_DestroyCtx(ctx);
+
+    /* An interior identifier, which a first-only teardown would still route. */
+    CAN_RxHeaderTypeDef header     = {.StdId = 0x203u, .IDE = CAN_ID_STD, .DLC = 1u};
+    uint8_t             payload[8] = {0x77u};
+    HAL_CAN_GetRxFifoFillLevel_ExpectAndReturn(&hcan, CAN_RX_FIFO0, 1u);
+    HAL_CAN_GetRxMessage_ExpectAnyArgsAndReturn(HAL_OK);
+    HAL_CAN_GetRxMessage_ReturnThruPtr_header(&header);
+    HAL_CAN_GetRxMessage_ReturnArrayThruPtr_data(payload, 8u);
+    HAL_CAN_GetRxFifoFillLevel_ExpectAndReturn(&hcan, CAN_RX_FIFO0, 0u);
+    HAL_CAN_RxFifo0MsgPendingCallback(&hcan);
+
+    TEST_ASSERT_EQUAL_HEX32(0u, rx_id); /* nothing routed */
+
+    /* And the span is claimable again. */
+    IMPL_malloc_ExpectAnyArgsAndReturn(storage_b.bytes);
+    TEST_ASSERT_NOT_NULL(IMPL_STM32_CAN_CreateCtxRange(&hcan, 0x200u, 0x201u, 0x204u));
+}
+
 STM32F4_TEST_MAIN_BEGIN()
+STM32F4_RUN_TEST(test_route_capacity_failure_frees_allocated_context);
+STM32F4_RUN_TEST(test_range_claim_routes_every_identifier_in_the_span);
+STM32F4_RUN_TEST(test_range_overlap_and_inversion_are_refused);
+STM32F4_RUN_TEST(test_destroying_a_range_node_retires_the_whole_span);
 STM32F4_RUN_TEST(test_get_ops_create_guards_allocator_and_duplicate_id);
 STM32F4_RUN_TEST(test_filter_start_notification_rollback_and_retry_idempotent);
 STM32F4_RUN_TEST(test_filter_bank_packing_uses_second_bank_fifo1);
 STM32F4_RUN_TEST(test_can2_filter_allocator_starts_at_bank14);
 STM32F4_RUN_TEST(test_filter_hal_failure_rolls_back_allocator_and_retry_succeeds);
 STM32F4_RUN_TEST(test_hal_start_failure_can_retry_without_consuming_filter_slot);
-STM32F4_RUN_TEST(test_route_capacity_failure_frees_allocated_context);
+
 STM32F4_RUN_TEST(test_standard_tx_golden_header_zero_fill_send_to_and_free_level);
 STM32F4_RUN_TEST(test_fifo0_and_fifo1_route_short_payload_and_ignore_unknown);
 STM32F4_RUN_TEST(test_error_maps_all_families_resets_hal_and_routes_to_node);

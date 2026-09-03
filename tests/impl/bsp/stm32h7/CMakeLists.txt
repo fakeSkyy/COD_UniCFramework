@@ -45,6 +45,12 @@ add_stm32h7_impl_test(can
     test_start_rolls_back_failures_retries_and_adds_live_filter
     test_send_requires_started_bus_and_builds_classic_frame
     test_receive_routes_fifo0_fifo1_lost_and_malformed_frames
+    test_destroy_stops_routing_and_frees_the_identifier
+    test_range_claim_installs_one_element_and_routes_the_span
+    test_overlapping_claims_are_refused
+    test_single_identifier_outside_a_range_still_gets_a_filter
+    test_inverted_range_is_refused
+    test_destroying_a_range_node_stops_the_whole_span
     test_status_and_protocol_errors_map_broadcast_and_recover
     test_bus_and_filter_capacity_follow_hardware_limits
     test_null_callbacks_ignore_frames_and_recovered_status)

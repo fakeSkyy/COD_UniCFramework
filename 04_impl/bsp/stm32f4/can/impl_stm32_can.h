@@ -29,9 +29,11 @@ typedef struct IMPL_STM32_CAN_Bus_s IMPL_STM32_CAN_Bus_s;
  */
 typedef struct
 {
-    CAN_HandleTypeDef* hcan;  /**< CAN peripheral handle (from CubeMX).       */
-    uint32_t           tx_id; /**< Standard identifier used by send().        */
-    uint32_t           rx_id; /**< Standard identifier routed to this node.   */
+    CAN_HandleTypeDef* hcan;       /**< CAN peripheral handle (from CubeMX).       */
+    uint32_t           tx_id;      /**< Standard identifier used by send().        */
+    uint32_t           rx_id;      /**< First standard identifier routed here.      */
+    uint32_t           rx_id_last; /**< Last identifier of the claimed range; equals
+                                        rx_id for a single-identifier node.          */
 
     IMPL_STM32_CAN_Bus_s* bus; /**< Shared per-peripheral state.              */
 
@@ -62,6 +64,37 @@ typedef struct
  *         already registered on this bus.
  */
 void* IMPL_STM32_CAN_CreateCtx(CAN_HandleTypeDef* hcan, uint32_t tx_id, uint32_t rx_id);
+
+/**
+ * @brief Create a context that claims a contiguous range of receive identifiers.
+ *
+ * Kept signature-compatible with the H7 backend so application code that claims a
+ * range is not written twice; what differs is how the claim reaches the hardware.
+ *
+ * @par Why this enumerates where the H7 backend does not
+ * FDCAN has a true range filter element (FilterID1..FilterID2), so there one element
+ * covers any span exactly. bxCAN has only IDLIST and IDMASK: a mask matches a
+ * power-of-two block, and the spans this is actually used for are not such blocks —
+ * 0x201..0x204 is neither a power-of-two length nor aligned, so the narrowest mask
+ * covering it also admits 0x200..0x207, swallowing the DJI control identifier and
+ * three GM6020 feedback identifiers. Over-admitting was rejected: it silently steals
+ * traffic another node may own.
+ *
+ * So the range is expanded into one filter slot per identifier, exactly as if the
+ * caller had created a node per identifier — but it remains ONE node with one routing
+ * entry and one callback, which is the part of the range abstraction that matters to
+ * the application. The saving here is in nodes and callbacks, not in filter slots.
+ *
+ * @param hcan         Peripheral handle from CubeMX.
+ * @param tx_id        Identifier send() transmits under.
+ * @param rx_id_first  First identifier of the claimed range.
+ * @param rx_id_last   Last identifier, inclusive.
+ * @return Opaque context, or NULL on a NULL handle, an identifier past 11 bits, an
+ *         inverted range, an identifier already claimed on this bus, an exhausted
+ *         routing table, or a failed allocation.
+ */
+void* IMPL_STM32_CAN_CreateCtxRange(CAN_HandleTypeDef* hcan, uint32_t tx_id, uint32_t rx_id_first,
+                                    uint32_t rx_id_last);
 
 /**
  * @brief Get the STM32 CAN ops (vtable) for use with PLAT_CAN_Create.

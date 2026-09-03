@@ -377,10 +377,14 @@ static bool stm32_can_start(void* ctx)
     if (!bus->started)
     {
         /* Both calls below are idempotent, so a retry after a wiring fault costs
-         * nothing and consumes no filter slot. */
-        if (!filter_add(bus, c->rx_id))
+         * nothing and consumes no filter slot. The span is enumerated for the same
+         * reason as the already-started path below: bxCAN has no exact range filter. */
+        for (uint32_t id = c->rx_id; id <= c->rx_id_last; id++)
         {
-            return false;
+            if (!filter_add(bus, id))
+            {
+                return false;
+            }
         }
 
         if (HAL_CAN_Start(bus->hcan) != HAL_OK)
@@ -398,7 +402,16 @@ static bool stm32_can_start(void* ctx)
         return true;
     }
 
-    return filter_add(bus, c->rx_id);
+    /* One slot per identifier: bxCAN cannot express 0x201..0x204 as a mask without
+     * over-admitting, so the span is enumerated. See IMPL_STM32_CAN_CreateCtxRange. */
+    for (uint32_t id = c->rx_id; id <= c->rx_id_last; id++)
+    {
+        if (!filter_add(bus, id))
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 static const CAN_Ops_s stm32_can_ops = {
@@ -707,9 +720,19 @@ static bool bind_callbacks(uint8_t slot)
 /*  Public API                                                               */
 /* ========================================================================= */
 
-void* IMPL_STM32_CAN_CreateCtx(CAN_HandleTypeDef* hcan, uint32_t tx_id, uint32_t rx_id)
+/**
+ * @brief Shared body of both CreateCtx entry points.
+ *
+ * @param hcan   Peripheral handle.
+ * @param tx_id  Transmit identifier.
+ * @param first  First receive identifier claimed.
+ * @param last   Last receive identifier claimed; equal to @p first for a single.
+ * @return Context, or NULL on any refusal.
+ */
+static void* can_create(CAN_HandleTypeDef* hcan, uint32_t tx_id, uint32_t first, uint32_t last)
 {
-    if (hcan == NULL || tx_id > CAN_STD_ID_MAX || rx_id > CAN_STD_ID_MAX)
+    if (hcan == NULL || tx_id > CAN_STD_ID_MAX || first > CAN_STD_ID_MAX || last > CAN_STD_ID_MAX ||
+        last < first)
     {
         return NULL;
     }
@@ -728,10 +751,16 @@ void* IMPL_STM32_CAN_CreateCtx(CAN_HandleTypeDef* hcan, uint32_t tx_id, uint32_t
      * while only start() populated the table made the guard vacuous for the ordinary
      * create-every-node-then-start-every-node sequence: both creates succeeded, both
      * starts returned true, and the second overwrote the first, leaving a node that
-     * reported healthy and never received another frame. */
-    if (UTIL_Registry_Find(&bus->route, id_key(rx_id)) != NULL)
+     * reported healthy and never received another frame.
+     *
+     * Checked across the whole span before anything is allocated, so a partial claim
+     * never has to be unwound. */
+    for (uint32_t id = first; id <= last; id++)
     {
-        return NULL;
+        if (UTIL_Registry_Find(&bus->route, id_key(id)) != NULL)
+        {
+            return NULL;
+        }
     }
 
     IMPL_STM32_CAN_Context_s* ctx = IMPL_malloc(sizeof(IMPL_STM32_CAN_Context_s));
@@ -740,25 +769,81 @@ void* IMPL_STM32_CAN_CreateCtx(CAN_HandleTypeDef* hcan, uint32_t tx_id, uint32_t
         return NULL;
     }
 
-    ctx->hcan   = hcan;
-    ctx->tx_id  = tx_id;
-    ctx->rx_id  = rx_id;
-    ctx->bus    = bus;
-    ctx->rx_cb  = NULL;
-    ctx->err_cb = NULL;
-    ctx->arg    = NULL;
+    ctx->hcan       = hcan;
+    ctx->tx_id      = tx_id;
+    ctx->rx_id      = first;
+    ctx->rx_id_last = last;
+    ctx->bus        = bus;
+    ctx->rx_cb      = NULL;
+    ctx->err_cb     = NULL;
+    ctx->arg        = NULL;
 
-    /* Claim the identifier now. Nothing is routed to it until start() installs the
-     * hardware filter, so an unstarted node still receives nothing. */
-    if (!UTIL_Registry_Add(&bus->route, id_key(rx_id), ctx))
+    /* Claim every identifier in the span. Nothing is routed to them until start()
+     * installs the hardware filters, so an unstarted node still receives nothing.
+     *
+     * Every identifier gets its own registry entry, unlike the H7 backend which
+     * registers only the first and keeps a separate span table. The difference follows
+     * from the hardware: FDCAN covers a span with one filter element, so spending one
+     * routing slot per identifier there would waste the saving. Here the span already
+     * costs one filter slot per identifier, so a span table would add a second lookup
+     * path and a second teardown step to save nothing.
+     *
+     * A failure part-way through leaves earlier entries claimed, so they are retired
+     * before returning — otherwise a refused create would permanently reserve
+     * identifiers no node owns. */
+    for (uint32_t id = first; id <= last; id++)
     {
-        IMPL_free(ctx);
-        return NULL; /* this bus already routes CAN_NODES_PER_BUS identifiers */
+        if (!UTIL_Registry_Add(&bus->route, id_key(id), ctx))
+        {
+            for (uint32_t done = first; done < id; done++)
+            {
+                UTIL_Registry_Remove(&bus->route, id_key(done));
+            }
+            IMPL_free(ctx);
+            return NULL; /* this bus already routes CAN_NODES_PER_BUS identifiers */
+        }
     }
 
     return ctx;
 }
 
+void* IMPL_STM32_CAN_CreateCtx(CAN_HandleTypeDef* hcan, uint32_t tx_id, uint32_t rx_id)
+{
+    return can_create(hcan, tx_id, rx_id, rx_id);
+}
+
+void* IMPL_STM32_CAN_CreateCtxRange(CAN_HandleTypeDef* hcan, uint32_t tx_id, uint32_t rx_id_first,
+                                    uint32_t rx_id_last)
+{
+    return can_create(hcan, tx_id, rx_id_first, rx_id_last);
+}
+
 const CAN_Ops_s* IMPL_STM32_CAN_GetOps(void) { return &stm32_can_ops; }
 
-void IMPL_STM32_CAN_DestroyCtx(void* ctx) { IMPL_free(ctx); }
+void IMPL_STM32_CAN_DestroyCtx(void* ctx)
+{
+    if (ctx == NULL)
+    {
+        return;
+    }
+
+    IMPL_STM32_CAN_Context_s* c = ctx;
+
+    /* Retire the routing entry BEFORE the free -- the receive path dereferences
+     * whatever this lookup returns from interrupt context, so freeing first would
+     * leave the table pointing at released memory. Same reasoning and same fix as the
+     * STM32H7 backend; this file is not built today, and keeping the two backends
+     * identical is the point of having both. */
+    if (c->bus != NULL)
+    {
+        /* Every identifier the span claimed, not just the first: CreateCtx registered
+         * one entry each, so retiring only rx_id would leave the rest of the span
+         * pointing at freed memory that the receive ISR dereferences. */
+        for (uint32_t id = c->rx_id; id <= c->rx_id_last; id++)
+        {
+            UTIL_Registry_Remove(&c->bus->route, id_key(id));
+        }
+    }
+
+    IMPL_free(ctx);
+}

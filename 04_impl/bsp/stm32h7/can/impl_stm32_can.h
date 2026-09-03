@@ -29,9 +29,11 @@ typedef struct IMPL_STM32_CAN_Bus_s IMPL_STM32_CAN_Bus_s;
  */
 typedef struct
 {
-    FDCAN_HandleTypeDef* hfdcan; /**< FDCAN peripheral handle (from CubeMX).   */
-    uint32_t             tx_id;  /**< Standard identifier used by send().      */
-    uint32_t             rx_id;  /**< Standard identifier routed to this node. */
+    FDCAN_HandleTypeDef* hfdcan;     /**< FDCAN peripheral handle (from CubeMX).   */
+    uint32_t             tx_id;      /**< Standard identifier used by send().      */
+    uint32_t             rx_id;      /**< First standard identifier routed here.   */
+    uint32_t             rx_id_last; /**< Last identifier of the claimed range; equals rx_id
+                                          for a single-identifier node.                    */
 
     IMPL_STM32_CAN_Bus_s* bus; /**< Shared per-peripheral state.              */
 
@@ -67,6 +69,41 @@ typedef struct
  *         already registered on this bus.
  */
 void* IMPL_STM32_CAN_CreateCtx(FDCAN_HandleTypeDef* hfdcan, uint32_t tx_id, uint32_t rx_id);
+
+/**
+ * @brief Create a context that claims a contiguous range of receive identifiers.
+ *
+ * Same as IMPL_STM32_CAN_CreateCtx but the node is addressed by every identifier from
+ * @p rx_id_first to @p rx_id_last inclusive, and start() installs **one** hardware
+ * filter element for the whole span instead of one per identifier.
+ *
+ * @par Why a range and not a mask
+ * FDCAN offers both, and only the range is exact. A mask element matches a
+ * power-of-two block, so a mask wide enough to cover 0x201..0x204 also admits
+ * 0x200..0x207 — which on a DJI bus means swallowing the control identifier and three
+ * GM6020 feedback identifiers that may belong to another node. FDCAN_FILTER_RANGE
+ * compares against FilterID1 and FilterID2 directly, so the span claimed is the span
+ * admitted.
+ *
+ * @par What it costs
+ * One filter element rather than one per identifier, and one routing entry rather than
+ * one per identifier — so a four-wheel chassis needs a single receive node. The
+ * trade is that the range is claimed as a unit: a second node cannot later take one
+ * identifier out of it, and the receive callback must dispatch by identifier itself,
+ * since every frame in the span arrives on the same node.
+ *
+ * @param hfdcan       Peripheral handle from CubeMX.
+ * @param tx_id        Identifier send() transmits under.
+ * @param rx_id_first  First identifier of the claimed range.
+ * @param rx_id_last   Last identifier, inclusive. Must be >= @p rx_id_first; passing
+ *                     the same value as @p rx_id_first yields a single-identifier
+ *                     node identical to IMPL_STM32_CAN_CreateCtx.
+ * @return Opaque context, or NULL if a handle is NULL, an identifier exceeds 11 bits,
+ *         the range is inverted, any identifier in the range is already claimed on
+ *         this bus, the routing table is full, or allocation failed.
+ */
+void* IMPL_STM32_CAN_CreateCtxRange(FDCAN_HandleTypeDef* hfdcan, uint32_t tx_id,
+                                    uint32_t rx_id_first, uint32_t rx_id_last);
 
 /**
  * @brief Get the STM32 FDCAN ops (vtable) for use with PLAT_CAN_Create.

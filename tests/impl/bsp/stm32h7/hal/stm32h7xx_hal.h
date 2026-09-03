@@ -351,6 +351,7 @@ typedef struct
 #define FDCAN_RX_FIFO0 0u
 #define FDCAN_RX_FIFO1 1u
 #define FDCAN_STANDARD_ID 0u
+#define FDCAN_FILTER_RANGE 0u /* matches the vendor header's value */
 #define FDCAN_FILTER_DUAL 1u
 #define FDCAN_FILTER_TO_RXFIFO0 0u
 #define FDCAN_FILTER_TO_RXFIFO1 1u

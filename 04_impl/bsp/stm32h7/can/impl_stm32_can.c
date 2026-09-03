@@ -94,11 +94,38 @@ struct IMPL_STM32_CAN_Bus_s
     UTIL_Registry_s      route;
     UTIL_Registry_Slot_s slots[CAN_NODES_PER_BUS];
 
-    /* Filter-element allocator. Identifiers are kept so a partially filled
-     * element can be rewritten when the next identifier lands in it. */
-    uint32_t filter_ids[CAN_NODES_PER_BUS];
-    uint8_t  filter_count;
-    uint8_t  filter_max; /**< Ids this peripheral's filter list can hold.      */
+    /* Filter-element allocator, indexed by hardware element rather than by
+     * identifier, because the two modes this backend uses do not hold the same number
+     * of identifiers per element: a DUAL element carries two exact identifiers, a
+     * RANGE element carries one span and cannot be shared. Deriving the element index
+     * from an identifier counter (index = n / 2) only works while every element is
+     * DUAL, so the element is allocated explicitly instead.
+     *
+     * For a DUAL element, lo/hi are its two identifiers and hi == lo while it holds
+     * only one. For a RANGE element, lo/hi are the ends of the claimed span. */
+    struct
+    {
+        uint32_t lo;
+        uint32_t hi;
+        bool     range; /**< RANGE element: owns the whole element, never paired. */
+        bool     full;  /**< DUAL element already holds two identifiers.          */
+    } filter[CAN_NODES_PER_BUS];
+
+    uint8_t filter_count; /**< Hardware elements in use.                        */
+    uint8_t filter_max;   /**< Elements this peripheral's filter list can hold.  */
+
+    /* Range claims, consulted by route_find when the registry misses. Kept separate
+     * from the registry because a registry entry maps one key to one value, and
+     * registering every identifier of a span would spend one routing slot per
+     * identifier — exactly the cost a range claim exists to avoid. */
+    struct
+    {
+        uint32_t                  first;
+        uint32_t                  last;
+        IMPL_STM32_CAN_Context_s* owner;
+    } range[CAN_NODES_PER_BUS];
+
+    uint8_t range_count;
 
     uint32_t rx_fifo; /**< FIFO its filters deliver to (FDCAN_RX_FIFOx).       */
 };
@@ -223,14 +250,19 @@ static IMPL_STM32_CAN_Bus_s* bus_acquire(FDCAN_HandleTypeDef* hfdcan)
      * beyond them belong to the next block of message RAM — the extended filter
      * list, then the receive FIFO — so an over-long filter list corrupts queued
      * frames instead of failing. Hence the bound is read back from the handle. */
-    uint32_t ids = hfdcan->Init.StdFiltersNbr * CAN_IDS_PER_FILTER;
-    if (ids == 0u)
+    /* Counted in filter ELEMENTS, which is what filter_count now tracks — a DUAL
+     * element holds two identifiers and a RANGE element holds one span, so the two
+     * units stopped being interchangeable when ranges were added. The identifier
+     * capacity a caller experiences is still up to twice this, because filter_add packs
+     * a second identifier into a half-full DUAL element before taking a new one. */
+    uint32_t elements = hfdcan->Init.StdFiltersNbr;
+    if (elements == 0u)
     {
         return NULL;
     }
-    if (ids > CAN_NODES_PER_BUS)
+    if (elements > CAN_NODES_PER_BUS)
     {
-        ids = CAN_NODES_PER_BUS;
+        elements = CAN_NODES_PER_BUS;
     }
 
     uint8_t slot = can_bus_count;
@@ -239,7 +271,7 @@ static IMPL_STM32_CAN_Bus_s* bus_acquire(FDCAN_HandleTypeDef* hfdcan)
     bus->hfdcan               = hfdcan;
     bus->started              = false;
     bus->filter_count         = 0;
-    bus->filter_max           = (uint8_t) ids;
+    bus->filter_max           = (uint8_t) elements;
     bus->rx_fifo              = fifo;
 
     UTIL_Registry_Init(&bus->route, bus->slots, CAN_NODES_PER_BUS);
@@ -279,23 +311,23 @@ static IMPL_STM32_CAN_Bus_s* bus_acquire(FDCAN_HandleTypeDef* hfdcan)
  *
  * @return true if the element was accepted by the HAL.
  */
-static bool filter_write_element(IMPL_STM32_CAN_Bus_s* bus, uint8_t slot)
+static bool filter_write_element(IMPL_STM32_CAN_Bus_s* bus, uint8_t index)
 {
-    uint8_t index  = slot / CAN_IDS_PER_FILTER;
-    uint8_t first  = (uint8_t) (index * CAN_IDS_PER_FILTER);
-    uint8_t second = ((first + 1u) < bus->filter_count) ? (uint8_t) (first + 1u) : first;
-
-    /* Dual rather than mask mode: an exact pair of identifiers is what a node
-     * pool actually needs, and a mask wide enough to cover two unrelated ids
-     * would admit every id in between. */
     FDCAN_FilterTypeDef f = {0};
     f.IdType              = FDCAN_STANDARD_ID;
     f.FilterIndex         = index;
-    f.FilterType          = FDCAN_FILTER_DUAL;
     f.FilterConfig =
         (bus->rx_fifo == FDCAN_RX_FIFO0) ? FDCAN_FILTER_TO_RXFIFO0 : FDCAN_FILTER_TO_RXFIFO1;
-    f.FilterID1 = bus->filter_ids[first];
-    f.FilterID2 = bus->filter_ids[second];
+
+    /* RANGE for a span, DUAL for one or two exact identifiers. Both are exact, which
+     * is the reason neither is a mask: a mask matches a power-of-two block, so one
+     * wide enough to cover 0x201..0x204 also admits 0x200..0x207 — swallowing the DJI
+     * control identifier and three GM6020 feedback identifiers that may belong to
+     * another node. FDCAN_FILTER_RANGE compares against FilterID1 and FilterID2
+     * directly, so the span claimed is exactly the span admitted. */
+    f.FilterType = bus->filter[index].range ? FDCAN_FILTER_RANGE : FDCAN_FILTER_DUAL;
+    f.FilterID1  = bus->filter[index].lo;
+    f.FilterID2  = bus->filter[index].hi;
 
     return HAL_FDCAN_ConfigFilter(bus->hfdcan, &f) == HAL_OK;
 }
@@ -309,10 +341,74 @@ static bool filter_add(IMPL_STM32_CAN_Bus_s* bus, uint32_t id)
     /* Idempotent. Without this a start that failed further along — a bus whose
      * transceiver is unpowered, say — consumed a fresh slot on every retry, so after
      * filter_max attempts the node could never start again even once the fault was
-     * fixed. The route Add in CreateCtx was always idempotent; this matches it. */
+     * fixed. The route Add in CreateCtx was always idempotent; this matches it.
+     *
+     * A range element counts as already covering every identifier inside it, so a
+     * single-identifier node inside a claimed span does not consume a second element. */
     for (uint8_t i = 0u; i < bus->filter_count; i++)
     {
-        if (bus->filter_ids[i] == id)
+        if (id >= bus->filter[i].lo && id <= bus->filter[i].hi)
+        {
+            if (bus->filter[i].range || bus->filter[i].lo == id || bus->filter[i].hi == id)
+            {
+                return true;
+            }
+        }
+    }
+
+    /* Pack into a DUAL element that still has room before taking a new one. */
+    for (uint8_t i = 0u; i < bus->filter_count; i++)
+    {
+        if (!bus->filter[i].range && !bus->filter[i].full)
+        {
+            const uint32_t kept = bus->filter[i].lo;
+
+            bus->filter[i].hi   = id;
+            bus->filter[i].full = true;
+
+            if (!filter_write_element(bus, i))
+            {
+                bus->filter[i].hi   = kept; /* leave the element as it was */
+                bus->filter[i].full = false;
+                return false;
+            }
+            return true;
+        }
+    }
+
+    if (bus->filter_count >= bus->filter_max)
+    {
+        return false;
+    }
+
+    const uint8_t index      = bus->filter_count;
+    bus->filter[index].lo    = id;
+    bus->filter[index].hi    = id;
+    bus->filter[index].range = false;
+    bus->filter[index].full  = false;
+    bus->filter_count++;
+
+    if (!filter_write_element(bus, index))
+    {
+        bus->filter_count--; /* leave the allocator as it was */
+        return false;
+    }
+    return true;
+}
+
+/**
+ * @brief Install one filter element covering @p first .. @p last inclusive.
+ *
+ * @return true when the element is in place, false when the list is exhausted or the
+ *         peripheral refused the write.
+ */
+static bool filter_add_range(IMPL_STM32_CAN_Bus_s* bus, uint32_t first, uint32_t last)
+{
+    /* An identical range already installed is a no-op, for the same reason filter_add
+     * is idempotent: a retry after a wiring fault must not consume a second element. */
+    for (uint8_t i = 0u; i < bus->filter_count; i++)
+    {
+        if (bus->filter[i].range && bus->filter[i].lo == first && bus->filter[i].hi == last)
         {
             return true;
         }
@@ -323,13 +419,16 @@ static bool filter_add(IMPL_STM32_CAN_Bus_s* bus, uint32_t id)
         return false;
     }
 
-    uint8_t slot          = bus->filter_count;
-    bus->filter_ids[slot] = id;
+    const uint8_t index      = bus->filter_count;
+    bus->filter[index].lo    = first;
+    bus->filter[index].hi    = last;
+    bus->filter[index].range = true;
+    bus->filter[index].full  = true; /* never paired with a neighbour */
     bus->filter_count++;
 
-    if (!filter_write_element(bus, slot))
+    if (!filter_write_element(bus, index))
     {
-        bus->filter_count--; /* leave the allocator as it was */
+        bus->filter_count--;
         return false;
     }
     return true;
@@ -498,7 +597,11 @@ static bool stm32_can_start(void* ctx)
             return false;
         }
 
-        if (!filter_add(bus, c->rx_id))
+        /* Same range/single choice as the already-started path below: the first node
+         * on a bus takes this branch, so claiming a range here must install a RANGE
+         * element rather than a single-identifier one. */
+        if (!((c->rx_id_last > c->rx_id) ? filter_add_range(bus, c->rx_id, c->rx_id_last)
+                                         : filter_add(bus, c->rx_id)))
         {
             return false;
         }
@@ -520,7 +623,8 @@ static bool stm32_can_start(void* ctx)
         return true;
     }
 
-    return filter_add(bus, c->rx_id);
+    return (c->rx_id_last > c->rx_id) ? filter_add_range(bus, c->rx_id, c->rx_id_last)
+                                      : filter_add(bus, c->rx_id);
 }
 
 static const CAN_Ops_s stm32_can_ops = {
@@ -572,6 +676,43 @@ static void can_report(IMPL_STM32_CAN_Bus_s* bus, uint32_t err)
  * @param bus  Bus whose FIFO has traffic, or NULL for an unknown handle.
  * @param its  Interrupt sources the HAL reported for this FIFO.
  */
+/**
+ * @brief Find the node an identifier belongs to, exact match first.
+ *
+ * Runs in interrupt context. The registry answers a single identifier in one pass, so
+ * an ordinary node costs exactly what it did before this function existed. A range
+ * node registers only its first identifier — registering all of them would consume one
+ * routing slot per identifier and defeat the point — so a miss falls back to scanning
+ * the span list.
+ *
+ * The scan is bounded by the number of range claims on the bus, not by the size of any
+ * range: a four-wheel chassis is one entry. A bus with no range claims never reaches
+ * the loop at all, because the registry hit returns first.
+ *
+ * @param bus  Bus record.
+ * @param id   Identifier from the received frame.
+ * @return Owning context, or NULL when nothing claimed the identifier.
+ */
+static IMPL_STM32_CAN_Context_s* route_find(IMPL_STM32_CAN_Bus_s* bus, uint32_t id)
+{
+    IMPL_STM32_CAN_Context_s* c = UTIL_Registry_Find(&bus->route, id_key(id));
+
+    if (c != NULL)
+    {
+        return c;
+    }
+
+    for (uint8_t i = 0u; i < bus->range_count; i++)
+    {
+        if (id >= bus->range[i].first && id <= bus->range[i].last)
+        {
+            return bus->range[i].owner;
+        }
+    }
+
+    return NULL;
+}
+
 static void can_drain_fifo(IMPL_STM32_CAN_Bus_s* bus, uint32_t its)
 {
     if (bus == NULL)
@@ -604,7 +745,7 @@ static void can_drain_fifo(IMPL_STM32_CAN_Bus_s* bus, uint32_t its)
             continue;
         }
 
-        IMPL_STM32_CAN_Context_s* c = UTIL_Registry_Find(&bus->route, id_key(header.Identifier));
+        IMPL_STM32_CAN_Context_s* c = route_find(bus, header.Identifier);
         if (c == NULL || c->rx_cb == NULL)
         {
             continue; /* filter admitted an id nobody claimed */
@@ -872,9 +1013,75 @@ static bool bind_callbacks(FDCAN_HandleTypeDef* hfdcan)
 /*  Public API                                                               */
 /* ========================================================================= */
 
-void* IMPL_STM32_CAN_CreateCtx(FDCAN_HandleTypeDef* hfdcan, uint32_t tx_id, uint32_t rx_id)
+/**
+ * @brief Whether a retired range slot can be reused.
+ *
+ * Only consulted once the table is nominally full, so the scan costs nothing in the
+ * ordinary case.
+ *
+ * @param bus  Bus record.
+ * @return true when some slot's owner is NULL.
+ */
+static bool range_slot_available(const IMPL_STM32_CAN_Bus_s* bus)
 {
-    if (hfdcan == NULL || tx_id > CAN_STD_ID_MAX || rx_id > CAN_STD_ID_MAX)
+    for (uint8_t i = 0u; i < bus->range_count; i++)
+    {
+        if (bus->range[i].owner == NULL)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * @brief Whether any identifier in [first, last] is already claimed on this bus.
+ *
+ * Checks both kinds of claim, because they live in different places: single
+ * identifiers in the routing registry, spans in the range table. Missing either would
+ * let two nodes claim overlapping traffic, and only one can win a lookup — the failure
+ * this guard exists to prevent is a node that reports healthy and never receives
+ * another frame.
+ *
+ * @param bus    Bus record.
+ * @param first  First identifier of the span to test.
+ * @param last   Last identifier, inclusive.
+ * @return true when the span is free.
+ */
+static bool route_span_is_free(IMPL_STM32_CAN_Bus_s* bus, uint32_t first, uint32_t last)
+{
+    for (uint32_t id = first; id <= last; id++)
+    {
+        if (UTIL_Registry_Find(&bus->route, id_key(id)) != NULL)
+        {
+            return false;
+        }
+    }
+
+    for (uint8_t i = 0u; i < bus->range_count; i++)
+    {
+        if (first <= bus->range[i].last && last >= bus->range[i].first)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * @brief Shared body of both CreateCtx entry points.
+ *
+ * @param hfdcan  Peripheral handle.
+ * @param tx_id   Transmit identifier.
+ * @param first   First receive identifier claimed.
+ * @param last    Last receive identifier claimed; equal to @p first for a single.
+ * @return Context, or NULL on any refusal.
+ */
+static void* can_create(FDCAN_HandleTypeDef* hfdcan, uint32_t tx_id, uint32_t first, uint32_t last)
+{
+    if (hfdcan == NULL || tx_id > CAN_STD_ID_MAX || first > CAN_STD_ID_MAX ||
+        last > CAN_STD_ID_MAX || last < first)
     {
         return NULL;
     }
@@ -894,7 +1101,16 @@ void* IMPL_STM32_CAN_CreateCtx(FDCAN_HandleTypeDef* hfdcan, uint32_t tx_id, uint
      * create-every-node-then-start-every-node sequence: both creates succeeded, both
      * starts returned true, and the second overwrote the first, leaving a node that
      * reported healthy and never received another frame. */
-    if (UTIL_Registry_Find(&bus->route, id_key(rx_id)) != NULL)
+    if (!route_span_is_free(bus, first, last))
+    {
+        return NULL;
+    }
+
+    /* A range needs a slot in the range table, checked before anything is allocated so
+     * a refusal leaves no state behind. */
+    const bool is_range = (last > first);
+
+    if (is_range && bus->range_count >= CAN_NODES_PER_BUS && !range_slot_available(bus))
     {
         return NULL;
     }
@@ -905,25 +1121,130 @@ void* IMPL_STM32_CAN_CreateCtx(FDCAN_HandleTypeDef* hfdcan, uint32_t tx_id, uint
         return NULL;
     }
 
-    ctx->hfdcan = hfdcan;
-    ctx->tx_id  = tx_id;
-    ctx->rx_id  = rx_id;
-    ctx->bus    = bus;
-    ctx->rx_cb  = NULL;
-    ctx->err_cb = NULL;
-    ctx->arg    = NULL;
+    ctx->hfdcan     = hfdcan;
+    ctx->tx_id      = tx_id;
+    ctx->rx_id      = first;
+    ctx->rx_id_last = last;
+    ctx->bus        = bus;
+    ctx->rx_cb      = NULL;
+    ctx->err_cb     = NULL;
+    ctx->arg        = NULL;
 
     /* Claim the identifier now. Nothing is routed to it until start() installs the
-     * hardware filter, so an unstarted node still receives nothing. */
-    if (!UTIL_Registry_Add(&bus->route, id_key(rx_id), ctx))
+     * hardware filter, so an unstarted node still receives nothing.
+     *
+     * A range registers only its first identifier: route_find falls back to the span
+     * table on a miss, so registering every identifier would spend one routing slot
+     * each and defeat the purpose of the claim. */
+    if (!UTIL_Registry_Add(&bus->route, id_key(first), ctx))
     {
         IMPL_free(ctx);
         return NULL; /* this bus already routes CAN_NODES_PER_BUS identifiers */
     }
 
+    if (is_range)
+    {
+        /* Reuse a slot a destroy retired before growing, so repeated create/destroy
+         * cycles cannot exhaust the table while the number of live claims stays flat.
+         * Span before owner, the reverse of the retire order: route_find tests the span
+         * first, so the entry becomes reachable only once both fields are in place. */
+        uint8_t slot = bus->range_count;
+
+        for (uint8_t i = 0u; i < bus->range_count; i++)
+        {
+            if (bus->range[i].owner == NULL)
+            {
+                slot = i;
+                break;
+            }
+        }
+
+        bus->range[slot].first = first;
+        bus->range[slot].last  = last;
+        bus->range[slot].owner = ctx;
+
+        if (slot == bus->range_count)
+        {
+            bus->range_count++;
+        }
+    }
+
     return ctx;
+}
+
+void* IMPL_STM32_CAN_CreateCtx(FDCAN_HandleTypeDef* hfdcan, uint32_t tx_id, uint32_t rx_id)
+{
+    return can_create(hfdcan, tx_id, rx_id, rx_id);
+}
+
+void* IMPL_STM32_CAN_CreateCtxRange(FDCAN_HandleTypeDef* hfdcan, uint32_t tx_id,
+                                    uint32_t rx_id_first, uint32_t rx_id_last)
+{
+    return can_create(hfdcan, tx_id, rx_id_first, rx_id_last);
 }
 
 const CAN_Ops_s* IMPL_STM32_CAN_GetOps(void) { return &stm32_can_ops; }
 
-void IMPL_STM32_CAN_DestroyCtx(void* ctx) { IMPL_free(ctx); }
+void IMPL_STM32_CAN_DestroyCtx(void* ctx)
+{
+    if (ctx == NULL)
+    {
+        return;
+    }
+
+    IMPL_STM32_CAN_Context_s* c = ctx;
+
+    /* Retire the routing entry BEFORE the free. CreateCtx published this context
+     * against its receive identifier, and the receive path dereferences whatever
+     * that lookup returns — c->rx_cb, then c->arg — from interrupt context. Freeing
+     * first would leave the table pointing at released memory, so the next admitted
+     * frame on this identifier would call through a dangling pointer inside an ISR.
+     *
+     * An earlier version did only the free, and documented the surviving route entry
+     * as deliberate by analogy with the shared bus record. The analogy does not hold:
+     * a bus record is shared and reacquired idempotently by the next node on the same
+     * handle, whereas a route entry belongs to this context alone and nothing ever
+     * replaces it. Nothing had failed yet only because no caller destroys a node. */
+    if (c->bus != NULL)
+    {
+        UTIL_Registry_Remove(&c->bus->route, id_key(c->rx_id));
+
+        /* A range claim is a second place this context is published, and route_find
+         * consults it after a registry miss — so leaving it behind would recreate
+         * exactly the dangling pointer the Remove above exists to prevent, just by
+         * the other lookup path.
+         *
+         * Retired in place, for the same reason UTIL_Registry_Remove does not compact:
+         * the destroyed node's hardware filter stays installed, so frames keep arriving
+         * on this bus and an ISR can be part-way through this scan right now. Moving
+         * the last entry down and decrementing the count would make that entry briefly
+         * unreachable, so a frame for an unrelated range would miss its owner. Clearing
+         * the owner cannot affect any other entry: route_find matches on the span and
+         * nothing moves.
+         *
+         * Owner first, then the span: route_find returns the owner only after the span
+         * matches, so once the owner is NULL a hit can no longer hand back a freed
+         * context. Widening the span to an impossible pair after that keeps a later
+         * identical range claim from mistaking this for a live entry. */
+        for (uint8_t i = 0u; i < c->bus->range_count; i++)
+        {
+            if (c->bus->range[i].owner == c)
+            {
+                c->bus->range[i].owner = NULL;
+                c->bus->range[i].first = CAN_STD_ID_MAX;
+                c->bus->range[i].last  = 0u; /* empty span: matches no identifier */
+                break;
+            }
+        }
+    }
+
+    /* The hardware accept filter for this identifier is deliberately left in place.
+     * Filter elements are allocated by slot index and the list is append-only, so
+     * releasing one would have to compact the list and rewrite every element after
+     * it — with the peripheral live and frames arriving. The cost of keeping it is
+     * that the FIFO still admits frames for a retired identifier; the routing lookup
+     * above now returns NULL for them and the receive loop already discards a frame
+     * nobody claimed ("filter admitted an id nobody claimed"). */
+
+    IMPL_free(ctx);
+}

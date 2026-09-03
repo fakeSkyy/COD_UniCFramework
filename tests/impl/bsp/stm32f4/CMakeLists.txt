@@ -55,6 +55,9 @@ add_stm32f4_impl_test(can
     test_filter_hal_failure_rolls_back_allocator_and_retry_succeeds
     test_hal_start_failure_can_retry_without_consuming_filter_slot
     test_route_capacity_failure_frees_allocated_context
+    test_range_claim_routes_every_identifier_in_the_span
+    test_range_overlap_and_inversion_are_refused
+    test_destroying_a_range_node_retires_the_whole_span
     test_standard_tx_golden_header_zero_fill_send_to_and_free_level
     test_fifo0_and_fifo1_route_short_payload_and_ignore_unknown
     test_error_maps_all_families_resets_hal_and_routes_to_node)
