@@ -44,7 +44,8 @@ add_application_test(test_app_tasks
     health_failure_short_circuits
     imu_failure_short_circuits
     scheduler_failure_after_ordered_creation
-    scheduler_true_defensive_return)
+    scheduler_true_defensive_return
+    chassis_failure_is_not_fatal)
 
 add_application_test(test_app_telemetry
     ${APPLICATION}/telemetry/app_telemetry.c
@@ -85,6 +86,21 @@ add_application_test(test_app_health
     failure_persistence_logs_only_first_edge
     recovery_logs_edge_and_clears_level
     null_failed_name_uses_safe_failure_path)
+
+add_application_test(test_app_chassis
+    ${APPLICATION}/chassis/app_chassis.c
+    mock_chassis_deps.c
+    start_task_creates_two_nodes_and_the_task
+    transmit_node_starts_last
+    missing_timebase_creates_no_nodes
+    refused_transmit_node_does_not_attach_motors
+    refused_receive_node_stops_bring_up
+    a_node_that_cannot_start_fails_bring_up
+    feedback_routes_to_the_motor_owning_the_identifier
+    unknown_identifier_is_dropped
+    non_consecutive_feedback_ids_are_refused
+    online_is_false_before_bring_up
+    start_task_propagates_task_creation_failure)
 
 add_application_test(test_app_imu
     ${APPLICATION}/imu/app_imu.c

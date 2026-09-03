@@ -124,6 +124,95 @@ bool App_Indicator_StartTask(uint8_t priority);
 void App_Indicator_Set(App_Indicator_Condition_e cond, bool on);
 
 /**
+ * @brief Largest fault code the pattern can blink, and the count it clamps to.
+ *
+ * Exposed because App_Indicator_SetFault's contract is stated in terms of it: a
+ * caller cannot honour "1..INDICATOR_FAULT_CODE_MAX" while the number lives only in
+ * app_indicator.c. Equal to the flash ceiling the pattern builder is bounded by, so
+ * the two cannot drift.
+ */
+#define INDICATOR_FAULT_CODE_MAX 9u
+
+/**
+ * @brief Every fault code in the firmware, allocated in one place.
+ *
+ * @par Why these are here rather than in the module that raises them
+ * A code is not a private fact about its module — it is a claim on a namespace only
+ * nine values wide, shared by every module that can fault, and read by a person
+ * counting flashes who has no way to know which module they are looking at. Three
+ * codes had grown as private macros in app_imu.c, each documented as "the next
+ * unused code" with a note to grep for App_Indicator_SetFault before adding another.
+ * That works exactly until two modules are edited in the same week, and the failure
+ * is silent: two faults blink identically and the LED starts lying about which one
+ * happened.
+ *
+ * Collecting them means a duplicate is visible in one screen, the next free value is
+ * obvious rather than the result of a search, and the compiler can be made to check
+ * the ceiling — see the assertion below, which no amount of grepping provides.
+ *
+ * @par Adding one
+ * Append it before INDICATOR_FAULT_CODE_COUNT, give it a sentence saying what a
+ * person seeing that many flashes should conclude, and leave the existing values
+ * alone: a code that has ever shipped is a number in someone's notes, and renumbering
+ * it makes those notes wrong. When the ceiling is genuinely reached, the answer is
+ * not a tenth flash nobody can count but a second signal — the log already carries
+ * the detail a light cannot.
+ */
+typedef enum
+{
+    /** @brief Not a fault. Passing this to App_Indicator_SetFault clears the fault. */
+    INDICATOR_FAULT_NONE = 0,
+
+    /**
+     * @brief The IMU answered for a while and then stopped; see app_imu.c.
+     *
+     * One flash: the sensor was working. Attitude is stale, so anything derived from
+     * it is actively wrong rather than merely missing.
+     */
+    INDICATOR_FAULT_IMU_OUTAGE = 1,
+
+    /**
+     * @brief The IMU never came up at all, so its task was never created.
+     *
+     * Two flashes. Deliberately distinct from IMU_OUTAGE: one never worked, the other
+     * did and stopped, and they point at different things — wiring or a dead part
+     * versus a bus that degraded in service.
+     */
+    INDICATOR_FAULT_IMU_INIT = 2,
+
+    /**
+     * @brief The gyro is running without an adopted calibration; see app_imu.c.
+     *
+     * Three flashes, and the only code here that is a partial failure: the loop runs,
+     * the sensor answers, roll and pitch are correct, and yaw alone dead-reckons on an
+     * uncorrected offset. Measured on this board at 0.074 deg/s against 0.0069 with a
+     * calibration adopted — 45 degrees of heading over ten minutes rather than 4.
+     */
+    INDICATOR_FAULT_IMU_UNCALIBRATED = 3,
+
+    /**
+     * @brief The chassis did not come up; see app_chassis.c.
+     *
+     * Four flashes. The firmware runs normally and the wheels are simply never
+     * commanded, which on a bench is the expected state whenever the ESCs are
+     * unpowered — so unlike the IMU codes this one is routine during development and
+     * only means something on an assembled robot. Either a CAN node was refused (an
+     * identifier in the claimed feedback range already taken on FDCAN1, or its filter
+     * elements exhausted) or the peripheral would not start.
+     */
+    INDICATOR_FAULT_CHASSIS = 4,
+
+    /** @brief Count, not a code. Keep last. */
+    INDICATOR_FAULT_CODE_COUNT,
+} App_Indicator_FaultCode_e;
+
+/* The pattern builder cannot blink more than INDICATOR_FAULT_CODE_MAX flashes, and
+ * SetFault clamps anything larger -- so a code past the ceiling would silently show as
+ * a different, smaller one. Caught here instead, at the point the code is allocated. */
+_Static_assert(INDICATOR_FAULT_CODE_COUNT - 1u <= INDICATOR_FAULT_CODE_MAX,
+               "more fault codes than the LED can blink; see App_Indicator_FaultCode_e");
+
+/**
  * @brief Raise INDICATOR_FAULT and give it a code to blink out.
  *
  * The fault pattern flashes @p code times, then pauses, and repeats — so a code has

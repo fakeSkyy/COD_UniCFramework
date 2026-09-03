@@ -5,12 +5,15 @@
 #include "cmock.h"
 #include "mock_tasks_deps.h"
 
+static const char* CMockString_App_Chassis_StartTask = "App_Chassis_StartTask";
 static const char* CMockString_App_Health_StartTask = "App_Health_StartTask";
 static const char* CMockString_App_Imu_StartTask = "App_Imu_StartTask";
+static const char* CMockString_App_Indicator_SetFault = "App_Indicator_SetFault";
 static const char* CMockString_App_Indicator_StartTask = "App_Indicator_StartTask";
 static const char* CMockString_PLAT_Task_FaultInit = "PLAT_Task_FaultInit";
 static const char* CMockString_PLAT_Task_StartScheduler = "PLAT_Task_StartScheduler";
 static const char* CMockString_UTIL_Log_Write = "UTIL_Log_Write";
+static const char* CMockString_code = "code";
 static const char* CMockString_fmt = "fmt";
 static const char* CMockString_level = "level";
 static const char* CMockString_priority = "priority";
@@ -56,6 +59,27 @@ typedef struct _CMOCK_App_Imu_StartTask_CALL_INSTANCE
   char IgnoreArg_priority;
 
 } CMOCK_App_Imu_StartTask_CALL_INSTANCE;
+
+typedef struct _CMOCK_App_Chassis_StartTask_CALL_INSTANCE
+{
+  UNITY_LINE_TYPE LineNumber;
+  char ExpectAnyArgsBool;
+  bool ReturnVal;
+  int CallOrder;
+  uint8_t Expected_priority;
+  char IgnoreArg_priority;
+
+} CMOCK_App_Chassis_StartTask_CALL_INSTANCE;
+
+typedef struct _CMOCK_App_Indicator_SetFault_CALL_INSTANCE
+{
+  UNITY_LINE_TYPE LineNumber;
+  char ExpectAnyArgsBool;
+  int CallOrder;
+  uint8_t Expected_code;
+  char IgnoreArg_code;
+
+} CMOCK_App_Indicator_SetFault_CALL_INSTANCE;
 
 typedef struct _CMOCK_PLAT_Task_StartScheduler_CALL_INSTANCE
 {
@@ -105,6 +129,17 @@ static struct mock_tasks_depsInstance
   CMOCK_App_Imu_StartTask_CALLBACK App_Imu_StartTask_CallbackFunctionPointer;
   int App_Imu_StartTask_CallbackCalls;
   CMOCK_MEM_INDEX_TYPE App_Imu_StartTask_CallInstance;
+  char App_Chassis_StartTask_IgnoreBool;
+  bool App_Chassis_StartTask_FinalReturn;
+  char App_Chassis_StartTask_CallbackBool;
+  CMOCK_App_Chassis_StartTask_CALLBACK App_Chassis_StartTask_CallbackFunctionPointer;
+  int App_Chassis_StartTask_CallbackCalls;
+  CMOCK_MEM_INDEX_TYPE App_Chassis_StartTask_CallInstance;
+  char App_Indicator_SetFault_IgnoreBool;
+  char App_Indicator_SetFault_CallbackBool;
+  CMOCK_App_Indicator_SetFault_CALLBACK App_Indicator_SetFault_CallbackFunctionPointer;
+  int App_Indicator_SetFault_CallbackCalls;
+  CMOCK_MEM_INDEX_TYPE App_Indicator_SetFault_CallInstance;
   char PLAT_Task_StartScheduler_IgnoreBool;
   bool PLAT_Task_StartScheduler_FinalReturn;
   char PLAT_Task_StartScheduler_CallbackBool;
@@ -173,6 +208,32 @@ void mock_tasks_deps_Verify(void)
     UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
   }
   if (Mock.App_Imu_StartTask_CallbackFunctionPointer != NULL)
+  {
+    call_instance = CMOCK_GUTS_NONE;
+    (void)call_instance;
+  }
+  call_instance = Mock.App_Chassis_StartTask_CallInstance;
+  if (Mock.App_Chassis_StartTask_IgnoreBool)
+    call_instance = CMOCK_GUTS_NONE;
+  if (CMOCK_GUTS_NONE != call_instance)
+  {
+    UNITY_SET_DETAIL(CMockString_App_Chassis_StartTask);
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
+  }
+  if (Mock.App_Chassis_StartTask_CallbackFunctionPointer != NULL)
+  {
+    call_instance = CMOCK_GUTS_NONE;
+    (void)call_instance;
+  }
+  call_instance = Mock.App_Indicator_SetFault_CallInstance;
+  if (Mock.App_Indicator_SetFault_IgnoreBool)
+    call_instance = CMOCK_GUTS_NONE;
+  if (CMOCK_GUTS_NONE != call_instance)
+  {
+    UNITY_SET_DETAIL(CMockString_App_Indicator_SetFault);
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
+  }
+  if (Mock.App_Indicator_SetFault_CallbackFunctionPointer != NULL)
   {
     call_instance = CMOCK_GUTS_NONE;
     (void)call_instance;
@@ -686,6 +747,251 @@ void App_Imu_StartTask_CMockIgnoreArg_priority(UNITY_LINE_TYPE cmock_line)
   CMOCK_App_Imu_StartTask_CALL_INSTANCE* cmock_call_instance = (CMOCK_App_Imu_StartTask_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.App_Imu_StartTask_CallInstance));
   UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
   cmock_call_instance->IgnoreArg_priority = 1;
+}
+
+bool App_Chassis_StartTask(uint8_t priority)
+{
+  UNITY_LINE_TYPE cmock_line = TEST_LINE_NUM;
+  CMOCK_App_Chassis_StartTask_CALL_INSTANCE* cmock_call_instance;
+  UNITY_SET_DETAIL(CMockString_App_Chassis_StartTask);
+  cmock_call_instance = (CMOCK_App_Chassis_StartTask_CALL_INSTANCE*)CMock_Guts_GetAddressFor(Mock.App_Chassis_StartTask_CallInstance);
+  Mock.App_Chassis_StartTask_CallInstance = CMock_Guts_MemNext(Mock.App_Chassis_StartTask_CallInstance);
+  if (Mock.App_Chassis_StartTask_IgnoreBool)
+  {
+    UNITY_CLR_DETAILS();
+    if (cmock_call_instance == NULL)
+      return Mock.App_Chassis_StartTask_FinalReturn;
+    Mock.App_Chassis_StartTask_FinalReturn = cmock_call_instance->ReturnVal;
+    return cmock_call_instance->ReturnVal;
+  }
+  if (!Mock.App_Chassis_StartTask_CallbackBool &&
+      Mock.App_Chassis_StartTask_CallbackFunctionPointer != NULL)
+  {
+    bool cmock_cb_ret = Mock.App_Chassis_StartTask_CallbackFunctionPointer(priority, Mock.App_Chassis_StartTask_CallbackCalls++);
+    UNITY_CLR_DETAILS();
+    return cmock_cb_ret;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringCalledMore);
+  cmock_line = cmock_call_instance->LineNumber;
+  if (cmock_call_instance->CallOrder > ++GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledEarly);
+  if (cmock_call_instance->CallOrder < GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLate);
+  if (!cmock_call_instance->ExpectAnyArgsBool)
+  {
+  if (!cmock_call_instance->IgnoreArg_priority)
+  {
+    UNITY_SET_DETAILS(CMockString_App_Chassis_StartTask,CMockString_priority);
+    UNITY_TEST_ASSERT_EQUAL_HEX8(cmock_call_instance->Expected_priority, priority, cmock_line, CMockStringMismatch);
+  }
+  }
+  if (Mock.App_Chassis_StartTask_CallbackFunctionPointer != NULL)
+  {
+    UNITY_SET_DETAIL(CMockString_App_Chassis_StartTask);
+    cmock_call_instance->ReturnVal = Mock.App_Chassis_StartTask_CallbackFunctionPointer(priority, Mock.App_Chassis_StartTask_CallbackCalls++);
+  }
+  UNITY_CLR_DETAILS();
+  return cmock_call_instance->ReturnVal;
+}
+
+void CMockExpectParameters_App_Chassis_StartTask(CMOCK_App_Chassis_StartTask_CALL_INSTANCE* cmock_call_instance, uint8_t priority);
+void CMockExpectParameters_App_Chassis_StartTask(CMOCK_App_Chassis_StartTask_CALL_INSTANCE* cmock_call_instance, uint8_t priority)
+{
+  cmock_call_instance->Expected_priority = priority;
+  cmock_call_instance->IgnoreArg_priority = 0;
+}
+
+void App_Chassis_StartTask_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_App_Chassis_StartTask_CALL_INSTANCE));
+  CMOCK_App_Chassis_StartTask_CALL_INSTANCE* cmock_call_instance = (CMOCK_App_Chassis_StartTask_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.App_Chassis_StartTask_CallInstance = CMock_Guts_MemChain(Mock.App_Chassis_StartTask_CallInstance, cmock_guts_index);
+  Mock.App_Chassis_StartTask_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+  Mock.App_Chassis_StartTask_IgnoreBool = (char)1;
+}
+
+void App_Chassis_StartTask_CMockStopIgnore(void)
+{
+  if(Mock.App_Chassis_StartTask_IgnoreBool)
+    Mock.App_Chassis_StartTask_CallInstance = CMock_Guts_MemNext(Mock.App_Chassis_StartTask_CallInstance);
+  Mock.App_Chassis_StartTask_IgnoreBool = (char)0;
+}
+
+void App_Chassis_StartTask_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_App_Chassis_StartTask_CALL_INSTANCE));
+  CMOCK_App_Chassis_StartTask_CALL_INSTANCE* cmock_call_instance = (CMOCK_App_Chassis_StartTask_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.App_Chassis_StartTask_CallInstance = CMock_Guts_MemChain(Mock.App_Chassis_StartTask_CallInstance, cmock_guts_index);
+  Mock.App_Chassis_StartTask_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+  cmock_call_instance->ExpectAnyArgsBool = (char)1;
+}
+
+void App_Chassis_StartTask_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, uint8_t priority, bool cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_App_Chassis_StartTask_CALL_INSTANCE));
+  CMOCK_App_Chassis_StartTask_CALL_INSTANCE* cmock_call_instance = (CMOCK_App_Chassis_StartTask_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.App_Chassis_StartTask_CallInstance = CMock_Guts_MemChain(Mock.App_Chassis_StartTask_CallInstance, cmock_guts_index);
+  Mock.App_Chassis_StartTask_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  CMockExpectParameters_App_Chassis_StartTask(cmock_call_instance, priority);
+  cmock_call_instance->ReturnVal = cmock_to_return;
+}
+
+void App_Chassis_StartTask_AddCallback(CMOCK_App_Chassis_StartTask_CALLBACK Callback)
+{
+  Mock.App_Chassis_StartTask_IgnoreBool = (char)0;
+  Mock.App_Chassis_StartTask_CallbackBool = (char)1;
+  Mock.App_Chassis_StartTask_CallbackCalls = 0;
+  Mock.App_Chassis_StartTask_CallbackFunctionPointer = Callback;
+}
+
+int App_Chassis_StartTask_CallCount(void)
+{
+  return Mock.App_Chassis_StartTask_CallbackCalls;
+}
+
+void App_Chassis_StartTask_Stub(CMOCK_App_Chassis_StartTask_CALLBACK Callback)
+{
+  Mock.App_Chassis_StartTask_IgnoreBool = (char)0;
+  Mock.App_Chassis_StartTask_CallbackBool = (char)0;
+  Mock.App_Chassis_StartTask_CallbackCalls = 0;
+  Mock.App_Chassis_StartTask_CallbackFunctionPointer = Callback;
+}
+
+void App_Chassis_StartTask_CMockIgnoreArg_priority(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_App_Chassis_StartTask_CALL_INSTANCE* cmock_call_instance = (CMOCK_App_Chassis_StartTask_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.App_Chassis_StartTask_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_priority = 1;
+}
+
+void App_Indicator_SetFault(uint8_t code)
+{
+  UNITY_LINE_TYPE cmock_line = TEST_LINE_NUM;
+  CMOCK_App_Indicator_SetFault_CALL_INSTANCE* cmock_call_instance;
+  UNITY_SET_DETAIL(CMockString_App_Indicator_SetFault);
+  cmock_call_instance = (CMOCK_App_Indicator_SetFault_CALL_INSTANCE*)CMock_Guts_GetAddressFor(Mock.App_Indicator_SetFault_CallInstance);
+  Mock.App_Indicator_SetFault_CallInstance = CMock_Guts_MemNext(Mock.App_Indicator_SetFault_CallInstance);
+  if (Mock.App_Indicator_SetFault_IgnoreBool)
+  {
+    UNITY_CLR_DETAILS();
+    return;
+  }
+  if (!Mock.App_Indicator_SetFault_CallbackBool &&
+      Mock.App_Indicator_SetFault_CallbackFunctionPointer != NULL)
+  {
+    Mock.App_Indicator_SetFault_CallbackFunctionPointer(code, Mock.App_Indicator_SetFault_CallbackCalls++);
+    UNITY_CLR_DETAILS();
+    return;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringCalledMore);
+  cmock_line = cmock_call_instance->LineNumber;
+  if (cmock_call_instance->CallOrder > ++GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledEarly);
+  if (cmock_call_instance->CallOrder < GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLate);
+  if (!cmock_call_instance->ExpectAnyArgsBool)
+  {
+  if (!cmock_call_instance->IgnoreArg_code)
+  {
+    UNITY_SET_DETAILS(CMockString_App_Indicator_SetFault,CMockString_code);
+    UNITY_TEST_ASSERT_EQUAL_HEX8(cmock_call_instance->Expected_code, code, cmock_line, CMockStringMismatch);
+  }
+  }
+  if (Mock.App_Indicator_SetFault_CallbackFunctionPointer != NULL)
+  {
+    UNITY_SET_DETAIL(CMockString_App_Indicator_SetFault);
+    Mock.App_Indicator_SetFault_CallbackFunctionPointer(code, Mock.App_Indicator_SetFault_CallbackCalls++);
+  }
+  UNITY_CLR_DETAILS();
+}
+
+void CMockExpectParameters_App_Indicator_SetFault(CMOCK_App_Indicator_SetFault_CALL_INSTANCE* cmock_call_instance, uint8_t code);
+void CMockExpectParameters_App_Indicator_SetFault(CMOCK_App_Indicator_SetFault_CALL_INSTANCE* cmock_call_instance, uint8_t code)
+{
+  cmock_call_instance->Expected_code = code;
+  cmock_call_instance->IgnoreArg_code = 0;
+}
+
+void App_Indicator_SetFault_CMockIgnore(void)
+{
+  Mock.App_Indicator_SetFault_IgnoreBool = (char)1;
+}
+
+void App_Indicator_SetFault_CMockStopIgnore(void)
+{
+  Mock.App_Indicator_SetFault_IgnoreBool = (char)0;
+}
+
+void App_Indicator_SetFault_CMockExpectAnyArgs(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_App_Indicator_SetFault_CALL_INSTANCE));
+  CMOCK_App_Indicator_SetFault_CALL_INSTANCE* cmock_call_instance = (CMOCK_App_Indicator_SetFault_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.App_Indicator_SetFault_CallInstance = CMock_Guts_MemChain(Mock.App_Indicator_SetFault_CallInstance, cmock_guts_index);
+  Mock.App_Indicator_SetFault_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ExpectAnyArgsBool = (char)1;
+}
+
+void App_Indicator_SetFault_CMockExpect(UNITY_LINE_TYPE cmock_line, uint8_t code)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_App_Indicator_SetFault_CALL_INSTANCE));
+  CMOCK_App_Indicator_SetFault_CALL_INSTANCE* cmock_call_instance = (CMOCK_App_Indicator_SetFault_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.App_Indicator_SetFault_CallInstance = CMock_Guts_MemChain(Mock.App_Indicator_SetFault_CallInstance, cmock_guts_index);
+  Mock.App_Indicator_SetFault_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  CMockExpectParameters_App_Indicator_SetFault(cmock_call_instance, code);
+}
+
+void App_Indicator_SetFault_AddCallback(CMOCK_App_Indicator_SetFault_CALLBACK Callback)
+{
+  Mock.App_Indicator_SetFault_IgnoreBool = (char)0;
+  Mock.App_Indicator_SetFault_CallbackBool = (char)1;
+  Mock.App_Indicator_SetFault_CallbackCalls = 0;
+  Mock.App_Indicator_SetFault_CallbackFunctionPointer = Callback;
+}
+
+int App_Indicator_SetFault_CallCount(void)
+{
+  return Mock.App_Indicator_SetFault_CallbackCalls;
+}
+
+void App_Indicator_SetFault_Stub(CMOCK_App_Indicator_SetFault_CALLBACK Callback)
+{
+  Mock.App_Indicator_SetFault_IgnoreBool = (char)0;
+  Mock.App_Indicator_SetFault_CallbackBool = (char)0;
+  Mock.App_Indicator_SetFault_CallbackCalls = 0;
+  Mock.App_Indicator_SetFault_CallbackFunctionPointer = Callback;
+}
+
+void App_Indicator_SetFault_CMockIgnoreArg_code(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_App_Indicator_SetFault_CALL_INSTANCE* cmock_call_instance = (CMOCK_App_Indicator_SetFault_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.App_Indicator_SetFault_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_code = 1;
 }
 
 bool PLAT_Task_StartScheduler(void)

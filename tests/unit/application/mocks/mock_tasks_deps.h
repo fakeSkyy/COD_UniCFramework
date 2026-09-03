@@ -95,6 +95,42 @@ void App_Imu_StartTask_Stub(CMOCK_App_Imu_StartTask_CALLBACK Callback);
 int App_Imu_StartTask_CallCount(void);
 #define App_Imu_StartTask_IgnoreArg_priority() App_Imu_StartTask_CMockIgnoreArg_priority(__LINE__)
 void App_Imu_StartTask_CMockIgnoreArg_priority(UNITY_LINE_TYPE cmock_line);
+#define App_Chassis_StartTask_Ignore() TEST_FAIL_MESSAGE("App_Chassis_StartTask requires _IgnoreAndReturn");
+#define App_Chassis_StartTask_IgnoreAndReturn(cmock_retval) App_Chassis_StartTask_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void App_Chassis_StartTask_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return);
+#define App_Chassis_StartTask_StopIgnore() App_Chassis_StartTask_CMockStopIgnore()
+void App_Chassis_StartTask_CMockStopIgnore(void);
+#define App_Chassis_StartTask_ExpectAnyArgs() TEST_FAIL_MESSAGE("App_Chassis_StartTask requires _ExpectAnyArgsAndReturn");
+#define App_Chassis_StartTask_ExpectAnyArgsAndReturn(cmock_retval) App_Chassis_StartTask_CMockExpectAnyArgsAndReturn(__LINE__, cmock_retval)
+void App_Chassis_StartTask_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return);
+#define App_Chassis_StartTask_Expect(priority) TEST_FAIL_MESSAGE("App_Chassis_StartTask requires _ExpectAndReturn");
+#define App_Chassis_StartTask_ExpectAndReturn(priority, cmock_retval) App_Chassis_StartTask_CMockExpectAndReturn(__LINE__, priority, cmock_retval)
+void App_Chassis_StartTask_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, uint8_t priority, bool cmock_to_return);
+typedef bool (* CMOCK_App_Chassis_StartTask_CALLBACK)(uint8_t priority, int cmock_num_calls);
+void App_Chassis_StartTask_AddCallback(CMOCK_App_Chassis_StartTask_CALLBACK Callback);
+void App_Chassis_StartTask_Stub(CMOCK_App_Chassis_StartTask_CALLBACK Callback);
+#define App_Chassis_StartTask_StubWithCallback App_Chassis_StartTask_Stub
+int App_Chassis_StartTask_CallCount(void);
+#define App_Chassis_StartTask_IgnoreArg_priority() App_Chassis_StartTask_CMockIgnoreArg_priority(__LINE__)
+void App_Chassis_StartTask_CMockIgnoreArg_priority(UNITY_LINE_TYPE cmock_line);
+#define App_Indicator_SetFault_IgnoreAndReturn(cmock_retval) TEST_FAIL_MESSAGE("App_Indicator_SetFault requires _Ignore (not AndReturn)");
+#define App_Indicator_SetFault_Ignore() App_Indicator_SetFault_CMockIgnore()
+void App_Indicator_SetFault_CMockIgnore(void);
+#define App_Indicator_SetFault_StopIgnore() App_Indicator_SetFault_CMockStopIgnore()
+void App_Indicator_SetFault_CMockStopIgnore(void);
+#define App_Indicator_SetFault_ExpectAnyArgsAndReturn(cmock_retval) TEST_FAIL_MESSAGE("App_Indicator_SetFault requires _ExpectAnyArgs (not AndReturn)");
+#define App_Indicator_SetFault_ExpectAnyArgs() App_Indicator_SetFault_CMockExpectAnyArgs(__LINE__)
+void App_Indicator_SetFault_CMockExpectAnyArgs(UNITY_LINE_TYPE cmock_line);
+#define App_Indicator_SetFault_ExpectAndReturn(code, cmock_retval) TEST_FAIL_MESSAGE("App_Indicator_SetFault requires _Expect (not AndReturn)");
+#define App_Indicator_SetFault_Expect(code) App_Indicator_SetFault_CMockExpect(__LINE__, code)
+void App_Indicator_SetFault_CMockExpect(UNITY_LINE_TYPE cmock_line, uint8_t code);
+typedef void (* CMOCK_App_Indicator_SetFault_CALLBACK)(uint8_t code, int cmock_num_calls);
+void App_Indicator_SetFault_AddCallback(CMOCK_App_Indicator_SetFault_CALLBACK Callback);
+void App_Indicator_SetFault_Stub(CMOCK_App_Indicator_SetFault_CALLBACK Callback);
+#define App_Indicator_SetFault_StubWithCallback App_Indicator_SetFault_Stub
+int App_Indicator_SetFault_CallCount(void);
+#define App_Indicator_SetFault_IgnoreArg_code() App_Indicator_SetFault_CMockIgnoreArg_code(__LINE__)
+void App_Indicator_SetFault_CMockIgnoreArg_code(UNITY_LINE_TYPE cmock_line);
 #define PLAT_Task_StartScheduler_Ignore() TEST_FAIL_MESSAGE("PLAT_Task_StartScheduler requires _IgnoreAndReturn");
 #define PLAT_Task_StartScheduler_IgnoreAndReturn(cmock_retval) PLAT_Task_StartScheduler_CMockIgnoreAndReturn(__LINE__, cmock_retval)
 void PLAT_Task_StartScheduler_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return);

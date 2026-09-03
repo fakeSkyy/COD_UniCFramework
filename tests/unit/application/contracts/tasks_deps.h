@@ -17,6 +17,8 @@ void PLAT_Task_FaultInit(void);
 bool App_Indicator_StartTask(uint8_t priority);
 bool App_Health_StartTask(uint8_t priority);
 bool App_Imu_StartTask(uint8_t priority);
+bool App_Chassis_StartTask(uint8_t priority);
+void App_Indicator_SetFault(uint8_t code);
 bool PLAT_Task_StartScheduler(void);
 void UTIL_Log_Write(UTIL_Log_Level_e level, const char* tag, const char* fmt, ...);
 

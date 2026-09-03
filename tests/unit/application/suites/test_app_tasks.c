@@ -52,6 +52,7 @@ static void test_scheduler_failure_after_ordered_creation(void)
     App_Indicator_StartTask_ExpectAndReturn(0u, true);
     App_Health_StartTask_ExpectAndReturn(1u, true);
     App_Imu_StartTask_ExpectAndReturn(2u, true);
+    App_Chassis_StartTask_ExpectAndReturn(3u, true);
     UTIL_Log_Write_Expect(UTIL_LOG_INFO, "app", "starting scheduler");
     PLAT_Task_StartScheduler_ExpectAndReturn(false);
     UTIL_Log_Write_Expect(UTIL_LOG_ERROR, "app", "scheduler failed to start");
@@ -64,8 +65,35 @@ static void test_scheduler_true_defensive_return(void)
     App_Indicator_StartTask_ExpectAndReturn(0u, true);
     App_Health_StartTask_ExpectAndReturn(1u, true);
     App_Imu_StartTask_ExpectAndReturn(2u, true);
+    App_Chassis_StartTask_ExpectAndReturn(3u, true);
     UTIL_Log_Write_Expect(UTIL_LOG_INFO, "app", "starting scheduler");
     PLAT_Task_StartScheduler_ExpectAndReturn(true);
+    TEST_ASSERT_FALSE(App_StartTasks());
+}
+
+/**
+ * @brief A chassis that cannot come up must not stop the firmware.
+ *
+ * The three tasks above it are fatal on failure; this one is not, and that asymmetry
+ * is deliberate: the chassis is the only task whose bring-up depends on hardware
+ * outside this board — five FDCAN nodes and four ESCs that are simply unpowered on a
+ * bench. Making it fatal would mean no bench session without a full robot.
+ */
+static void test_chassis_failure_is_not_fatal(void)
+{
+    PLAT_Task_FaultInit_Expect();
+    App_Indicator_StartTask_ExpectAndReturn(0u, true);
+    App_Health_StartTask_ExpectAndReturn(1u, true);
+    App_Imu_StartTask_ExpectAndReturn(2u, true);
+    App_Chassis_StartTask_ExpectAndReturn(3u, false);
+    UTIL_Log_Write_Expect(UTIL_LOG_WARN, "app", "chassis unavailable; wheels will not be driven");
+    App_Indicator_SetFault_Expect(4u);
+    UTIL_Log_Write_Expect(UTIL_LOG_INFO, "app", "starting scheduler");
+    PLAT_Task_StartScheduler_ExpectAndReturn(false);
+    UTIL_Log_Write_Expect(UTIL_LOG_ERROR, "app", "scheduler failed to start");
+
+    /* False here is the scheduler's doing, not the chassis's — the sequence reached
+     * StartScheduler at all, which is the property under test. */
     TEST_ASSERT_FALSE(App_StartTasks());
 }
 
@@ -77,5 +105,6 @@ int main(int argc, char** argv)
     APP_CASE(imu_failure_short_circuits);
     APP_CASE(scheduler_failure_after_ordered_creation);
     APP_CASE(scheduler_true_defensive_return);
+    APP_CASE(chassis_failure_is_not_fatal);
     APP_CASES_END();
 }

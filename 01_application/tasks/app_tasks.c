@@ -9,6 +9,7 @@
 
 #include <stdbool.h>
 
+#include "app_chassis.h"
 #include "app_health.h"
 #include "app_imu.h"
 #include "app_indicator.h"
@@ -96,6 +97,23 @@
 #define PRIO_IMU 2u
 
 /**
+ * @brief The chassis loop, above the attitude loop.
+ *
+ * Above PRIO_IMU rather than below, which is the one placement here that is not
+ * obvious. Both run at 1 kHz, so if the chassis waited behind the attitude loop its
+ * period would jitter by however long a BMI088 read plus an AHRS update takes — and
+ * that jitter goes straight into the dt every motor controller is stepped with.
+ * The attitude loop tolerates being late far better: it measures its own dt from the
+ * DWT and integrates the interval it actually observed, so a delayed sample is
+ * accounted for rather than mis-scaled.
+ *
+ * The cost of this order is that a chassis overrun delays attitude. That is bounded:
+ * the chassis body packs four commands and queues one frame, with no bus wait, while
+ * the attitude loop does two SPI transactions.
+ */
+#define PRIO_CHASSIS 3u
+
+/**
  * @brief The device supervisor, between the indicator and the attitude loop.
  *
  * Above the indicator because a supervisor that cannot run reports every device as
@@ -135,6 +153,17 @@ bool App_StartTasks(void)
     {
         UTIL_LOG_E("app", "could not create imu task");
         return false;
+    }
+
+    /* Not fatal, unlike the three above. The chassis is the only task here whose
+     * bring-up depends on hardware outside this board — five FDCAN nodes, and
+     * feedback from four ESCs that may simply not be powered on a bench. Refusing to
+     * start the firmware because the wheels are unplugged would make every
+     * bench session require a full robot. */
+    if (!App_Chassis_StartTask(PRIO_CHASSIS))
+    {
+        UTIL_LOG_W("app", "chassis unavailable; wheels will not be driven");
+        App_Indicator_SetFault(INDICATOR_FAULT_CHASSIS);
     }
 
     /* Create further tasks here, before the scheduler starts.
