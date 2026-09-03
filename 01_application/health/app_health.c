@@ -10,6 +10,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "app_imu.h"
 #include "app_indicator.h"
 #include "board.h"
 #include "dev_watchdog.h"
@@ -101,6 +102,15 @@ void App_Health_Report(void)
     UTIL_LOG_I("health", "%u device(s) supervised:", (unsigned) DEV_Watchdog_Count());
 
     DEV_Watchdog_ForEach(report_one, NULL);
+
+    /* Timing and calibration alongside liveness, because "every device is answering"
+     * is not the same claim as "the loops are meeting their deadlines" and a report
+     * that only covers the first invites the second to be assumed. Both numbers were
+     * previously reachable only through a debugger -- the overrun count was a static
+     * local no accessor could name, and an uncalibrated gyro announced itself once to
+     * an RTT viewer at bring-up and never again. */
+    UTIL_LOG_I("health", "  imu overruns %u, gyro %s", (unsigned) App_Imu_Overruns(),
+               App_Imu_Calibrated() ? "calibrated" : "UNCALIBRATED (yaw drifts)");
 }
 
 /* ========================================================================= */

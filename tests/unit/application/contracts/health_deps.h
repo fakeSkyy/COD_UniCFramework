@@ -8,6 +8,7 @@
 #ifndef HEALTH_DEPS_H
 #define HEALTH_DEPS_H
 
+#include "app_imu.h"
 #include "app_indicator.h"
 #include "board.h"
 #include "dev_watchdog.h"
@@ -26,6 +27,8 @@ void            DEV_Watchdog_ForEach(void (*fn)(const DEV_Watchdog_s* wd, void* 
 uint32_t        DEV_Watchdog_Step(uint32_t now_ms);
 const char*     DEV_Watchdog_FailedDevice(void);
 void            App_Indicator_Set(App_Indicator_Condition_e cond, bool on);
+uint32_t        App_Imu_Overruns(void);
+bool            App_Imu_Calibrated(void);
 void            UTIL_Log_Write(UTIL_Log_Level_e level, const char* tag, const char* fmt, ...);
 
 #endif /* HEALTH_DEPS_H */

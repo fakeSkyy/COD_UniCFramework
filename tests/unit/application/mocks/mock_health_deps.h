@@ -231,6 +231,32 @@ int App_Indicator_Set_CallCount(void);
 void App_Indicator_Set_CMockIgnoreArg_cond(UNITY_LINE_TYPE cmock_line);
 #define App_Indicator_Set_IgnoreArg_on() App_Indicator_Set_CMockIgnoreArg_on(__LINE__)
 void App_Indicator_Set_CMockIgnoreArg_on(UNITY_LINE_TYPE cmock_line);
+#define App_Imu_Overruns_Ignore() TEST_FAIL_MESSAGE("App_Imu_Overruns requires _IgnoreAndReturn");
+#define App_Imu_Overruns_IgnoreAndReturn(cmock_retval) App_Imu_Overruns_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void App_Imu_Overruns_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, uint32_t cmock_to_return);
+#define App_Imu_Overruns_StopIgnore() App_Imu_Overruns_CMockStopIgnore()
+void App_Imu_Overruns_CMockStopIgnore(void);
+#define App_Imu_Overruns_Expect() TEST_FAIL_MESSAGE("App_Imu_Overruns requires _ExpectAndReturn");
+#define App_Imu_Overruns_ExpectAndReturn(cmock_retval) App_Imu_Overruns_CMockExpectAndReturn(__LINE__, cmock_retval)
+void App_Imu_Overruns_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, uint32_t cmock_to_return);
+typedef uint32_t (* CMOCK_App_Imu_Overruns_CALLBACK)(int cmock_num_calls);
+void App_Imu_Overruns_AddCallback(CMOCK_App_Imu_Overruns_CALLBACK Callback);
+void App_Imu_Overruns_Stub(CMOCK_App_Imu_Overruns_CALLBACK Callback);
+#define App_Imu_Overruns_StubWithCallback App_Imu_Overruns_Stub
+int App_Imu_Overruns_CallCount(void);
+#define App_Imu_Calibrated_Ignore() TEST_FAIL_MESSAGE("App_Imu_Calibrated requires _IgnoreAndReturn");
+#define App_Imu_Calibrated_IgnoreAndReturn(cmock_retval) App_Imu_Calibrated_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void App_Imu_Calibrated_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return);
+#define App_Imu_Calibrated_StopIgnore() App_Imu_Calibrated_CMockStopIgnore()
+void App_Imu_Calibrated_CMockStopIgnore(void);
+#define App_Imu_Calibrated_Expect() TEST_FAIL_MESSAGE("App_Imu_Calibrated requires _ExpectAndReturn");
+#define App_Imu_Calibrated_ExpectAndReturn(cmock_retval) App_Imu_Calibrated_CMockExpectAndReturn(__LINE__, cmock_retval)
+void App_Imu_Calibrated_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return);
+typedef bool (* CMOCK_App_Imu_Calibrated_CALLBACK)(int cmock_num_calls);
+void App_Imu_Calibrated_AddCallback(CMOCK_App_Imu_Calibrated_CALLBACK Callback);
+void App_Imu_Calibrated_Stub(CMOCK_App_Imu_Calibrated_CALLBACK Callback);
+#define App_Imu_Calibrated_StubWithCallback App_Imu_Calibrated_Stub
+int App_Imu_Calibrated_CallCount(void);
 #define UTIL_Log_Write_IgnoreAndReturn(cmock_retval) TEST_FAIL_MESSAGE("UTIL_Log_Write requires _Ignore (not AndReturn)");
 #define UTIL_Log_Write_Ignore() UTIL_Log_Write_CMockIgnore()
 void UTIL_Log_Write_CMockIgnore(void);

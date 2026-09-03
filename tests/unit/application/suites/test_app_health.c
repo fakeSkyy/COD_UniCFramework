@@ -154,6 +154,11 @@ static void run_task(unsigned loops)
     DEV_Watchdog_Step_StubWithCallback(watchdog_step);
     DEV_Watchdog_FailedDevice_StubWithCallback(first_failed);
     App_Indicator_Set_StubWithCallback(indicator_set);
+    /* Ignored rather than expected: the report line they feed is diagnostic, so the
+     * count of calls is not part of what these cases assert. A dedicated case below
+     * pins the values that actually reach the log. */
+    App_Imu_Overruns_IgnoreAndReturn(0u);
+    App_Imu_Calibrated_IgnoreAndReturn(true);
     PLAT_Task_DelayUntil_StubWithCallback(delay_until);
     UTIL_Log_Write_StubWithCallback(capture_log);
     if (setjmp(task_exit) == 0)
@@ -204,8 +209,35 @@ static void test_report_counts_and_logs_each_node(void)
     DEV_Watchdog_Count_ExpectAndReturn(2u);
     DEV_Watchdog_ForEach_StubWithCallback(two_nodes);
     UTIL_Log_Write_StubWithCallback(capture_log);
+    /* Ignored, not expected: with :enforce_strict_ordering these would have to be
+     * placed relative to every watchdog call, and this case asserts a log count, not
+     * a call sequence. */
+    App_Imu_Overruns_IgnoreAndReturn(0u);
+    App_Imu_Calibrated_IgnoreAndReturn(true);
     App_Health_Report();
-    TEST_ASSERT_EQUAL_UINT(3u, report_logs);
+    /* Four, not three: a header, one line per supervised node, and the timing line.
+     * The count is asserted rather than the text because capture_log already checks
+     * every format string it does not recognise. */
+    TEST_ASSERT_EQUAL_UINT(4u, report_logs);
+}
+
+/**
+ * @brief The report states the overrun count and the calibration verdict.
+ *
+ * Both numbers were previously reachable only from a debugger, which is the reason
+ * this line exists — so the test pins that the report actually asks for them, and
+ * that an uncalibrated gyro is what the operator is told about rather than the
+ * healthy case being printed regardless.
+ */
+static void test_report_states_timing_and_calibration(void)
+{
+    DEV_Watchdog_Count_ExpectAndReturn(0u);
+    DEV_Watchdog_ForEach_StubWithCallback(empty_foreach);
+    UTIL_Log_Write_StubWithCallback(capture_log);
+    App_Imu_Overruns_IgnoreAndReturn(42u);
+    App_Imu_Calibrated_IgnoreAndReturn(false);
+    App_Health_Report();
+    TEST_ASSERT_EQUAL_UINT(2u, report_logs);
 }
 
 static void test_healthy_level_and_twenty_ms_period(void)
@@ -263,6 +295,7 @@ int main(int argc, char** argv)
     APP_CASE(start_task_forwards_parameters_and_result);
     APP_CASE(start_task_propagates_failure);
     APP_CASE(report_counts_and_logs_each_node);
+    APP_CASE(report_states_timing_and_calibration);
     APP_CASE(healthy_level_and_twenty_ms_period);
     APP_CASE(failure_persistence_logs_only_first_edge);
     APP_CASE(recovery_logs_edge_and_clears_level);
