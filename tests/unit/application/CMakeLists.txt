@@ -82,6 +82,7 @@ add_application_test(test_app_health
     start_task_forwards_parameters_and_result
     start_task_propagates_failure
     report_counts_and_logs_each_node
+    report_states_timing_and_calibration
     healthy_level_and_twenty_ms_period
     failure_persistence_logs_only_first_edge
     recovery_logs_edge_and_clears_level
@@ -119,6 +120,9 @@ add_application_test(test_app_imu
     heater_duty_rises_below_setpoint_and_is_floored_above_it
     heater_output_never_exceeds_configured_cap
     heater_out_of_range_temp_commands_zero_duty
+    yaw_total_unwraps_forward_across_pi
+    yaw_total_unwraps_backward_across_pi
+    yaw_total_ignores_ordinary_motion
     heater_over_temperature_cuts_output
     heater_below_cutoff_still_regulates
     imu_outage_stops_heater
@@ -132,8 +136,8 @@ target_sources(test_app_imu PRIVATE
     ${UTILS}/util_lpf/util_lpf.c
     ${UTILS}/util_fast_math/util_fast_math.c)
 
-add_application_test(test_board_devices
-    ${APPLICATION}/board/board_devices.c
+add_application_test(test_board_stm32h7
+    ${APPLICATION}/board/board_stm32h7.c
     mock_board_deps.c
     accessors_are_null_before_first_init
     eight_devices_initialize_in_strict_table_order
@@ -147,5 +151,6 @@ add_application_test(test_board_devices
     reinit_destroys_each_previous_context_exactly_once
     midway_failure_leaves_contexts_that_the_next_call_still_releases
     third_consecutive_init_frees_nothing_twice)
-target_sources(test_board_devices PRIVATE host/host_vendor.c)
-target_include_directories(test_board_devices BEFORE PRIVATE ${APPLICATION_TEST}/host)
+target_sources(test_board_stm32h7 PRIVATE host/host_vendor.c)
+target_include_directories(test_board_stm32h7 BEFORE PRIVATE ${APPLICATION_TEST}/host)
+

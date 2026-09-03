@@ -97,39 +97,11 @@
  */
 #define IMU_FAIL_STREAK 100u
 
-/**
- * @brief Fault code this module blinks on the status LED for a read outage.
- *
- * 1 because the sensor going away is the first failure worth distinguishing by eye.
- * Codes are a shared, scarce namespace — App_Indicator_SetFault can only blink up to
- * INDICATOR_FAULT_CODE_MAX of them — so a second module must pick a different one, and
- * the two facts live far apart. Grep for App_Indicator_SetFault before choosing.
- */
-#define IMU_FAULT_CODE 1u
-
-/**
- * @brief Fault code this module blinks on the status LED for a failed bring-up.
- *
- * 2, the next unused code — grepped for App_Indicator_SetFault call sites before
- * picking it: app_imu.c itself uses 1 for a read outage (IMU_FAULT_CODE), and
- * nothing else in the tree calls SetFault with a literal. Kept separate from
- * IMU_FAULT_CODE deliberately: bring-up failing and a live sensor going quiet
- * are different faults with different implications (one never worked, the other
- * did and stopped), and collapsing them into one code would make the flash
- * count stop telling the two apart.
- */
-#define IMU_INIT_FAULT_CODE 2u
-
-/**
- * @brief Fault code this module blinks when the gyro is running uncalibrated.
- *
- * 3, the next unused code — 1 is a read outage, 2 a failed bring-up, both above.
- * Distinct from those two because the failure is partial in a way neither is: the
- * attitude loop runs, the sensor answers, roll and pitch are correct, and only yaw
- * is degraded. Sharing a code with either would make the flash count stop
- * distinguishing "no IMU at all" from "an IMU whose heading you should not trust".
- */
-#define IMU_UNCALIBRATED_FAULT_CODE 3u
+/* Fault codes are not defined here. They live in App_Indicator_FaultCode_e in
+ * app_indicator.h, because a code is a claim on a nine-value namespace shared with
+ * every other module that can fault -- and when these were three private macros, the
+ * only thing stopping a collision was a note telling the next author to grep. See the
+ * comment on that enum. */
 
 /**
  * @brief Loop period as the scheduler sees it, milliseconds.
@@ -380,6 +352,36 @@ static float heater_duty;
 static bool heater_regulating;
 
 /**
+ * @brief Whole turns the yaw estimate has made, signed.
+ *
+ * Counted so App_Imu_YawTotal can report a heading that does not jump. Signed and
+ * 32-bit: a gimbal spun continuously one way at 360 deg/s would need over 68 years to
+ * overflow this, so it is not a wrap worth handling.
+ */
+static int32_t yaw_turns;
+
+/** @brief Previous wrapped yaw, radians; the unwrap compares against it. */
+static float yaw_prev;
+
+/** @brief False until the first sample seeds yaw_prev, so no turn is counted. */
+static bool yaw_seeded;
+
+/**
+ * @brief Cycles where the loop was already late when it asked to sleep.
+ *
+ * Counted rather than logged: at 1 kHz an RTT write per miss would itself cause the
+ * next miss, so the count is accumulated here and read by something slower --
+ * App_Imu_Overruns, which app_health reports at 20 ms.
+ *
+ * File scope rather than a static local inside body(), which is where it started.
+ * A function-local static is private to a translation unit's function and cannot be
+ * named by an accessor, so the only way to read it was a debugger -- and the one
+ * number that says whether the attitude loop is keeping its deadline should not
+ * require a probe to be physically attached.
+ */
+static uint32_t overruns;
+
+/**
  * @brief Consecutive heater steps spent at the duty cap while still below setpoint.
  *
  * Distinguishes "warming up" from "cannot get there". Both look identical in a
@@ -568,7 +570,7 @@ static bool imu_init(void)
          * to read gyro_bias for an unrelated measurement, and all three axes read
          * 0.00000000. A degraded state with no visible signal is one nobody looks for. */
         UTIL_LOG_W("imu", "gyro calibration rejected (moving or bus error); yaw will drift");
-        App_Indicator_SetFault(IMU_UNCALIBRATED_FAULT_CODE);
+        App_Indicator_SetFault(INDICATOR_FAULT_IMU_UNCALIBRATED);
     }
 
     /* One read before aligning, so the alignment sees a real sample rather than the
@@ -590,7 +592,16 @@ static bool imu_init(void)
     dt_cursor       = PLAT_DWT_GetTick(Board_Timebase());
     fail_streak     = 0u;
     outage_reported = false;
-    ready           = true;
+
+    /* Cleared here rather than relying on static zero-initialisation, so a second
+     * bring-up does not inherit the turn count from the first: the vehicle may well
+     * have been carried somewhere between the two, and a total that spans that gap
+     * describes no rotation that happened. */
+    yaw_turns  = 0;
+    yaw_prev   = 0.0f;
+    yaw_seeded = false;
+
+    ready = true;
 
     /* Telemetry last, and its failure is not this function's failure: a missing
      * debug port means no plot, which is worth a line in the log but no reason to
@@ -794,6 +805,58 @@ static void heater_step(bool temp_valid)
 /**
  * @brief One sample: read the sensor, advance the estimate.
  */
+/**
+ * @brief Track whole turns so a continuous heading can be reported.
+ *
+ * The estimator's yaw is an atan2 result, so it wraps from +pi to -pi and back. A
+ * consumer that servos on it — a gimbal holding a heading across the boundary — sees
+ * a full-scale step at the wrap and slews the wrong way around. Counting turns here
+ * means App_Imu_Yaw keeps its wrapped contract for anything that wants an angle,
+ * while App_Imu_YawTotal gives a value that only moves as far as the vehicle did.
+ *
+ * @par Why the threshold is pi rather than something smaller
+ * A step larger than pi between consecutive samples is taken to be a wrap. That is a
+ * decision about which of two explanations is likelier, and at 1 kHz it is not close:
+ * a genuine pi-radian rotation in one millisecond is 180000 deg/s, five hundred times
+ * past the gyro's own 2000 dps range, so it cannot be measured even in principle. The
+ * assumption this rests on is the sample rate, not the motion — at 50 Hz the same
+ * threshold would sit at 9000 deg/s and remain safe, but a loop slow enough to see
+ * more than half a turn per sample cannot unwrap at all, by any threshold, because
+ * the direction of travel is genuinely ambiguous.
+ *
+ * @param yaw  Wrapped yaw from the estimator, radians in [-pi, pi].
+ */
+static void yaw_unwrap_step(float yaw)
+{
+    if (!UTIL_IsFinitef(yaw))
+    {
+        return; /* Hold the count; a bad sample must not invent a turn. */
+    }
+
+    if (!yaw_seeded)
+    {
+        /* Seeded rather than assumed zero: the estimator has already taken its
+         * gravity fix by now, so the first yaw is wherever the vehicle is pointing.
+         * Treating that as a step from zero would count a turn that never happened. */
+        yaw_prev   = yaw;
+        yaw_seeded = true;
+        return;
+    }
+
+    const float delta = yaw - yaw_prev;
+
+    if (delta < -UTIL_PI)
+    {
+        yaw_turns++; /* Crossed +pi going up, reappeared near -pi. */
+    }
+    else if (delta > UTIL_PI)
+    {
+        yaw_turns--;
+    }
+
+    yaw_prev = yaw;
+}
+
 static void imu_step(void)
 {
     if (!ready)
@@ -821,7 +884,7 @@ static void imu_step(void)
             /* Raised as well as logged: an attitude nothing is updating is the kind of
              * failure someone needs to see without a debugger attached, and the log
              * only exists while something is reading RTT. Fault code 1 is the sensor. */
-            App_Indicator_SetFault(IMU_FAULT_CODE);
+            App_Indicator_SetFault(INDICATOR_FAULT_IMU_OUTAGE);
         }
 
         /* Still stepped on a failed read: this is what lets the "offline" check
@@ -841,7 +904,7 @@ static void imu_step(void)
 
         /* Cleared on recovery, so the LED tracks the current state rather than
          * latching the worst thing that ever happened. */
-        App_Indicator_SetFault(0u);
+        App_Indicator_SetFault(INDICATOR_FAULT_NONE);
     }
 
     fail_streak     = 0u;
@@ -852,6 +915,8 @@ static void imu_step(void)
      * driver's start-up bias is a different quantity — it is baked into what
      * DEV_BMI088_Gyro returns, and the filter estimates what remains. */
     UTIL_AHRS_Update(&ahrs, DEV_BMI088_GetGyro(&imu), DEV_BMI088_GetAccel(&imu), dt);
+
+    yaw_unwrap_step(UTIL_AHRS_GetYaw(&ahrs));
 
     heater_step(true);
 
@@ -889,10 +954,6 @@ static void body(void* arg)
      * the task's own first entry reads the tick the scheduler is actually at. */
     uint32_t cursor = PLAT_Task_TickNow();
 
-    /* Counted, not logged. At 1 kHz an RTT write per miss would itself cause the next
-     * miss. Read it from a debugger, or surface it from a slower task. */
-    static uint32_t overruns;
-
     for (;;)
     {
         imu_step();
@@ -923,7 +984,7 @@ bool App_Imu_StartTask(uint8_t priority)
     if (!imu_init())
     {
         UTIL_LOG_E("imu", "init failed; attitude loop not running");
-        App_Indicator_SetFault(IMU_INIT_FAULT_CODE);
+        App_Indicator_SetFault(INDICATOR_FAULT_IMU_INIT);
         return true;
     }
 
@@ -964,3 +1025,10 @@ bool App_Imu_HeaterRegulating(void) { return heater_regulating; }
 float App_Imu_HeaterDutyCap(void) { return IMU_HEATER_DUTY_CAP_PERCENT; }
 
 bool App_Imu_Calibrated(void) { return ready && DEV_BMI088_IsCalibrated(&imu); }
+
+uint32_t App_Imu_Overruns(void) { return overruns; }
+
+float App_Imu_YawTotal(void)
+{
+    return ready ? (UTIL_AHRS_GetYaw(&ahrs) + (float) yaw_turns * UTIL_TWO_PI) : 0.0f;
+}

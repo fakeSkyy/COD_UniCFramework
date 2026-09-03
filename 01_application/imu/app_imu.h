@@ -161,6 +161,46 @@ float App_Imu_HeaterDuty(void);
 bool App_Imu_HeaterRegulating(void);
 
 /**
+ * @brief Yaw as a continuous heading, radians, unwrapped across the +/-pi boundary.
+ *
+ * Same estimate as App_Imu_Yaw plus a whole-turn count, so it passes through half a
+ * turn without the full-scale step an atan2 result takes there. For a consumer that
+ * servos on heading — a gimbal holding a bearing — that step is the difference between
+ * holding position and slewing a full turn the wrong way.
+ *
+ * Two things this does not change. It drifts exactly as App_Imu_Yaw does, for the same
+ * reason and at the same rate; unwrapping removes a discontinuity, not an error. And
+ * it is relative to wherever the vehicle was pointing when the estimator converged,
+ * not to any external reference.
+ *
+ * Grows without bound by design — that is what makes it continuous. A consumer wanting
+ * an angle should use App_Imu_Yaw.
+ *
+ * @return Unwrapped yaw in radians, or 0 when not online.
+ */
+float App_Imu_YawTotal(void);
+
+/**
+ * @brief Cycles where the attitude loop missed its 1 kHz deadline.
+ *
+ * Monotonic since start-up. Each count is one iteration that was already past its
+ * wake-up time when it asked to sleep, so the loop ran late rather than skipping a
+ * sample — the gyro is still integrated once per iteration, but the dt it assumes no
+ * longer matches the time that actually passed, which shows up as attitude error.
+ *
+ * The one number that says whether the loop is keeping its deadline. A rising count
+ * under load means something above this task's priority is holding the CPU too long;
+ * a few counts right after bring-up are normal, since the first iterations run while
+ * other tasks are still initialising.
+ *
+ * Read it from a slower context — app_health logs it — rather than from the loop
+ * itself: an RTT write per miss at 1 kHz would cause the next miss.
+ *
+ * @return Total overruns since App_Imu_StartTask, or 0 when the task never started.
+ */
+uint32_t App_Imu_Overruns(void);
+
+/**
  * @brief Whether the gyro is running on an adopted calibration.
  *
  * False means bring-up rejected the measurement — the sensor was moving, or the bus

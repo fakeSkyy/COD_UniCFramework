@@ -159,6 +159,38 @@ static float capture_delta(DWT_Instance_s* dwt, uint32_t* cursor, int calls)
     return 0.00125f;
 }
 
+/**
+ * @brief Yaw values fed to the estimator stub, one per update call.
+ *
+ * Scripted rather than computed so a case can put an exact sequence across the wrap
+ * boundary — the unwrap's correctness is entirely about what it does at that step, and
+ * a value derived from a simulated rotation would only approach it.
+ */
+static const float* yaw_script;
+static unsigned     yaw_script_len;
+static unsigned     yaw_script_pos;
+
+static bool scripted_yaw_update(UTIL_AHRS_s* ahrs, const float* gyro, const float* accel, float dt,
+                                int calls)
+{
+    (void) gyro;
+    (void) accel;
+    (void) dt;
+    (void) calls;
+
+    /* Roll and pitch match capture_update's fixed values so the shared telemetry
+     * capture's assertions on them still hold; only yaw is scripted here. */
+    ahrs->euler[0] = 0.4f;
+    ahrs->euler[1] = 0.5f;
+
+    if (yaw_script_pos < yaw_script_len)
+    {
+        ahrs->euler[2] = yaw_script[yaw_script_pos++];
+    }
+
+    return true;
+}
+
 static bool capture_update(UTIL_AHRS_s* ahrs, const float* gyro, const float* accel, float dt,
                            int calls)
 {
@@ -180,7 +212,14 @@ static void capture_telemetry(float roll, float pitch, float yaw, const float* r
     (void) calls;
     TEST_ASSERT_FLOAT_WITHIN(0.0001f, 0.4f, roll);
     TEST_ASSERT_FLOAT_WITHIN(0.0001f, 0.5f, pitch);
-    TEST_ASSERT_FLOAT_WITHIN(0.0001f, 0.6f, yaw);
+
+    /* Yaw is only pinned when the estimator stub is the fixed-value one. A case that
+     * scripts a yaw sequence is asserting something about the unwrap, and forcing 0.6
+     * here would make that case unable to drive the boundary it exists to test. */
+    if (yaw_script == NULL)
+    {
+        TEST_ASSERT_FLOAT_WITHIN(0.0001f, 0.6f, yaw);
+    }
     TEST_ASSERT_EQUAL_PTR(imu_seen->gyro, rate);
     TEST_ASSERT_FLOAT_WITHIN(0.0001f, heater_temp_c, temp);
     telemetry_calls++;
@@ -321,6 +360,9 @@ void setUp(void)
     memset(&timebase, 0, sizeof(timebase));
     memset(&heater_pwm_fixture, 0, sizeof(heater_pwm_fixture));
     memset(quat, 0, sizeof(quat));
+    yaw_script             = NULL;
+    yaw_script_len         = 0u;
+    yaw_script_pos         = 0u;
     captured_entry         = NULL;
     captured_arg           = NULL;
     create_result          = true;
@@ -385,7 +427,7 @@ static void test_accessors_before_ready_are_safe(void)
 /**
  * @brief Every DEV_BMI088_Init failure status must leave App_Imu_StartTask
  * returning true, never reaching PLAT_Task_Create, and raising fault code 2
- * (IMU_INIT_FAULT_CODE) exactly once per attempt.
+ * (INDICATOR_FAULT_IMU_INIT) exactly once per attempt.
  *
  * PLAT_Task_Create is not stubbed at all here — CMock fails the test if
  * production code calls a mock function with no expectation set up for it, so an
@@ -630,6 +672,77 @@ static void test_heater_out_of_range_temp_commands_zero_duty(void)
  * are different interlocks, and a temperature can be entirely believable and still be
  * one the heater must not be running at.
  */
+/**
+ * @brief Crossing +pi upward adds a turn, so the total stays continuous.
+ *
+ * The script steps from just under +pi to just over -pi, which is what a gimbal
+ * rotating steadily through half a turn actually produces. App_Imu_Yaw must keep
+ * reporting the wrapped value; App_Imu_YawTotal must not jump.
+ */
+static void test_yaw_total_unwraps_forward_across_pi(void)
+{
+    static const float script[] = {3.1f, -3.1f};
+
+    yaw_script     = script;
+    yaw_script_len = 2u;
+    install_common_stubs();
+    UTIL_AHRS_Update_StubWithCallback(scripted_yaw_update);
+    capture_task();
+
+    TEST_ASSERT_EQUAL_INT(1, run_body(1u));
+    /* First sample seeds the unwrap, so no turn is counted for it. */
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, 3.1f, App_Imu_YawTotal());
+
+    TEST_ASSERT_EQUAL_INT(1, run_body(1u));
+    /* Wrapped output is unchanged -- that contract still holds. */
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, -3.1f, App_Imu_Yaw());
+    /* Total advanced by the 0.0832 rad actually travelled, not back by 6.2. */
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, -3.1f + 6.28318531f, App_Imu_YawTotal());
+}
+
+/**
+ * @brief Crossing -pi downward subtracts a turn.
+ *
+ * The mirror of the case above, and the one whose sign is easy to get backwards: here
+ * the delta is positive and large, which means the vehicle turned the other way.
+ */
+static void test_yaw_total_unwraps_backward_across_pi(void)
+{
+    static const float script[] = {-3.1f, 3.1f};
+
+    yaw_script     = script;
+    yaw_script_len = 2u;
+    install_common_stubs();
+    UTIL_AHRS_Update_StubWithCallback(scripted_yaw_update);
+    capture_task();
+
+    TEST_ASSERT_EQUAL_INT(1, run_body(1u));
+    TEST_ASSERT_EQUAL_INT(1, run_body(1u));
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, 3.1f - 6.28318531f, App_Imu_YawTotal());
+}
+
+/**
+ * @brief An ordinary step below the threshold counts no turn.
+ *
+ * Guards the other direction: a threshold low enough to catch real rotation would make
+ * the total drift by whole turns during normal movement.
+ */
+static void test_yaw_total_ignores_ordinary_motion(void)
+{
+    static const float script[] = {0.0f, 1.5f, 3.0f};
+
+    yaw_script     = script;
+    yaw_script_len = 3u;
+    install_common_stubs();
+    UTIL_AHRS_Update_StubWithCallback(scripted_yaw_update);
+    capture_task();
+
+    TEST_ASSERT_EQUAL_INT(1, run_body(1u));
+    TEST_ASSERT_EQUAL_INT(1, run_body(1u));
+    TEST_ASSERT_EQUAL_INT(1, run_body(1u));
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, 3.0f, App_Imu_YawTotal());
+}
+
 static void test_heater_over_temperature_cuts_output(void)
 {
     heater_pwm_present = true;
@@ -729,6 +842,9 @@ int main(int argc, char** argv)
     APP_CASE(heater_duty_rises_below_setpoint_and_is_floored_above_it);
     APP_CASE(heater_output_never_exceeds_configured_cap);
     APP_CASE(heater_out_of_range_temp_commands_zero_duty);
+    APP_CASE(yaw_total_unwraps_forward_across_pi);
+    APP_CASE(yaw_total_unwraps_backward_across_pi);
+    APP_CASE(yaw_total_ignores_ordinary_motion);
     APP_CASE(heater_over_temperature_cuts_output);
     APP_CASE(heater_below_cutoff_still_regulates);
     APP_CASE(imu_outage_stops_heater);
