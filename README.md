@@ -11,8 +11,15 @@ COD_UniCFramework
 ├── 03_platform      # 厂商无关的外设/RTOS 接口
 ├── 04_impl          # STM32 与 FreeRTOS 后端实现
 ├── 05_vender        # 第三方源码，只读
-└── 06_utils         # 与硬件无关的算法和服务
+├── 06_utils         # 与硬件无关的算法和服务
+└── docs             # 工程知识库
 ```
+
+文档都在 `docs/`，[`docs/README.md`](docs/README.md) 是索引。三处最常用：
+
+- [`docs/rules/structure.md`](docs/rules/structure.md) —— 权威的设计与命名规范，**改任何一层之前先读**
+- [`docs/ai-memory/`](docs/ai-memory/) —— 多个 AI agent 协同维护的项目记忆：硬件实测数字、被否决的替代方案、排查时走错的方向
+- [`docs/HIGHLIGHTS.md`](docs/HIGHLIGHTS.md) —— 框架亮点，每条都附一条可验证的命令
 
 ### 使用规范
 

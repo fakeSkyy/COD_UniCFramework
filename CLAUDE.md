@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A FreeRTOS firmware framework for robotics, targeting an **STM32H723VGTx** (Cortex-M7 r1p2 at 550 MHz) with a CubeMX-generated HAL. It was ported from an STM32F407IGHx; that backend is still present at `04_impl/bsp/stm32f4/` but is not built. The layered refactor is **complete**: `01_application` … `06_utils` is the only layout, and every source in the build lives there. The pre-refactor code has been moved to `ref/` (see [Reference code](#reference-code)).
+A FreeRTOS firmware framework for robotics, targeting an **STM32H723VGTx** (Cortex-M7 r1p2 at 550 MHz) with a CubeMX-generated HAL. It was ported from an STM32F407IGHx; that backend is still present at `04_impl/bsp/stm32f4/` but is not built. The layered refactor is **complete**: `01_application` … `06_utils` is the only layout, and every source in the build lives there. The pre-refactor tree is gone — see [Reference code](#reference-code).
 
-The design and naming rules are authoritative in `.claude/rules/structure.md` — read it before touching any layer.
+The design and naming rules are authoritative in `docs/rules/structure.md` — read it before touching any layer.
 
-The core goal (`.claude/docs/product.md`): swapping the target chip should require changing only the vendor/impl layers; everything above stays untouched.
+The core goal (`docs/product.md`): swapping the target chip should require changing only the vendor/impl layers; everything above stays untouched.
 
 ## Build
 
@@ -20,7 +20,7 @@ The toolchain is `arm-none-eabi-gcc` (15.2 on this machine, at `/home/stg/tools/
 ./build.sh flash           # build, gate, then flash via CMSIS-DAP
 ```
 
-`build.sh` is the intended entry point for one reason: it fails on any `-Wall` warning, which CMake does not. `ALLOW_WARNINGS=1` reports without failing, for triaging a vendor regeneration only. `BUILD_TYPE` selects the configuration. Parallelism is the `JOBS_DEFAULT` setting at the top of the script (one job per core out of the box) — edit it to change the default, or `JOBS=<n>` for a single run. Sizes come from the link step's own per-region table, which the build already prints — the script deliberately does not restate them, because figures derived from `size(1)` disagree with the linker's by a few bytes and two numbers for one quantity is worse than one.
+`build.sh` is the intended entry point for one reason: it fails on any `-Wall` warning, which CMake does not. `ALLOW_WARNINGS=1` reports without failing, for triaging a vendor regeneration only. `BUILD_TYPE` selects the configuration; the default is **RelWithDebInfo** (`-O2 -g`), changed from `Debug` on 2026/9/3 because `-O0` is not neutral for a vtable-forwarding platform layer — each forwarder was a 14-instruction function with a stack frame instead of the 7-instruction tail call `-O2` emits, costing 63 KB of text. `Release` (`-Os -g0`) is smaller still but strips the symbols this repository's debugging method depends on. The host test tree stays on `Debug` deliberately, and is configured separately. Parallelism is the `JOBS_DEFAULT` setting at the top of the script (one job per core out of the box) — edit it to change the default, or `JOBS=<n>` for a single run. Sizes come from the link step's own per-region table, which the build already prints — the script deliberately does not restate them, because figures derived from `size(1)` disagree with the linker's by a few bytes and two numbers for one quantity is worse than one.
 
 Note what the warning gate can and cannot see: warnings only appear in a build's output for files it actually recompiled, so an incremental run over an unchanged tree proves nothing about warnings. The script says `UP TO DATE` rather than `0 warnings` in that case — take a zero-warning claim only from a run that reports files compiled.
 
@@ -29,7 +29,7 @@ The underlying commands, for when a script is in the way:
 ```bash
 cmake -S . -B build -G "Unix Makefiles" \
   -DCMAKE_TOOLCHAIN_FILE=05_vender/stm32cubemx/cmake/gcc-arm-none-eabi.cmake \
-  -DCMAKE_BUILD_TYPE=Debug
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo
 cmake --build build -j16
 cmake --build build --target rtt          # openocd + RTT on tcp/9090
 ```
@@ -52,12 +52,12 @@ cmake --build build -j16 2>&1 | grep -c 'warning:'    # must be 0
 ```bash
 cmake -S tests -B build-tests -DCMAKE_BUILD_TYPE=Debug
 cmake --build build-tests -j16
-ctest --test-dir build-tests --output-on-failure     # 218/218 as of 2026/8/24
+ctest --test-dir build-tests --output-on-failure     # 238/238 as of 2026/9/3
 ```
 
-`tests/README.md` is authoritative for the details; `tests/TEST_REPORT.md` records the current baseline and its history. Wrapper scripts cover the configurations that need their own build directory — `run_tests.sh`, `run_quality.sh`, `run_coverage.sh`, `run_sanitizers.sh`, `run_fuzz.sh`, `run_performance.sh`.
+`tests/README.md` is authoritative for the details. Wrapper scripts cover the configurations that need their own build directory — `run_tests.sh`, `run_quality.sh`, `run_coverage.sh`, `run_sanitizers.sh`, `run_fuzz.sh`, `run_performance.sh`.
 
-What this reaches, by CTest label: `utils` (18), `application` (48), `stm32f4` (52), `stm32h7` (51), `device` (11), `platform_bsp` (10), `rtos` (6), `platform_rtos` (4), `integration` (11), `property` (3), `quality` (2), `performance` (2), `resource` (2). So it is **not** limited to hardware-independent code: HAL-facing and FreeRTOS-facing layers are reached through CMock mocks generated from the vendor headers (`tests/*/generate_mocks.sh`, `cmock.yml`).
+What this reaches, by CTest label: `application` (67), `stm32f4` (52), `stm32h7` (51), `utils` (18), `integration` (11), `device` (11), `platform_bsp` (10), `rtos` (6), `platform_rtos` (4), `property` (3), `quality` (2), `performance` (2), `resource` (1). So it is **not** limited to hardware-independent code: HAL-facing and FreeRTOS-facing layers are reached through CMock mocks generated from the vendor headers (`tests/*/generate_mocks.sh`, `cmock.yml`).
 
 Two limits worth knowing before trusting a green run:
 
@@ -81,13 +81,15 @@ Consequences when editing:
 
 This has bitten this repository more than once: the whole `PLAT_Task_*` layer existed, compiled, and had never once been linked, because CubeMX's CMSIS-RTOS tasks were what actually ran.
 
+It is worth knowing how much of the tree this currently applies to. Measured 2026/9/1 by comparing each module's `.obj` text symbols against the ELF, **six `06_utils` modules are absent from the image entirely** — `util_crc`, `util_maf`, `util_msgbus`, `util_rls`, `util_td`, `util_traj_limit` — as is `util_registry` (for a different reason, see the ISR-dispatch note under Architecture). Six `02_device` drivers are likewise absent: `dev_dji_motor`, `dev_dm_motor`, `dev_motor_pid`, `dev_power_limit`, `dev_remote`, `dev_steer_chassis`. On the platform side `adc`, `can`, `gpio`, `iic`, `mutex` and `sem` contribute nothing. None of this is a defect — they have no caller yet — but it does mean **the host tests are the only thing that has ever executed them**, and a claim like "this module works" rests entirely on `tests/`, not on anything that has run on the target.
+
 So after adding a module, prove it linked rather than assuming:
 
 ```bash
 arm-none-eabi-nm build/COD_UniFramework_H7.elf | grep <function>   # empty = not in image
 ```
 
-And when adding an API, wire a real caller — otherwise you have only verified that it compiles. Full explanation and command reference in `.claude/docs/gc-sections.md`.
+And when adding an API, wire a real caller — otherwise you have only verified that it compiles. Full explanation and command reference in `docs/build/gc-sections.md`.
 
 ### The CubeMX USER CODE regions are load-bearing
 
@@ -97,9 +99,9 @@ Three separate outages in this repository came from the generator deciding a pie
 |---|---|
 | The whole `PLAT_Task_*` layer had never been linked | CMSIS-RTOS owned task creation |
 | Builds and links, does nothing at all | `USER CODE BEGIN 2` regenerated empty, so `Board_Init`/`App_StartTasks` were unreachable and gc-sections dropped the framework |
-| Board completely dead | `TIM2_IRQHandler` generated empty, so the HAL timebase never ticked — `.claude/docs/debug-tim2-timebase.md` |
+| Board completely dead | `TIM2_IRQHandler` generated empty, so the HAL timebase never ticked — `docs/debugging/tim2-timebase.md` |
 
-So after any Generate Code, check that `main.c`'s `USER CODE BEGIN 2` still calls into the framework and that `stm32h7xx_it.c` still forwards `TIM2_IRQHandler`. A third thing is regenerated every time and is *not* silent: the four fault handlers come back as bare `while (1)` bodies outside any USER CODE region, colliding with `rtos_fault.c` as a `multiple definition` link error naming both files. Delete them from `stm32h7xx_it.c` again — there is a comment in their place saying so. That one is safe because it cannot be missed; the first two are the dangerous ones. `.claude/docs/debug-tim2-timebase.md` also documents the debugging method — verify the debugger before trusting its output, then use a stack backtrace rather than guessing from fault registers.
+So after any Generate Code, check that `main.c`'s `USER CODE BEGIN 2` still calls into the framework and that `stm32h7xx_it.c` still forwards `TIM2_IRQHandler`. A third thing is regenerated every time and is *not* silent: the four fault handlers come back as bare `while (1)` bodies outside any USER CODE region, colliding with `rtos_fault.c` as a `multiple definition` link error naming both files. Delete them from `stm32h7xx_it.c` again — there is a comment in their place saying so. That one is safe because it cannot be missed; the first two are the dangerous ones. `docs/debugging/tim2-timebase.md` also documents the debugging method — verify the debugger before trusting its output, then use a stack backtrace rather than guessing from fault registers.
 
 ## Architecture
 
@@ -113,18 +115,19 @@ Key mechanics:
 
 - **Two-step instance creation.** `IMPL_STM32_xxx_CreateCtx(<vendor handle>)` returns an opaque `void* ctx`; then `PLAT_xxx_Create(IMPL_STM32_xxx_GetOps(), ctx)` wraps it in a vendor-neutral `*_Instance_s`. The platform layer never dereferences `ctx`.
 - **Ops vtable** (`UART_Ops_s`, etc.) is the only contract between platform and impl. Backends expose it read-only via `IMPL_STM32_xxx_GetOps()`.
-- **Composition root.** `01_application/board/board_devices.c` is the *only* translation unit allowed to include both platform headers and `impl_*`/vendor headers — one `grep -l impl_stm32_bind.h` should return exactly that file, which is what makes the rule checkable. All vendor→neutral wiring lives there; the app layer includes only `board.h` + `plat_*.h` and compiles with no HAL present. When adding a peripheral, add a line to `board_devices.def` — the storage, the bring-up step, the failure name and the `Board_Xxx()` accessor are all generated from it. The `.def` is the data half and names no chip; the `.c` is the code half and names no peripheral. `Board_CANCreate` is a section in that same file rather than a separate one: a CAN node is created at runtime (how many exist is a property of the robot, not the board), but it reads the same bus table, and a second file would have duplicated the `PLAT_ALLOW_CONSTRUCTION` gate whose whole purpose is to exist once.
-- **Task list.** `01_application/tasks/app_tasks.c` holds the priority table and hands control to the scheduler; `main` calls `Board_Init` then `App_StartTasks`. It does **not** own the tasks: each module creates its own via `App_<Name>_StartTask(priority)`, keeping its stack, period, body and includes together with the work they follow from. Priority is the exception, and the reason a central file exists at all — it is meaningless in isolation ("starve this first" is a claim about the other tasks) and scarce, since `configMAX_PRIORITIES` is 7. Two tasks run: the status indicator at 0 and the 1 kHz attitude loop at 2. The file names no RTOS: tasks come from `PLAT_Task_Create`, the scheduler from `PLAT_Task_StartScheduler`, so switching applications is an app-layer edit and switching RTOS an impl-layer one.
+- **Composition root.** `01_application/board/board_stm32h7.c` is the *only* translation unit allowed to include both platform headers and `impl_*`/vendor headers — `grep -rl impl_stm32_ --include=*.c 01_application 02_device` should return exactly that file, which is what makes the rule checkable. All vendor→neutral wiring lives there; the app layer includes only `board.h` + `plat_*.h` and compiles with no HAL present. The file is **named for the chip**: retargeting means writing `board_stm32f4.c` beside it and swapping one CMake source-list entry, because everything above stays on the `Board_*` names in `board.h` and never learns which was chosen. Exactly one such file may be in the build — they define the same symbols. Adding a peripheral is three explicit calls (`IMPL_STM32_<CLASS>_CreateCtx` → `IMPL_STM32_<CLASS>_GetOps` → `PLAT_<Class>_Init`) plus an accessor and its `board.h` declaration; the hardware reasoning for each device is a comment at its bring-up call, and it is the most valuable content in the file. `Board_CANCreate` is a section in that same file rather than a separate one: a CAN node is created at runtime (how many exist is a property of the robot, not the board), and a second file would have duplicated the `PLAT_ALLOW_CONSTRUCTION` gate whose whole purpose is to exist once.
+- **This used to be an X-macro, and no longer is.** `board_devices.def` expanded one line per device into storage, bring-up, teardown, accessors and the failure name through six macro expansions, reaching backends via `impl_stm32_bind.h`'s token pasting. That made the five copies of each device undriftable — a real property — but at eight devices `grep` answers the same question, so it was replaced (2026/9/2) with explicit calls. Behaviour is identical and all 237 host tests passed unchanged (238 now). What the ops+context seam, caller-owned storage, bring-up order, reverse-order idempotent teardown and NULL-on-not-up accessors do is untouched. `docs/build/x-macro.md` records the mechanics and why it was retired.
+- **Task list.** `01_application/tasks/app_tasks.c` holds the priority table and hands control to the scheduler; `main` calls `Board_Init` then `App_StartTasks`. It does **not** own the tasks: each module creates its own via `App_<Name>_StartTask(priority)`, keeping its stack, period, body and includes together with the work they follow from. Priority is the exception, and the reason a central file exists at all — it is meaningless in isolation ("starve this first" is a claim about the other tasks) and scarce, since `configMAX_PRIORITIES` is 7. Three tasks run: the status indicator at 0, the health reporter at 1, and the 1 kHz attitude loop at 2. The file names no RTOS: tasks come from `PLAT_Task_Create`, the scheduler from `PLAT_Task_StartScheduler`, so switching applications is an app-layer edit and switching RTOS an impl-layer one.
 - **The status indicator owns the LED, and conditions are reported to it.** `01_application/indicator/app_indicator.c` drives the one WS2812 and shows whichever raised condition ranks highest, falling back to a 2-flash green heartbeat when none is. The heartbeat is not a special case — it is the lowest-ranked row of the same table. Subsystems call `App_Indicator_Set(cond, on)` (ISR-safe, idempotent, level-triggered) or `App_Indicator_SetFault(code)`; they report *conditions*, never blink patterns, so colour and timing decisions stay in one file instead of spreading across every detector. Rank is enum order in `App_Indicator_Condition_e`, so adding a condition is one enumerator plus one designated-initialiser row — a missing row fails to compile because the table is sized by `INDICATOR_CONDITION_COUNT`. Every pattern shares one 1 s beat deliberately: a pattern with its own period would make "the light stopped" ambiguous with "the light is showing something slower". The `raised` bitmask is written without a critical section, which is safe only because detectors are expected to be level-triggered — an edge-triggered detector that raises once could lose its bit to a concurrent write, and that case needs a critical section in `Set`.
 - **The status LED is a WS2812 on PA7 (SPI6_MOSI), driven through SPI.** It has no clock and no chip select — it decodes the width of the high pulse on one wire — so `02_device/dev_ws2812` emits one SPI byte per colour bit (`0x60` = 0, `0x78` = 1) and clocks the waveform out of MOSI, keeping the timing in hardware instead of a 30 µs interrupts-off critical section. At 6 MHz that is T0H 333 ns / T1H 667 ns in a 1333 ns slot, near the centre of the part's tolerance. Three settings are load-bearing: SPI6's kernel clock **HSE 24 MHz** (set in `HAL_SPI_MspInit` in `spi.c` — H7 puts per-peripheral clock sources there, not in `main.c`), **prescaler /4**, and **Data Size 8 bits** (CubeMX defaults this to 4 bits when the `.ioc` has no `DataSize` key, which halves the clock count and produces an undecodable waveform). `DEV_WS2812_Show` also sends 100 trailing zero bytes — 133 µs of low — because a WS2812 only latches after a reset gap and nothing guarantees MOSI parks low; omitting them leaves the LED displaying its previous contents forever, which is exactly how this first failed. An earlier version packed three SPI bits per colour bit for 9 bytes instead of 24; the pulse widths landed at the edge of the window and this LED misread them, so do not re-pack it. Sends use the blocking `PLAT_SPI_Send`, so the `SPI_XFER_IT` in the board entry selects nothing — and must not be changed, because CubeMX enabled no SPI6 interrupt and generated no `SPI6_IRQHandler`. The SPI backend accepts `cs_port == NULL` for this kind of CS-less device. CubeMX also spent PA5 on SPI6_SCK, which a WS2812 does not use.
 - **Callback trampolines.** Platform-layer static trampolines (e.g. `plat_uart_rx_tramp`) are attached once to the backend via `ops->attach_cb`; user callbacks registered later via `PLAT_UART_On*` are looked up lazily, so re-attaching is never needed.
-- **ISR dispatch via registry.** `06_utils/util_registry` is a fixed-capacity, caller-owned, ISR-safe (lock-free `Find`) key→value map. Impl backends use it to route HAL interrupt callbacks (keyed by the vendor handle, e.g. `UART_HandleTypeDef*`) back to the owning context — see the `HAL_UARTEx_RxEventCallback` / routing table in `impl_stm32_uart.c`. Mutating calls (`Add`/`Remove`) must run in task context.
+- **ISR dispatch: two modes, and the H7 build uses the other one.** `06_utils/util_registry` is a fixed-capacity, caller-owned, ISR-safe (lock-free `Find`) key→value map for routing HAL interrupt callbacks (keyed by the vendor handle) back to the owning context. But `stm32h7xx_hal_conf.h` sets `USE_HAL_{UART,SPI,FDCAN,...}_REGISTER_CALLBACKS 1`, so the backends register **per-instance** callbacks (`uart0_rx`, `uart0_tx`, …) and the weak-symbol path that does the registry lookup is `#if`'d out. Net effect: `util_registry` is **not in the linked image at all** in this build — `arm-none-eabi-nm build/COD_UniFramework_H7.elf | grep -i registry` is empty. Both paths are maintained; the registry is what a backend uses when its HAL module has no register-callbacks support. Its API is `Init`/`Add`/`Find`/`ForEach`/`Remove`. `Remove` (added 2026/9/2) retires a slot by clearing its key **in place** — the table is never compacted, so `count` is a high-water mark rather than the live-entry count, and `Add` reuses a retired slot before growing. Compacting would be tidier but is unsafe: shrinking `count` first makes the moved entry briefly unreachable, so an ISR looking up an *unrelated* key in that window would miss it. Mutating calls (`Add`/`Remove`) must run in task context; `Find`/`ForEach` stay lock-free. A caller that frees a stored value **must `Remove` it first** — see the CAN backend's `DestroyCtx`, where omitting that left the routing table pointing at freed memory that the receive ISR dereferenced.
 - **Memory** has one heap and one switch. `04_impl/rtos/freertos/memory/impl_memory.c` holds the sole ops binding (currently FreeRTOS `pvPortMalloc`/`vPortFree`); everything routes through it. Upper layers call `PLAT_malloc`/`PLAT_free`; impl backends call `IMPL_malloc`/`IMPL_free` (same ops, no upward call into `03_platform`). Impl backends must **not** call `pvPortMalloc`/`malloc` directly — that would leak past the switch and keep them pinned to the FreeRTOS heap when the allocator is swapped.
 - **Logging** goes through `06_utils/util_log`: `UTIL_LOG_E/W/I(tag, fmt, ...)`, backed by SEGGER RTT on up-buffer 0. Do not call `SEGGER_RTT_printf` in new code. Levels are filtered by the preprocessor, so `-DUTIL_LOG_LEVEL=UTIL_LOG_LEVEL_WARN` removes every INFO site — format string and argument evaluation included; `UTIL_LOG_LEVEL_NONE` removes all of them. `UTIL_Log_SetLevel` lowers the threshold further at runtime but cannot raise it past what was compiled in. Two constraints worth knowing: the RTT formatter has **no `%f`** (it consumes the wrong argument width, so every later conversion in the same call is garbage too — scale to an int and name the scale), and a log site on a 1 kHz path will itself cause the deadline miss it was added to find. `rtos_fault.c` deliberately still uses raw RTT: it runs after something has already gone wrong, so it minimises the layers between itself and the transport.
 
 Unlike the peripheral classes, the RTOS ones (`plat_task`, `plat_mutex`, `plat_sem`, `plat_memory`) take **no ops argument and no context**: there is only ever one sensible RTOS backend per build, so they call `IMPL_*_GetOps()` directly. That is what lets `06_utils` use a mutex without naming a vendor.
 
-Naming and comment conventions (per-layer prefixes like `PLAT_`/`IMPL_`/`DEV_`/`UTIL_`, struct `_s` / enum `_e` suffixes, Doxygen requirements) are specified in `.claude/rules/structure.md` — follow it exactly.
+Naming and comment conventions (per-layer prefixes like `PLAT_`/`IMPL_`/`DEV_`/`UTIL_`, struct `_s` / enum `_e` suffixes, Doxygen requirements) are specified in `docs/rules/structure.md` — follow it exactly.
 
 ## SEGGER RTT
 
@@ -165,18 +168,22 @@ The probe on this bench is a **WCH CMSIS-DAP** (USB `1a86:e6e1`), not an ST-Link
 - `rtt setup` only works **after** the firmware is running — the control block is initialised at runtime.
 - `05_vender/stm32cubemx/STM32H723.svd` gives register views in the debugger. It sits in the vendor tree alongside the linker script, since both describe the part rather than this project; `.vscode/launch.json` names that path.
 
-To read RTT without a second terminal, ask gdb for the buffer directly — `WrOff > RdOff` distinguishes "firmware printed nothing" from "I failed to read it". Full recipe in `.claude/docs/debug-tim2-timebase.md`, along with the method that found the TIM2 bug: verify the debugger first, then use a stack backtrace rather than guessing from fault registers.
+To read RTT without a second terminal, ask gdb for the buffer directly — `WrOff > RdOff` distinguishes "firmware printed nothing" from "I failed to read it". Full recipe in `docs/debugging/tim2-timebase.md`, along with the method that found the TIM2 bug: verify the debugger first, then use a stack backtrace rather than guessing from fault registers.
 
 ## Known issues
 
 The H7 port builds clean and the scheduler runs on hardware, but these are open. None is a code defect in the framework layers:
 
-- **UART DMA reception cannot work as linked.** `.bss` is in DTCMRAM and DMA1/DMA2 cannot address DTCM on H7, so all six UART RX streams would transfer nothing — silence, not corruption. `ucHeap` is `.bss`, so `PLAT_malloc`'d buffers are affected too. The fix is to place DMA buffers in AXI SRAM at `0x24000000` (which MPU region 0 already marks non-cacheable, so no cache maintenance is needed), and that means editing the linker script. No longer latent in the sense this line used to mean: `BOARD_DEVICE(DebugUart, debug_uart, UART, &huart10, UART_XFER_IT)` now exists. It is safe only because it asks for interrupt mode, not DMA — `board_devices.def` explains that choice at the entry itself. Any future UART entry that asks for `UART_XFER_DMA`, or any RX path, hits this. The UART backend now refuses an unreachable buffer rather than accepting it silently, so `StartReceive` returns false instead of receiving nothing.
-- **Seventeen interrupt handlers are generated with empty bodies.** `SPI2_IRQHandler`, `DMA1_Stream0..7`, `DMA2_Stream0..6` and `BDMA_Channel0` exist in `stm32h7xx_it.c` with no `HAL_*_IRQHandler` call, so the interrupt is enabled in the NVIC and nothing ever clears the peripheral's flag. This is the TIM2 mechanism exactly (`.claude/docs/debug-tim2-timebase.md`), and SPI2 is the one that matters soonest: both IMU contexts are created with `SPI_XFER_IT`, so the first asynchronous transfer re-enters the handler until the stack is gone. Nothing calls an async SPI transfer yet, which is the only reason this has not been seen. Found while checking a regeneration, not caused by one — it predates the CAN timing fix.
+- **DMA buffers must be declared `PLAT_DMA_BUF`, and nothing enforces it at compile time.** `.bss` is in DTCMRAM and DMA1/DMA2 cannot address DTCM on H7, so a DMA transfer into ordinary static storage moves nothing — silence, not corruption. `ucHeap` is `.bss`, so `PLAT_malloc`'d buffers are affected too. The mechanism is now in place: `03_platform/bsp/dma_buf/plat_dma_buf.h`'s `PLAT_DMA_BUF` both aligns to a cache line and places into a `.dma_buf` section that the linker script maps to AXI SRAM at `0x24000000` (MPU region 0 already marks it non-cacheable, so no cache maintenance is needed), and two link-time `ASSERT`s in `STM32H723xG_flash.ld` fail the build if a regeneration drops the section. The backends verify at runtime too — `dma_reachable()` in `impl_stm32_uart.c` checks the address against the reachable regions and `StartReceive` returns false rather than receiving nothing. What is **not** solved: a buffer declared as a plain `static` still compiles fine and still fails at run time, caught only by that runtime check. Only `telem_frame` uses the macro today (`RAM_D1` holds 32 B). Every UART entry is still `UART_XFER_IT`; the first `UART_XFER_DMA` entry is what makes this live.
 - **Flash reads can bus-fault, which `plat_flash`'s `bool` cannot report.** Every H7 flash word carries ECC, and a word left half-programmed by a power loss raises a double-detection error on *read*. Record-level magic + CRC in `dev_bmi088_store` partially covers this; closing it properly needs a fault handler. `RTOS_FaultInit` now enables BusFault, so such a read reports as `BusFault` with `PRECISERR` and the offending address rather than as an escalated HardFault — but recovering from it, rather than stopping, still needs work `plat_flash`'s `bool` return has no way to express.
-- **Two board bindings are inferences, not verified against the schematic.** The buzzer is on `htim12`/`TIM_CHANNEL_2` (PB15) — chosen because its CubeMX setup is shaped like a tone generator, while TIM3_CH4 on PB1 is preloaded like a servo; neither carries a `GPIO_Label`. And the IMU is on SPI2 with PC0/PC3 chip selects, which is the only SPI configured. A wrong choice here fails as a device timeout, naming nothing.
+- **One board binding is still an inference.** The IMU is on SPI2 with PC0/PC3 chip selects, which is the only SPI configured — and unlike the pins below, PC0/PC3 do at least carry `ACCEL_CS`/`GYRO_CS` labels in the `.ioc`. A wrong choice here fails as a device timeout, naming nothing. The buzzer (PB15/TIM12_CH2) and the IMU heater (PB1/TIM3_CH4) were both inferences and are now confirmed against the vendor's own `CtrBoard-H7_BUZZER` and `CtrBoard-H7_IMU_TempCtrl` examples; see [The vendor's own examples are the authority on pin facts](#the-vendors-own-examples-are-the-authority-on-pin-facts). Neither example labels the pin, so both rest on "this is the one PWM output that project configures" rather than on a schematic.
 
 ### Resolved
+
+- ~~**Seventeen interrupt handlers were generated with empty bodies.**~~ `SPI2_IRQHandler`, `DMA1_Stream0..7`, `DMA2_Stream0..6` and `BDMA_Channel0` existed in `stm32h7xx_it.c` with no `HAL_*_IRQHandler` call, so the interrupt was enabled in the NVIC and nothing ever cleared the peripheral's flag — the TIM2 mechanism exactly (`docs/debugging/tim2-timebase.md`). SPI2 was the one that mattered soonest: both IMU contexts are created with `SPI_XFER_IT`, so the first asynchronous transfer would have re-entered the handler until the stack was gone. Nothing called an async SPI transfer, which is the only reason it was never seen. All 31 handlers in that file now forward to HAL, and the call sits **inside `USER CODE BEGIN <IRQn> 0`** so a regeneration preserves it. Verify after any Generate Code:
+  ```bash
+  grep -c 'HAL_.*_IRQHandler' 05_vender/stm32cubemx/Core/Src/stm32h7xx_it.c   # 31
+  ```
 
 - ~~**Three of the four fault handlers were unreachable.**~~ `rtos_fault.c` implemented MemManage, BusFault and UsageFault handlers, and the vector table pointed at them, but the core leaves the three configurable faults disabled at reset — so every one escalated to HardFault and those three functions could never be entered. Reports still came out (HardFault decodes CFSR regardless) but always named "HardFault", and on an escalated fault the recovered frame can be the escalation's rather than the original access's. `RTOS_FaultInit` now sets the three `SHCSR` enables plus `CCR.DIV_0_TRP`, reached from the application as `PLAT_Task_FaultInit` and called by `App_StartTasks`. Matters here specifically because the MPU is enabled over AXI SRAM, so MPU violations were a reachable fault with its own handler switched off.
 - ~~**`PLAT_Sem_Count` from an interrupt halted the board.**~~ `uxSemaphoreGetCount` expands to `uxQueueMessagesWaiting`, which takes a critical section, and `vPortEnterCritical` asserts when entered from an ISR — so a diagnostic read stopped the firmware. Now dispatches on IPSR to `uxSemaphoreGetCountFromISR`, matching what `sem_give` already did.
@@ -193,7 +200,9 @@ The H7 port builds clean and the scheduler runs on hardware, but these are open.
 
 ## Reference code
 
-`ref/` holds the pre-refactor `application/`, `components/`, `bsp/` and `algorithm/` trees, kept **for reference only** — they are not in the build and `README.md` documents that old design in Chinese. Read them to understand intended behaviour; put new work in the numbered layers.
+There is **no `ref/` directory in this repository**, and there never was one in its git history — `.gitignore` lists `ref/` and several documents used to describe it as holding the pre-refactor `application/` `components/` `bsp/` `algorithm/` trees, but no such tree was ever committed here. If you need the pre-refactor design, it is not in this repo; `README.md` still documents that old design in Chinese. Put new work in the numbered layers.
+
+The one genuine reference backend is `04_impl/bsp/stm32f4/` — the F407 code this project was ported from. It is present, not built (`CMakeLists.txt` selects `stm32h7`), and it is the worked example of "a second MCU slots in beside the existing backend".
 
 ### The vendor's own examples are the authority on pin facts
 
@@ -213,10 +222,38 @@ Note that the examples label pins only sparsely: `CtrBoard-H7_IMU_TempCtrl.ioc` 
 is identifiable only as the single PWM output the temperature-control project configures.
 So even here, confirm what a pin *drives* against the project's purpose, not its name.
 
-Confirmed from `例程/CtrBoard-H7_IMU_TempCtrl` (2026/8/26): the IMU heater is
-**PB1 / TIM3_CH4**, `Period = 10000-1`, `Prescaler = 24-1` off a 240 MHz kernel clock, so
-1 kHz PWM with 10000 duty steps. Our own `.ioc` configures PB1/TIM3_CH4 identically and
-`board_devices.def` has no entry for it, which is why `Board_Init` never touches it.
+Confirmed so far (2026/8/26), both by fetching the example's `.ioc`:
+
+| Ours | Vendor example | What it settles |
+|---|---|---|
+| IMU heater, PB1 / TIM3_CH4 | `CtrBoard-H7_IMU_TempCtrl` | 1 kHz there (`Period 10000-1`, `Prescaler 24-1`, 240 MHz kernel); ours is 172 Hz and deliberately stays that way |
+| Buzzer, PB15 / TIM12_CH2 | `CtrBoard-H7_BUZZER` | 5 kHz there (`Period 2000-1`, `Prescaler 24-1`); ours leaves the counter wide open because `dev_buzzer` rewrites the frequency per note |
+
+Both were inferences from timer shape before this, and both turned out correct. Two
+lessons worth keeping: the examples' periods are **not** to be copied — each of ours
+differs for a documented reason — and the confirmation is only ever "this is the single
+PWM output that project configures", never a labelled pin.
+
+## Documentation
+
+`docs/` is the project knowledge base and is version-controlled; `docs/README.md` indexes it. Three parts matter most when working here:
+
+- **`docs/rules/structure.md`** — the authoritative design and naming rules. Read before touching any layer.
+- **`docs/ai-memory/`** — project memory maintained jointly by AI agents: hardware-measured numbers, rejected alternatives, and wrong turns taken while debugging. One fact per file with YAML frontmatter; `docs/ai-memory/README.md` states what belongs there. The test is whether reading the code could produce the fact — if it could, it does not go there. **After learning something that took hardware or a wrong turn to establish, write it there** rather than only into a commit message.
+- **`docs/build/x-macro.md`** — preprocessor mechanics for any code-generating macro: why `##` pastes the macro's *name* without a second level of indirection, why an include guard on a list file silently drops every expansion after the first, where GCC reports an error inside a macro body. Historical for the board layer (which no longer uses one) but live for the impl layer's `<CLASS>_SLOT_LIST`. Every claim measured on this machine's gcc 15.2.
+- **`docs/debugging/`**, **`docs/build/`**, **`docs/reviews/`** — the long-form mechanism explanations this file links to.
+
+`.claude/skills/` holds three process skills distilled from failures this repository actually had — invoke them rather than reconstructing the procedure:
+
+| Skill | When |
+|---|---|
+| `verify-change` | Before claiming a change works, builds, or passes — and before every commit. The three gates, plus the three ways a green host run still hides a defect. |
+| `add-peripheral` | Adding a `BOARD_DEVICE` entry, or debugging a device timeout / a DMA transfer that moves nothing. |
+| `post-cubemx-check` | After any CubeMX Generate Code, or when the board builds and links but does nothing. |
+
+`.gitignore` carries an exception for them (`.claude/*` plus `!.claude/skills/`) so they survive a clone; nothing else in `.claude/` does.
+
+The documents above used to live under `.claude/`, which `.gitignore` excludes — so the repository's authoritative rules document was not in version control and did not survive a clone. Nothing but tool state goes in `.claude/` now.
 
 ## Notes
 
