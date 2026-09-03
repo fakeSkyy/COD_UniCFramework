@@ -141,7 +141,11 @@ void UTIL_AHRS_SetNoise(UTIL_AHRS_s* ahrs, float q_gyro, float q_bias, float r_a
  *                     towards the direction of travel. Pass 0 to accept any
  *                     magnitude.
  * @param gate_sigma   Innovation gate passed through to the filter, in sigma.
- *                     3 to 5 is usual; 0 disables it.
+ *                     3 to 5 is usual; 0 disables it. The consecutive-rejection cap
+ *                     Init installs is left alone by this call, so retuning the gate
+ *                     cannot silently remove the escape hatch that stops a confidently
+ *                     wrong attitude from rejecting its own correction for good — see
+ *                     UTIL_KF_SetGateMaxRun.
  * @param bias_limit   Cap on |estimated bias| in rad/s. A real MEMS gyro bias is
  *                     well under 0.1 rad/s, so a larger estimate means the
  *                     filter is absorbing something that is not bias.

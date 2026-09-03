@@ -31,6 +31,22 @@
 /** @brief Default innovation gate, in sigma. */
 #define DEFAULT_GATE_SIGMA 5.0f
 
+/**
+ * @brief Consecutive gate rejections after which one accelerometer sample is forced in.
+ *
+ * The gate measures against the filter's own confidence, so an attitude that has become
+ * confidently wrong rejects exactly the gravity measurements that would right it. That
+ * is not hypothetical here: a sustained shock or a hard landing can leave the estimate
+ * tilted with a small P, and nothing in the loop would recover it.
+ *
+ * 50 samples is 50 ms at the 1 kHz this is normally driven at -- long enough that
+ * vibration and ordinary linear acceleration cannot exhaust it (accel_tol already
+ * refuses those on magnitude, before the gate sees them), short enough that a wedged
+ * estimate rights itself faster than an operator would notice. Matches the count the
+ * DJI reference implementation arrived at for the same problem.
+ */
+#define DEFAULT_GATE_MAX_RUN 50u
+
 /** @brief Initial covariance on the quaternion states. */
 #define INITIAL_P_QUAT 1.0f
 
@@ -391,6 +407,7 @@ bool UTIL_AHRS_Init(UTIL_AHRS_s* ahrs, float* buf, float gravity)
     UTIL_KF_SetMeasurementNoise(&ahrs->kf, r_diag);
 
     UTIL_KF_SetGuards(&ahrs->kf, DEFAULT_GATE_SIGMA, INITIAL_P_QUAT);
+    UTIL_KF_SetGateMaxRun(&ahrs->kf, DEFAULT_GATE_MAX_RUN);
 
     ahrs->initialized = true;
 
