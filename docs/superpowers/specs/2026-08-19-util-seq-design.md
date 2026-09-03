@@ -141,7 +141,7 @@ out[i] = (uint16_t) (from + (int32_t) (to - from) * (int32_t) elapsed / (int32_t
 
 ## 测试
 
-`tests/suites/test_util_seq.c`，纯逻辑所以可以完整覆盖。目标 100% 行 + 分支。
+`tests/unit/utils/suites/test_util_seq.c`，纯逻辑所以可以完整覆盖。目标 100% 行 + 分支。
 
 必须覆盖：
 
@@ -164,7 +164,7 @@ out[i] = (uint16_t) (from + (int32_t) (to - from) * (int32_t) elapsed / (int32_t
 |---|---|
 | `06_utils/util_seq/util_seq.h` | 新增 |
 | `06_utils/util_seq/util_seq.c` | 新增 |
-| `tests/suites/test_util_seq.c` | 新增 |
+| `tests/unit/utils/suites/test_util_seq.c` | 新增 |
 | `CMakeLists.txt` | 源文件 + include 目录各一处 |
 | `tests/CMakeLists.txt` | 源文件一处 |
 | `02_device/dev_buzzer/dev_buzzer.{h,c}` | 加 `PlaySeq`，`Tick` 内部改走播放器 |

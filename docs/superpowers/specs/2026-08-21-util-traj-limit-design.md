@@ -177,7 +177,7 @@ static float brake_distance(float vel, float dv, float dt)
 
 ## 测试
 
-`tests/suites/test_util_traj_limit.c`。纯逻辑，目标 **100% 行 + 分支覆盖**。
+`tests/unit/utils/suites/test_util_traj_limit.c`。纯逻辑，目标 **100% 行 + 分支覆盖**。
 
 1. **参数拒绝** —— NULL 实例；`v_max`/`a_max`/`dt` 各为 0、负、NaN；拒绝后 `Step` 仍产出有界输出
 2. **速度上限** —— 远距离目标，**逐点**断言位置差分不超过 `v_max*dt`（不是只看终值）
@@ -203,7 +203,7 @@ static float brake_distance(float vel, float dv, float dt)
 |---|---|
 | `06_utils/util_traj_limit/util_traj_limit.h` | 新增 |
 | `06_utils/util_traj_limit/util_traj_limit.c` | 新增 |
-| `tests/suites/test_util_traj_limit.c` | 新增 |
+| `tests/unit/utils/suites/test_util_traj_limit.c` | 新增 |
 | `CMakeLists.txt` | 源文件 + include 目录各一处 |
 | `tests/CMakeLists.txt` | `UTIL_SOURCES` 一处（include 目录由 `util_*` glob 覆盖） |
 | `06_utils/util_td/util_td.h` | 加一句交叉引用，指向本模块 |

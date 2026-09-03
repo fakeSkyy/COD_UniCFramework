@@ -62,7 +62,7 @@ Ruling: re-dispatch on sonnet rather than haiku. The task is still transcription
 
 Task 1: complete (review clean — Spec compliance ✅, task quality approved).
   Delivered: 06_utils/util_traj_limit/util_traj_limit.{h,c} (156 / 100 lines),
-  tests/suites/test_util_traj_limit.c (113 lines, 5 tests), both CMakeLists
+  tests/unit/utils/suites/test_util_traj_limit.c (113 lines, 5 tests), both CMakeLists
   wired. Verified: new suite 5/5, ctest 17/17, firmware 0 warnings.
   Step is the deliberate stub `(void) target; return t->pos;` — T2 replaces it.
   Reviewer minor (deferred to final review, not a fix round): 4 of 5 tests fully
@@ -291,7 +291,7 @@ accepting the report:
 Task 2: complete. Final: 18 tests (5 from Task 1 + 13 from Task 2), 100% line +
   branch + branch-taken-both-ways on util_traj_limit.c.
   Files: 06_utils/util_traj_limit/util_traj_limit.{h,c},
-  tests/suites/test_util_traj_limit.c, 06_utils/util_td/util_td.h
+  tests/unit/utils/suites/test_util_traj_limit.c, 06_utils/util_td/util_td.h
   (cross-reference), both CMakeLists (wired in Task 1).
   No git in this repo, so the ledger plus the report are the record.
 
@@ -454,7 +454,7 @@ Also fixed by me directly in the header: the phrase "this module's snap", a term
 
 PLAN COMPLETE. Final state, all verified by me:
   06_utils/util_traj_limit/util_traj_limit.{h,c} — new module
-  tests/suites/test_util_traj_limit.c — 24 tests
+  tests/unit/utils/suites/test_util_traj_limit.c — 24 tests
   06_utils/util_td/util_td.h — reciprocal cross-reference
   CMakeLists.txt + tests/CMakeLists.txt — wired
   Gates: suite 24/24, ctest 17/17, host build 0 warnings, firmware 0
@@ -484,7 +484,7 @@ Process lesson worth carrying out of this plan: every one of the five algorithm
 这份 ledger 是 2026/8/21 的执行记录，保留原样作为历史。之后另一个会话给整个工程加了
 host 测试基础设施，所以里面的门禁数字已经过期：文中反复出现的 "ctest 17/17" 现在是
 **218/218**（instrumentation 配置 216/216），测试可执行文件从 `build-tests/` 移到了
-`build-tests/suites/`。
+`build-tests/unit/utils/`。
 
 对本模块的两处实现改动我复核过，都比这份 ledger 结尾留下的版本更严谨：
 

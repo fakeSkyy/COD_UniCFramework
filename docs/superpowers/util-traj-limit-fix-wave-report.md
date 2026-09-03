@@ -1,7 +1,7 @@
 # util_traj_limit fix wave — report
 
 Scope: `06_utils/util_traj_limit/util_traj_limit.{h,c}`, test suite
-`tests/suites/test_util_traj_limit.c`. Six findings from final review, all six
+`tests/unit/utils/suites/test_util_traj_limit.c`. Six findings from final review, all six
 accepted as real defects and fixed. No redesign beyond what was specified.
 Repo is not under git; no diff/commit is possible or was attempted.
 

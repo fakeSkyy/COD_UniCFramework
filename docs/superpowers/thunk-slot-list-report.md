@@ -249,4 +249,4 @@ All deleted: `/tmp/thunk_refactor/` (all subdirectories), `/tmp/h7_commands.txt`
 3. Everything else in the brief was followed as literally specified: 9 files
    only, H7 CAN untouched, no shared header, no behavioural change to thunks
    or registration logic, all three macros `#undef`'d, comments say why not
-   what, Doxygen/naming conventions per `.claude/rules/structure.md`.
+   what, Doxygen/naming conventions per `docs/rules/structure.md`.

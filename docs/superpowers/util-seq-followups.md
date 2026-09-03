@@ -14,7 +14,7 @@ suites to 218 CTests, reaching `01_application`, `04_impl`, device, platform and
 rtos via CMock stubs over the HAL and FreeRTOS). What that changes here:
 
 - `test_util_seq` is still 28 tests, all passing; the binary moved to
-  `build-tests/suites/test_util_seq`. The full baseline is now **218/218**.
+  `build-tests/unit/utils/test_util_seq`. The full baseline is now **218/218**.
 - `util_seq` IS in the firmware image now (`UTIL_Seq_Init`, `Play`, `Step`,
   `Out` all appear in the ELF), because the status indicator calls it. So the
   module is no longer verified by host tests alone — but see below: that is not

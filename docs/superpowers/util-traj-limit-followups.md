@@ -11,7 +11,7 @@
 
 另一个会话给整个工程加了完整的 host 测试基础设施（`tests/` 从 17 个 suite 长到 218 个 CTest，覆盖到 `01_application` / `04_impl` / device / platform / rtos，用 CMock 打桩 HAL 和 FreeRTOS）。对本模块的影响：
 
-- `test_util_traj_limit` 仍是 24 个测试全过；可执行文件位置变成 `build-tests/suites/test_util_traj_limit`。
+- `test_util_traj_limit` 仍是 24 个测试全过；可执行文件位置变成 `build-tests/unit/utils/test_util_traj_limit`。
 - 全量基线现在是 **218/218**（instrumentation 配置 216/216，性能与资源门禁在那里不注册）。我自己跑过两者确认，不是抄报告。
 - 覆盖率自己重跑确认：`util_traj_limit.c` 行 100%（67 行）、分支 100%（44）、双向 100%（44）；`util_seq.c` 行 100%（79）、分支 100%（42）、双向 97.62%。
 - 本模块的实现被那个会话改了两处，都比我留下的更严谨，已复核：seeding 那条路径现在置 `settled = true`（首次 `Step` 确实精确落在 target 且速率为零，所以这个标志是诚实的），落地路径改成 `t->settled = (t->vel == 0.0f)` 而不是无条件置真。我用 20000 个目标验证了不变式仍然成立：`IsSettled` 为真时 `pos == target` 且 `vel == 0`，0 个反例，0 个不收敛；交付位置的加速度上限最坏 1.003 倍。

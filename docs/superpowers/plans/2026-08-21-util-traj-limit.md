@@ -40,7 +40,7 @@
 |---|---|
 | `06_utils/util_traj_limit/util_traj_limit.h` | 类型、6 个公开函数的声明与全部 Doxygen、两个取值器的 inline 定义 |
 | `06_utils/util_traj_limit/util_traj_limit.c` | `Init` / `Reset` / `Step` / `IsSettled` |
-| `tests/suites/test_util_traj_limit.c` | 11 组行为测试，目标 100% 行 + 分支 |
+| `tests/unit/utils/suites/test_util_traj_limit.c` | 11 组行为测试，目标 100% 行 + 分支 |
 | `CMakeLists.txt` | 源文件一处 + include 目录一处 |
 | `tests/CMakeLists.txt` | `UTIL_SOURCES` 一处（include 目录由 `util_*` glob 自动覆盖） |
 | `06_utils/util_td/util_td.h` | 加一句交叉引用，指向本模块 |
@@ -54,7 +54,7 @@ Task 1 建立类型与生命周期（Init/Reset/取值器/IsSettled）并接入�
 **Files:**
 - Create: `06_utils/util_traj_limit/util_traj_limit.h`
 - Create: `06_utils/util_traj_limit/util_traj_limit.c`
-- Create: `tests/suites/test_util_traj_limit.c`
+- Create: `tests/unit/utils/suites/test_util_traj_limit.c`
 - Modify: `CMakeLists.txt`（源文件列表 + include 目录）
 - Modify: `tests/CMakeLists.txt`（`UTIL_SOURCES`）
 
@@ -346,7 +346,7 @@ bool UTIL_TrajLimit_IsSettled(const UTIL_TrajLimit_s* t)
 
 - [ ] **Step 3: 写测试文件（生命周期部分）**
 
-创建 `tests/suites/test_util_traj_limit.c`：
+创建 `tests/unit/utils/suites/test_util_traj_limit.c`：
 
 ```c
 /**
@@ -492,7 +492,7 @@ int main(void)
 ```bash
 cd /home/stg/platform_ws/COD_UniCFramework
 cmake --build build-tests -j16
-./build-tests/test_util_traj_limit
+./build-tests/unit/utils/test_util_traj_limit
 ```
 
 Expected: `5 Tests 0 Failures 0 Ignored` / `OK`
@@ -515,7 +515,7 @@ Expected: 17/17 suites（原 16 + 新增 1），固件 0。
 ```bash
 clang-format -i 06_utils/util_traj_limit/util_traj_limit.h \
                 06_utils/util_traj_limit/util_traj_limit.c \
-                tests/suites/test_util_traj_limit.c
+                tests/unit/utils/suites/test_util_traj_limit.c
 ```
 
 再跑一次 Step 6 确认格式化没破坏任何东西。
@@ -526,7 +526,7 @@ clang-format -i 06_utils/util_traj_limit/util_traj_limit.h \
 
 **Files:**
 - Modify: `06_utils/util_traj_limit/util_traj_limit.c`（替换 Step 桩）
-- Modify: `tests/suites/test_util_traj_limit.c`（加 10 组测试）
+- Modify: `tests/unit/utils/suites/test_util_traj_limit.c`（加 10 组测试）
 - Modify: `06_utils/util_td/util_td.h`（交叉引用）
 
 **Interfaces:**
@@ -535,7 +535,7 @@ clang-format -i 06_utils/util_traj_limit/util_traj_limit.h \
 
 - [ ] **Step 1: 先写会失败的测试**
 
-在 `tests/suites/test_util_traj_limit.c` 的 Reset 段之后加入下面 10 组，并把它们加进 `main` 的 `RUN_TEST` 列表（顺序与下面一致）。同时把 Task 1 Step 5 里说的那条断言补上 —— 即 `test_tl_reset_nonfinite_leaves_unseeded` 末尾的 `TEST_ASSERT_EQUAL_FLOAT(7.0f, UTIL_TrajLimit_Step(&t, 7.0f));`。
+在 `tests/unit/utils/suites/test_util_traj_limit.c` 的 Reset 段之后加入下面 10 组，并把它们加进 `main` 的 `RUN_TEST` 列表（顺序与下面一致）。同时把 Task 1 Step 5 里说的那条断言补上 —— 即 `test_tl_reset_nonfinite_leaves_unseeded` 末尾的 `TEST_ASSERT_EQUAL_FLOAT(7.0f, UTIL_TrajLimit_Step(&t, 7.0f));`。
 
 ```c
 /* ========================================================================= */
@@ -847,7 +847,7 @@ static void test_tl_nonfinite_target_held_and_never_latched(void)
 ```bash
 cd /home/stg/platform_ws/COD_UniCFramework
 cmake --build build-tests -j16
-./build-tests/test_util_traj_limit
+./build-tests/unit/utils/test_util_traj_limit
 ```
 
 Expected: 编译通过，但多数新用例 FAIL —— Step 还是桩，输出永远停在 `Reset` 给的位置。具体地，`test_tl_first_step_seeds_from_target` 会因为返回 0 而不是 50 失败，几个 `IsSettled` 断言会因为桩从不 snap 而失败。
@@ -994,7 +994,7 @@ static float brake_distance(float vel, float dv, float dt)
 - [ ] **Step 4: 跑测试，确认全过**
 
 ```bash
-./build-tests/test_util_traj_limit
+./build-tests/unit/utils/test_util_traj_limit
 ```
 
 Expected: `24 Tests 0 Failures 0 Ignored` / `OK`（5 个来自 Task 1 + 13 个新增 + 最终审查后的 6 条）
@@ -1043,7 +1043,7 @@ find /tmp/tlcov -name 'util_traj_limit.c.gcov' -exec grep -n -B8 "branch.*never 
 ```bash
 cd /home/stg/platform_ws/COD_UniCFramework
 clang-format -i 06_utils/util_traj_limit/util_traj_limit.c \
-                tests/suites/test_util_traj_limit.c \
+                tests/unit/utils/suites/test_util_traj_limit.c \
                 06_utils/util_td/util_td.h
 cmake --build build-tests -j16 && ctest --test-dir build-tests
 cmake --build build -j16 2>&1 | grep -cE "error:|warning:"

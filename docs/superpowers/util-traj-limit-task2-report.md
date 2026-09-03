@@ -16,7 +16,7 @@ five distinct implementations, each falsified by adversarial testing rather than
   Doxygen comment, documenting the float-resolution convergence floor. Unchanged since the prior
   report; the coordinator confirmed in Correction 4 that this section and its margin figures need
   no further changes.
-- `tests/suites/test_util_traj_limit.c` — final suite: **18 tests** (5 from Task 1 + 13 from Task
+- `tests/unit/utils/suites/test_util_traj_limit.c` — final suite: **18 tests** (5 from Task 1 + 13 from Task
   2). See "Test file changes in this round" for what moved in Correction 4.
 - `06_utils/util_td/util_td.h` — cross-reference paragraph, transcribed verbatim from the brief in
   a prior round. No further changes needed; unaffected by any correction.
@@ -212,7 +212,7 @@ additional test was needed for it once the dead-code hypothesis was disproven.
 
 ## Verification: by execution
 
-- `cmake --build build-tests -j16 --target test_util_traj_limit && ./build-tests/test_util_traj_limit`
+- `cmake --build build-tests -j16 --target test_util_traj_limit && ./build-tests/unit/utils/test_util_traj_limit`
   → `18 Tests 0 Failures 0 Ignored / OK`.
 - `ctest --test-dir build-tests` → `100% tests passed, 0 tests failed out of 17`.
 - Coverage (`-DCOVERAGE=ON`, `gcov -b`) on `util_traj_limit.c`: **Lines executed: 100.00% of 63.
