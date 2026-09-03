@@ -230,6 +230,38 @@ SECTIONS
   PROVIDE( __bss_start = __tbss_start );
   PROVIDE( __bss_size = __bss_end - __bss_start );
 
+  /* DMA-reachable RAM.
+   *
+   * Every other RAM section in this script lands in DTCMRAM, and DMA1/DMA2 on this
+   * part cannot address the tightly-coupled DTCM at all -- a stream pointed there
+   * transfers nothing, silently. So a buffer that DMA must touch cannot live in
+   * .bss or .data; it needs its own section, in AXI SRAM.
+   *
+   * RAM_D1 at 0x24000000 was already declared in MEMORY and, before this section,
+   * went entirely unused -- 320 KB idle while the 128 KB of DTCM held everything.
+   *
+   * No cache maintenance is needed for buffers placed here: main.c's MPU region 0
+   * covers 0x24000000 with IsCacheable = MPU_ACCESS_NOT_CACHEABLE, so the CPU's
+   * accesses never sit in a dirty cache line the DMA cannot see. That is a property
+   * of that MPU configuration, not of the address -- if region 0 is ever made
+   * cacheable, code placing buffers here has to add clean/invalidate around every
+   * transfer.
+   *
+   * NOLOAD, so startup does not copy it: a DMA buffer's initial contents are never
+   * meaningful, and giving it an initialiser would only cost flash. Anything placed
+   * here is therefore uninitialised at reset, exactly like .bss but without the
+   * zeroing -- the code owning the buffer must not assume a zero value.
+   *
+   * Placed by attribute: __attribute__((section(".dma_buf"))). */
+  .dma_buf (NOLOAD) : ALIGN(32)
+  {
+    _sdma_buf = .;
+    *(.dma_buf)
+    *(.dma_buf*)
+    . = ALIGN(32);
+    _edma_buf = .;
+  } >RAM_D1
+
   /* User_heap_stack section, used to check that there is enough RAM left */
   ._user_heap_stack (NOLOAD) :
   {
@@ -242,6 +274,20 @@ SECTIONS
   } >DTCMRAM
 
 
+
+  /* A regeneration of this file drops .dma_buf silently -- there is no USER CODE
+   * region around a linker script's memory map, which is exactly how CubeMX has
+   * broken this project three times before (see CLAUDE.md). Without the section,
+   * PLAT_DMA_BUF's section attribute would place its buffers in a section the script
+   * does not mention, the linker would fall back to putting them wherever it likes,
+   * and every DMA send would start being refused by dma_reachable at run time -- a
+   * silent loss of telemetry rather than a build failure.
+   *
+   * So assert it here. If this fires after a Generate Code, restore the .dma_buf
+   * section above rather than deleting the assertion. */
+  ASSERT(ADDR(.dma_buf) >= 0x24000000, ".dma_buf must be in AXI SRAM: DMA cannot reach DTCM")
+  ASSERT(ADDR(.dma_buf) + SIZEOF(.dma_buf) <= 0x24050000,
+         ".dma_buf overflows the AXI SRAM window that impl_stm32_uart.c accepts")
 
   /* Remove information from the standard libraries */
   /DISCARD/ :

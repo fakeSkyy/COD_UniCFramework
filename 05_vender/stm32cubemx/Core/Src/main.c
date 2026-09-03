@@ -148,7 +148,7 @@ int main(void)
    * file was in when the H7 CubeMX project was generated, because Generate Code
    * produces an empty USER CODE 2.
    *
-   * Board_Init brings up every peripheral instance (see board_devices.def) and
+   * Board_Init brings up every peripheral instance (see board_stm32h7.c) and
    * must precede App_StartTasks, which creates tasks that use them. Both run
    * before the scheduler, so neither may block on a semaphore or a mutex. */
   if (!Board_Init())

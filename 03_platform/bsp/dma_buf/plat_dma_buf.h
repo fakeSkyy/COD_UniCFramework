@@ -36,6 +36,28 @@
  * line and rounds its length up to a whole number of lines. Then no line is ever
  * shared and the backend's maintenance is safe.
  *
+ * @par The second half: where the buffer lives
+ * Alignment is not sufficient on this part. DMA1/DMA2 on the STM32H7 cannot address
+ * the tightly-coupled DTCM at 0x20000000 at all, and the linker script puts .bss,
+ * .data and the FreeRTOS heap there — so a correctly aligned buffer in ordinary
+ * static storage is still one a DMA stream transfers nothing to or from, silently.
+ * PLAT_DMA_BUF therefore also places the buffer in the .dma_buf section, which the
+ * linker script maps into AXI SRAM at 0x24000000.
+ *
+ * Two consequences of that placement:
+ *
+ *   - The section is NOLOAD, so a buffer declared this way is **not zero-initialised**
+ *     at reset, unlike everything else with static storage duration. Code that reads
+ *     before the first transfer completes must not assume zeros.
+ *   - It cannot be applied to an automatic (stack) variable: a stack lives in DTCM,
+ *     and a section attribute on a local is silently ignored by GCC rather than
+ *     rejected. Async buffers must have static storage duration. This is also why
+ *     they must outlive the transfer, which was already true.
+ *
+ * The backends verify placement rather than trusting it — see dma_reachable in
+ * impl_stm32_uart.c, which refuses an unreachable buffer so the failure is a false
+ * return at the call site instead of a transfer that quietly moves nothing.
+ *
  * @code
  *   PLAT_DMA_BUF(uint8_t, rx_buf, 8);   // 8 bytes wanted, 32 allocated
  *   PLAT_UART_ReceiveAsync(uart, rx_buf, 8);
@@ -85,7 +107,7 @@
  */
 #define PLAT_DMA_BUF(type, name, count)                                                            \
     type name[PLAT_CACHE_ALIGN_UP((count) * sizeof(type)) / sizeof(type)]                          \
-        __attribute__((aligned(PLAT_CACHE_LINE_BYTES)))
+        __attribute__((aligned(PLAT_CACHE_LINE_BYTES), section(".dma_buf")))
 
 /**
  * @brief Assert at compile time that an existing buffer is DMA-safe.

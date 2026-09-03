@@ -143,6 +143,23 @@ void DMA1_Stream0_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Stream0_IRQn 0 */
 
+  /* CubeMX generates every DMA handler with an empty body: it wires the stream
+   * up in <peripheral>.c and enables the interrupt in the NVIC, but does not emit
+   * the HAL_DMA_IRQHandler call that services it. An empty handler never clears
+   * the stream's transfer-complete or error flag, so the interrupt re-enters as
+   * fast as the core can take it and the stack is gone in microseconds -- the
+   * board simply stops, with no fault report naming the cause.
+   *
+   * This is the TIM2 mechanism above, repeated once per stream. It has not been
+   * seen yet only because nothing starts a DMA transfer: dev_bmi088 declares
+   * SPI_XFER_IT but calls the blocking PLAT_SPI_Send, and the one UART entry asks
+   * for interrupt mode. The first asynchronous transfer on any of these streams
+   * would hit it.
+   *
+   * Inside USER CODE BEGIN 0, not after it, so Generate Code preserves the call
+   * -- exactly why the TIM2 fix above sits where it does. */
+  HAL_DMA_IRQHandler(&hdma_memtomem_dma1_stream0);
+
   /* USER CODE END DMA1_Stream0_IRQn 0 */
   /* USER CODE BEGIN DMA1_Stream0_IRQn 1 */
 
@@ -155,6 +172,8 @@ void DMA1_Stream0_IRQHandler(void)
 void DMA1_Stream1_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Stream1_IRQn 0 */
+
+  HAL_DMA_IRQHandler(&hdma_spi2_rx);
 
   /* USER CODE END DMA1_Stream1_IRQn 0 */
   /* USER CODE BEGIN DMA1_Stream1_IRQn 1 */
@@ -169,6 +188,8 @@ void DMA1_Stream2_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Stream2_IRQn 0 */
 
+  HAL_DMA_IRQHandler(&hdma_spi2_tx);
+
   /* USER CODE END DMA1_Stream2_IRQn 0 */
   /* USER CODE BEGIN DMA1_Stream2_IRQn 1 */
 
@@ -181,6 +202,8 @@ void DMA1_Stream2_IRQHandler(void)
 void DMA1_Stream3_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Stream3_IRQn 0 */
+
+  HAL_DMA_IRQHandler(&hdma_uart7_rx);
 
   /* USER CODE END DMA1_Stream3_IRQn 0 */
   /* USER CODE BEGIN DMA1_Stream3_IRQn 1 */
@@ -195,6 +218,8 @@ void DMA1_Stream4_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Stream4_IRQn 0 */
 
+  HAL_DMA_IRQHandler(&hdma_uart7_tx);
+
   /* USER CODE END DMA1_Stream4_IRQn 0 */
   /* USER CODE BEGIN DMA1_Stream4_IRQn 1 */
 
@@ -208,6 +233,8 @@ void DMA1_Stream5_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Stream5_IRQn 0 */
 
+  HAL_DMA_IRQHandler(&hdma_usart1_rx);
+
   /* USER CODE END DMA1_Stream5_IRQn 0 */
   /* USER CODE BEGIN DMA1_Stream5_IRQn 1 */
 
@@ -220,6 +247,8 @@ void DMA1_Stream5_IRQHandler(void)
 void DMA1_Stream6_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Stream6_IRQn 0 */
+
+  HAL_DMA_IRQHandler(&hdma_usart1_tx);
 
   /* USER CODE END DMA1_Stream6_IRQn 0 */
   /* USER CODE BEGIN DMA1_Stream6_IRQn 1 */
@@ -321,6 +350,18 @@ void SPI2_IRQHandler(void)
 {
   /* USER CODE BEGIN SPI2_IRQn 0 */
 
+  /* Empty as generated, and the one of these that matters soonest: both BMI088
+   * contexts are created with SPI_XFER_IT, so the moment anything calls an
+   * asynchronous SPI transfer this interrupt fires with no HAL call to clear the
+   * peripheral's flag, re-enters until the stack is exhausted, and takes the board
+   * down without a fault report that names SPI.
+   *
+   * Reachable today only because dev_bmi088 goes through the blocking
+   * PLAT_SPI_Send: the declared transfer mode selects nothing on that path. That
+   * makes this a primed trap rather than a live bug -- whoever first switches the
+   * IMU to an async read would see a hang with no obvious cause. */
+  HAL_SPI_IRQHandler(&hspi2);
+
   /* USER CODE END SPI2_IRQn 0 */
   /* USER CODE BEGIN SPI2_IRQn 1 */
 
@@ -376,6 +417,8 @@ void DMA1_Stream7_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Stream7_IRQn 0 */
 
+  HAL_DMA_IRQHandler(&hdma_usart2_rx);
+
   /* USER CODE END DMA1_Stream7_IRQn 0 */
   /* USER CODE BEGIN DMA1_Stream7_IRQn 1 */
 
@@ -403,6 +446,8 @@ void DMA2_Stream0_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA2_Stream0_IRQn 0 */
 
+  HAL_DMA_IRQHandler(&hdma_usart2_tx);
+
   /* USER CODE END DMA2_Stream0_IRQn 0 */
   /* USER CODE BEGIN DMA2_Stream0_IRQn 1 */
 
@@ -415,6 +460,8 @@ void DMA2_Stream0_IRQHandler(void)
 void DMA2_Stream1_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA2_Stream1_IRQn 0 */
+
+  HAL_DMA_IRQHandler(&hdma_usart3_rx);
 
   /* USER CODE END DMA2_Stream1_IRQn 0 */
   /* USER CODE BEGIN DMA2_Stream1_IRQn 1 */
@@ -429,6 +476,8 @@ void DMA2_Stream2_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA2_Stream2_IRQn 0 */
 
+  HAL_DMA_IRQHandler(&hdma_usart3_tx);
+
   /* USER CODE END DMA2_Stream2_IRQn 0 */
   /* USER CODE BEGIN DMA2_Stream2_IRQn 1 */
 
@@ -441,6 +490,8 @@ void DMA2_Stream2_IRQHandler(void)
 void DMA2_Stream3_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA2_Stream3_IRQn 0 */
+
+  HAL_DMA_IRQHandler(&hdma_uart5_rx);
 
   /* USER CODE END DMA2_Stream3_IRQn 0 */
   /* USER CODE BEGIN DMA2_Stream3_IRQn 1 */
@@ -455,6 +506,8 @@ void DMA2_Stream4_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA2_Stream4_IRQn 0 */
 
+  HAL_DMA_IRQHandler(&hdma_usart10_rx);
+
   /* USER CODE END DMA2_Stream4_IRQn 0 */
   /* USER CODE BEGIN DMA2_Stream4_IRQn 1 */
 
@@ -468,6 +521,8 @@ void DMA2_Stream5_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA2_Stream5_IRQn 0 */
 
+  HAL_DMA_IRQHandler(&hdma_usart10_tx);
+
   /* USER CODE END DMA2_Stream5_IRQn 0 */
   /* USER CODE BEGIN DMA2_Stream5_IRQn 1 */
 
@@ -480,6 +535,8 @@ void DMA2_Stream5_IRQHandler(void)
 void DMA2_Stream6_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA2_Stream6_IRQn 0 */
+
+  HAL_DMA_IRQHandler(&hdma_adc1);
 
   /* USER CODE END DMA2_Stream6_IRQn 0 */
   /* USER CODE BEGIN DMA2_Stream6_IRQn 1 */
@@ -521,6 +578,8 @@ void UART7_IRQHandler(void)
 void BDMA_Channel0_IRQHandler(void)
 {
   /* USER CODE BEGIN BDMA_Channel0_IRQn 0 */
+
+  HAL_DMA_IRQHandler(&hdma_adc3);
 
   /* USER CODE END BDMA_Channel0_IRQn 0 */
   /* USER CODE BEGIN BDMA_Channel0_IRQn 1 */
