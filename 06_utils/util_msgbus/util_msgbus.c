@@ -11,6 +11,21 @@
 #include <stddef.h>
 #include <string.h>
 
+/* The one place in 06_utils that depends on a layer above it, and the only sanctioned
+ * exception to the downward-only rule in docs/rules/structure.md — recorded there as
+ * well, so it cannot be mistaken for an oversight and copied.
+ *
+ * A bus that hands data between tasks needs mutual exclusion and a way to wake a
+ * waiter, and both belong to the RTOS rather than to any algorithm. Injecting them as
+ * callbacks would not remove the dependency: the four pointers could only ever be
+ * these functions, so the coupling would merely stop being greppable while giving
+ * every call site a new way to get it wrong. Moving the module down to 03_platform is
+ * worse still — it holds no vendor knowledge and is fully host-testable, so it would
+ * be the only thing in that layer with nothing beneath it.
+ *
+ * The cost is real and worth stating: this is the one util that cannot be dropped into
+ * a project without this platform layer. A new util that wants a lock should take one
+ * as a parameter instead of following this file. */
 #include "plat_mutex.h"
 #include "plat_task.h"
 
