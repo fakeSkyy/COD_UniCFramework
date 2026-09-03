@@ -109,12 +109,18 @@ static const uint8_t telem_tail[4] = {0x00u, 0x00u, 0x80u, 0x7Fu};
  * channels come from two different instants, with no way to tell. The in_flight
  * flag below is what prevents that.
  *
- * Ordinary .bss rather than PLAT_DMA_BUF: the board entry uses UART_XFER_IT, so
- * the CPU does the copying and there is no DMA reachability or cache-line
- * requirement to satisfy. Switching that entry to DMA would make this buffer
- * unsendable — see the note in board_devices.def.
+ * PLAT_DMA_BUF rather than ordinary .bss, even though the board entry currently asks
+ * for UART_XFER_IT and interrupt mode has no reachability or cache-line requirement
+ * at all. Declaring it this way costs padding to a 32-byte cache line and nothing
+ * else, and it means switching that entry to UART_XFER_DMA is a one-word change here
+ * instead of a silent failure: DMA1/DMA2 cannot reach DTCM, where .bss lives, so an
+ * ordinary buffer would be refused by the backend's dma_reachable check.
+ *
+ * Note this buffer is therefore no longer zero-initialised at reset — .dma_buf is a
+ * NOLOAD section. Nothing here reads it before writing: build_frame fills every byte
+ * of the frame before the send is armed.
  */
-static uint8_t telem_frame[TELEM_FRAME_BYTES];
+PLAT_DMA_BUF(uint8_t, telem_frame, TELEM_FRAME_BYTES);
 
 /**
  * @brief True from arming a send until its completion callback runs.

@@ -86,8 +86,13 @@ _Static_assert(INDICATOR_PERIOD_MS > (INDICATOR_MAX_FLASHES * INDICATOR_ON_MS) +
                                          ((INDICATOR_MAX_FLASHES - 1u) * INDICATOR_GAP_MS),
                "the longest pattern does not fit inside one beat");
 
-/** @brief Largest fault code that can be blinked out; see App_Indicator_SetFault. */
-#define INDICATOR_FAULT_CODE_MAX INDICATOR_MAX_FLASHES
+/* INDICATOR_FAULT_CODE_MAX now comes from app_indicator.h, where the fault codes
+ * themselves are allocated -- a caller has to see the ceiling to honour SetFault's
+ * documented range. It was defined here as INDICATOR_MAX_FLASHES; this assertion keeps
+ * the two tied, so raising the flash ceiling without widening the code range (or the
+ * reverse) fails the build rather than silently clamping a legal code. */
+_Static_assert(INDICATOR_FAULT_CODE_MAX == INDICATOR_MAX_FLASHES,
+               "fault code ceiling and flash ceiling have drifted apart");
 
 /**
  * @brief How often the task wakes to advance the pattern, milliseconds.
@@ -113,7 +118,7 @@ _Static_assert(INDICATOR_PERIOD_MS > (INDICATOR_MAX_FLASHES * INDICATOR_ON_MS) +
  * two only coincide because this build's FreeRTOSConfig.h sets
  * configTICK_RATE_HZ to 1000. That macro is a vendor (impl-layer) symbol; this
  * file is application code and, per the composition-root rule, must not name
- * one — board_devices.c is the only translation unit allowed to see both
+ * one — board_stm32h7.c is the only translation unit allowed to see both
  * platform and vendor headers. So the one-tick-equals-one-ms assumption cannot
  * be given a _Static_assert in this file without breaking that rule. The
  * nearest place that could state it is 04_impl/rtos/freertos/task/impl_task.c,
