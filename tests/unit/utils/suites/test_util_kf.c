@@ -428,6 +428,100 @@ static void test_util_kf_gate_rejects_an_outlier(void)
     TEST_ASSERT_TRUE(UTIL_KF_Get(&kf, 0u) > 0.0f);
 }
 
+/**
+ * @brief A wedged gate lets one measurement through once the run cap is reached.
+ *
+ * The failure this guards: a gate tests against the filter's own confidence, so a
+ * confident-but-wrong state rejects the measurements that would correct it, and with a
+ * small Q that can persist indefinitely. The cap resolves the standoff in the sensor's
+ * favour, which is the right way round -- the world is not the thing that is wrong.
+ */
+static void test_util_kf_gate_max_run_breaks_a_deadlock(void)
+{
+    static float buf[UTIL_KF_BUF_SIZE(1, 1)];
+    UTIL_KF_s    kf;
+
+    /* Q = 0, so P never grows and the gate never widens on its own: without the cap
+     * this filter rejects the same measurement forever. */
+    make_scalar_filter(&kf, buf, 1.0e-4f, 0.0f, 1.0e-4f);
+    UTIL_KF_SetGuards(&kf, 3.0f, 0.0f);
+    UTIL_KF_SetGateMaxRun(&kf, 3u);
+
+    float wild = 10.0f;
+
+    /* Two rejections, and the run is visible while it is happening. */
+    TEST_ASSERT_FALSE(UTIL_KF_Correct(&kf, &wild));
+    TEST_ASSERT_EQUAL_UINT32(1u, UTIL_KF_GetRejectRun(&kf));
+    TEST_ASSERT_FALSE(UTIL_KF_Correct(&kf, &wild));
+    TEST_ASSERT_EQUAL_UINT32(2u, UTIL_KF_GetRejectRun(&kf));
+    TEST_ASSERT_EXACTLY_ZERO(UTIL_KF_Get(&kf, 0u));
+
+    /* The third is forced through, and the estimate finally moves. */
+    TEST_ASSERT_TRUE(UTIL_KF_Correct(&kf, &wild));
+    TEST_ASSERT_EQUAL_UINT32(0u, UTIL_KF_GetRejectRun(&kf));
+    TEST_ASSERT_TRUE(UTIL_KF_Get(&kf, 0u) > 0.0f);
+
+    /* The lifetime total still counts all three rejections; the run does not. */
+    TEST_ASSERT_EQUAL_UINT32(3u, UTIL_KF_GetRejectCount(&kf));
+}
+
+/**
+ * @brief An accepted measurement clears the run, so isolated outliers never accumulate.
+ *
+ * The property that keeps the cap from defeating the gate: outliers separated by good
+ * samples must each be rejected on their own merits, however many there are. Only an
+ * unbroken run reaches the cap.
+ */
+static void test_util_kf_gate_run_resets_on_an_accepted_measurement(void)
+{
+    static float buf[UTIL_KF_BUF_SIZE(1, 1)];
+    UTIL_KF_s    kf;
+
+    make_scalar_filter(&kf, buf, 1.0e-4f, 0.0f, 1.0e-4f);
+    UTIL_KF_SetGuards(&kf, 3.0f, 0.0f);
+    UTIL_KF_SetGateMaxRun(&kf, 3u);
+
+    float wild = 10.0f;
+    float mild = 0.001f;
+
+    /* Alternating bad and good: six outliers, none of which is ever forced through,
+     * because no run ever reaches three. */
+    for (unsigned i = 0u; i < 6u; i++)
+    {
+        TEST_ASSERT_FALSE(UTIL_KF_Correct(&kf, &wild));
+        TEST_ASSERT_EQUAL_UINT32(1u, UTIL_KF_GetRejectRun(&kf));
+        TEST_ASSERT_TRUE(UTIL_KF_Correct(&kf, &mild));
+        TEST_ASSERT_EQUAL_UINT32(0u, UTIL_KF_GetRejectRun(&kf));
+    }
+
+    TEST_ASSERT_EQUAL_UINT32(6u, UTIL_KF_GetRejectCount(&kf));
+    /* Still near zero: the estimate followed the good samples, not the outliers. */
+    TEST_ASSERT_TRUE(UTIL_KF_Get(&kf, 0u) < 0.01f);
+}
+
+/**
+ * @brief A zero cap keeps rejecting, so the default behaviour is unchanged.
+ */
+static void test_util_kf_gate_max_run_zero_rejects_forever(void)
+{
+    static float buf[UTIL_KF_BUF_SIZE(1, 1)];
+    UTIL_KF_s    kf;
+
+    make_scalar_filter(&kf, buf, 1.0e-4f, 0.0f, 1.0e-4f);
+    UTIL_KF_SetGuards(&kf, 3.0f, 0.0f);
+    UTIL_KF_SetGateMaxRun(&kf, 0u);
+
+    float wild = 10.0f;
+
+    for (unsigned i = 0u; i < 50u; i++)
+    {
+        TEST_ASSERT_FALSE(UTIL_KF_Correct(&kf, &wild));
+    }
+
+    TEST_ASSERT_EXACTLY_ZERO(UTIL_KF_Get(&kf, 0u));
+    TEST_ASSERT_EQUAL_UINT32(50u, UTIL_KF_GetRejectCount(&kf));
+}
+
 static void test_util_kf_correct_is_false_when_every_component_is_gated(void)
 {
     static float buf[UTIL_KF_BUF_SIZE(1, 1)];
@@ -650,6 +744,9 @@ int main(void)
     RUN_TEST(test_util_kf_covariance_stays_positive_definite);
 
     RUN_TEST(test_util_kf_gate_rejects_an_outlier);
+    RUN_TEST(test_util_kf_gate_max_run_breaks_a_deadlock);
+    RUN_TEST(test_util_kf_gate_run_resets_on_an_accepted_measurement);
+    RUN_TEST(test_util_kf_gate_max_run_zero_rejects_forever);
     RUN_TEST(test_util_kf_correct_is_false_when_every_component_is_gated);
 
     RUN_TEST(test_util_kf_correct_skips_only_the_bad_component);

@@ -124,6 +124,8 @@ bool UTIL_KF_Init(UTIL_KF_s* kf, float* buf, uint16_t n, uint16_t z)
     kf->n            = 0u;
     kf->z            = 0u;
     kf->reject_count = 0u;
+    kf->reject_run   = 0u;
+    kf->gate_max_run = 0u;
     kf->reset_count  = 0u;
     kf->p_reset      = DEFAULT_P_RESET;
     kf->gate_sigma   = 0.0f;
@@ -266,6 +268,17 @@ void UTIL_KF_SetGuards(UTIL_KF_s* kf, float gate_sigma, float p_reset)
     {
         kf->p_reset = p_reset;
     }
+}
+
+void UTIL_KF_SetGateMaxRun(UTIL_KF_s* kf, uint32_t max_run)
+{
+    if (kf == NULL || !kf->initialized)
+    {
+        return;
+    }
+
+    kf->gate_max_run = max_run;
+    kf->reject_run   = 0u;
 }
 
 void UTIL_KF_Reset(UTIL_KF_s* kf)
@@ -447,7 +460,26 @@ static bool correct_scalar(UTIL_KF_s* kf, uint16_t row, float z_val)
         if (UTIL_Absf(innovation) > limit)
         {
             kf->reject_count++;
-            return false;
+            kf->reject_run++;
+
+            /* Reject, unless this is the run-th in a row. A gate that has refused this
+             * many consecutive measurements is no longer filtering outliers -- it is
+             * disagreeing with the sensor persistently, which means the filter's own
+             * state is the likelier thing to be wrong. Letting one through breaks the
+             * deadlock; see UTIL_KF_SetGateMaxRun. */
+            if (kf->gate_max_run == 0u || kf->reject_run < kf->gate_max_run)
+            {
+                return false;
+            }
+
+            /* Forced through. Reset the run here rather than below so the next
+             * rejection starts a fresh count instead of forcing every subsequent
+             * measurement once the cap has been reached. */
+            kf->reject_run = 0u;
+        }
+        else
+        {
+            kf->reject_run = 0u;
         }
     }
 

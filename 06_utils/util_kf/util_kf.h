@@ -106,6 +106,8 @@ typedef struct
     uint16_t z; /**< Measurement dimension.                      */
 
     uint32_t reject_count; /**< Measurements rejected by the gate. */
+    uint32_t reject_run;   /**< Consecutive rejections; see gate_max_run.  */
+    uint32_t gate_max_run; /**< Rejections before forcing one through; 0 = never. */
     uint32_t reset_count;  /**< Times the state had to be rebuilt. */
 
     float p_reset;    /**< Diagonal loaded into P when rebuilding. */
@@ -196,6 +198,45 @@ void UTIL_KF_SetMeasurementNoise(UTIL_KF_s* kf, const float* diag);
  *                    setting.
  */
 void UTIL_KF_SetGuards(UTIL_KF_s* kf, float gate_sigma, float p_reset);
+
+/**
+ * @brief Cap how many measurements in a row the gate may reject.
+ *
+ * The escape hatch for the failure the gate itself creates. A gate tests against the
+ * filter's own confidence, so a state seeded far from the truth with a confident P
+ * rejects exactly the measurements that would fix it — and while the note on
+ * UTIL_KF_SetGuards records that a 2-state tracker recovered from that in about 200
+ * steps, recovery is not guaranteed. It depends on Q growing P faster than the gate
+ * tightens; with a small Q and a wrong state the filter can reject forever, reporting
+ * a confident estimate that is simply wrong, with nothing but the rejection count to
+ * say so.
+ *
+ * With a cap set, the run-th consecutive rejection is instead accepted. One outlier
+ * still cannot move the estimate — that takes @p max_run in a row — but a sustained
+ * disagreement between the filter and the world is eventually resolved in the world's
+ * favour, which is the right way round.
+ *
+ * @param kf       Instance to configure.
+ * @param max_run  Consecutive rejections after which one measurement is forced
+ *                 through. 0 disables the cap, restoring reject-forever behaviour.
+ *                 Choose it against how long a genuine outlier burst lasts: long
+ *                 enough that vibration or a knock cannot exhaust it, short enough
+ *                 that a wedged filter recovers in a time the application can accept.
+ *                 At a 1 kHz update rate, 50 is 50 ms.
+ */
+void UTIL_KF_SetGateMaxRun(UTIL_KF_s* kf, uint32_t max_run);
+
+/**
+ * @brief Consecutive gate rejections right now.
+ *
+ * Distinct from UTIL_KF_GetRejectCount, which is a lifetime total: a total says the
+ * gate has been working, while a long current run says the filter and the sensor
+ * disagree *now* and one of them is wrong.
+ *
+ * @return Length of the current rejection run; 0 whenever the last measurement was
+ *         accepted.
+ */
+static inline uint32_t UTIL_KF_GetRejectRun(const UTIL_KF_s* kf) { return kf->reject_run; }
 
 /**
  * @brief Clear the state estimate and reload P with its reset diagonal.
