@@ -67,7 +67,11 @@ case "$jobs" in
         ;;
 esac
 
-build_type=${BUILD_TYPE:-Debug}
+# Matches CMakeLists.txt's default; see the comment there for why -O0 is not neutral
+# for a vtable-forwarding platform layer. Override per invocation:
+#   BUILD_TYPE=Debug ./build.sh     -- -O0 -g3, for stepping
+#   BUILD_TYPE=Release ./build.sh   -- -Os -g0, smallest image
+build_type=${BUILD_TYPE:-RelWithDebInfo}
 toolchain=05_vender/stm32cubemx/cmake/gcc-arm-none-eabi.cmake
 
 if [ ! -f "$root/$toolchain" ]; then

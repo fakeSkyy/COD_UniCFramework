@@ -38,8 +38,23 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
+# RelWithDebInfo (-O2 -g) rather than Debug (-O0 -g3), because -O0 is not a neutral
+# choice here: the platform layer is a vtable forwarder per call, and at -O0 each one
+# compiles to a 14-instruction function with a stack frame instead of the 7-instruction
+# tail call -O2 emits. Measured on this tree, Debug is 164960 bytes of text against
+# 100192 for RelWithDebInfo and 86608 for Release -- so the layering was costing 65 KB
+# of flash and a per-call overhead that no design change could have recovered.
+#
+# Not Release: that is -Os -g0 here, and a stripped image breaks the debugging method
+# this repository actually relies on (reset halt, then a stack backtrace -- see
+# docs/debugging/tim2-timebase.md). Keeping -g costs flash only in the ELF, not on the
+# device: the .bin and .hex carry no debug sections.
+#
+# Both other types remain available: `BUILD_TYPE=Debug ./build.sh` when stepping
+# through optimised-away locals is the point, `BUILD_TYPE=Release ./build.sh` for the
+# smallest image. All 238 host tests pass at -O0, -O2 and -Os.
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Debug")
+    set(CMAKE_BUILD_TYPE "RelWithDebInfo")
 endif()
 
 # Must match what the vendor subdirectory expects; see note 1 above.
@@ -220,12 +235,17 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     02_device/dev_watchdog/dev_watchdog.c
 
     # --- 01_application
-    01_application/board/board_devices.c
+    # The composition root, named for the chip it composes. Retargeting is a matter
+    # of building board_stm32f4.c instead: everything above stays on the Board_*
+    # names in board.h and never learns which was chosen. Exactly one of these may
+    # be in the build -- they define the same symbols.
+    01_application/board/board_stm32h7.c
     01_application/tasks/app_tasks.c
     01_application/indicator/app_indicator.c
     01_application/imu/app_imu.c
     01_application/telemetry/app_telemetry.c
     01_application/health/app_health.c
+    01_application/chassis/app_chassis.c
 )
 
 # Not built:
@@ -313,6 +333,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     01_application/tasks
     01_application/indicator
     01_application/health
+    01_application/chassis
     01_application/imu
     01_application/telemetry
 )
