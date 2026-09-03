@@ -6,6 +6,7 @@
 #include "mock_board_deps.h"
 
 static const char* CMockString_IMPL_STM32_CAN_CreateCtx = "IMPL_STM32_CAN_CreateCtx";
+static const char* CMockString_IMPL_STM32_CAN_CreateCtxRange = "IMPL_STM32_CAN_CreateCtxRange";
 static const char* CMockString_IMPL_STM32_CAN_DestroyCtx = "IMPL_STM32_CAN_DestroyCtx";
 static const char* CMockString_IMPL_STM32_CAN_GetOps = "IMPL_STM32_CAN_GetOps";
 static const char* CMockString_IMPL_STM32_DWT_CreateCtx = "IMPL_STM32_DWT_CreateCtx";
@@ -43,6 +44,8 @@ static const char* CMockString_inst = "inst";
 static const char* CMockString_mode = "mode";
 static const char* CMockString_ops = "ops";
 static const char* CMockString_rx_id = "rx_id";
+static const char* CMockString_rx_id_first = "rx_id_first";
+static const char* CMockString_rx_id_last = "rx_id_last";
 static const char* CMockString_sector_count = "sector_count";
 static const char* CMockString_tx_id = "tx_id";
 
@@ -252,6 +255,26 @@ typedef struct _CMOCK_IMPL_STM32_CAN_CreateCtx_CALL_INSTANCE
   char IgnoreArg_rx_id;
 
 } CMOCK_IMPL_STM32_CAN_CreateCtx_CALL_INSTANCE;
+
+typedef struct _CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE
+{
+  UNITY_LINE_TYPE LineNumber;
+  char ExpectAnyArgsBool;
+  void* ReturnVal;
+  int CallOrder;
+  FDCAN_HandleTypeDef* Expected_hfdcan;
+  uint32_t Expected_tx_id;
+  uint32_t Expected_rx_id_first;
+  uint32_t Expected_rx_id_last;
+  char ReturnThruPtr_hfdcan_Used;
+  FDCAN_HandleTypeDef const* ReturnThruPtr_hfdcan_Val;
+  size_t ReturnThruPtr_hfdcan_Size;
+  char IgnoreArg_hfdcan;
+  char IgnoreArg_tx_id;
+  char IgnoreArg_rx_id_first;
+  char IgnoreArg_rx_id_last;
+
+} CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE;
 
 typedef struct _CMOCK_IMPL_STM32_CAN_GetOps_CALL_INSTANCE
 {
@@ -489,6 +512,12 @@ static struct mock_board_depsInstance
   CMOCK_IMPL_STM32_CAN_CreateCtx_CALLBACK IMPL_STM32_CAN_CreateCtx_CallbackFunctionPointer;
   int IMPL_STM32_CAN_CreateCtx_CallbackCalls;
   CMOCK_MEM_INDEX_TYPE IMPL_STM32_CAN_CreateCtx_CallInstance;
+  char IMPL_STM32_CAN_CreateCtxRange_IgnoreBool;
+  void* IMPL_STM32_CAN_CreateCtxRange_FinalReturn;
+  char IMPL_STM32_CAN_CreateCtxRange_CallbackBool;
+  CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALLBACK IMPL_STM32_CAN_CreateCtxRange_CallbackFunctionPointer;
+  int IMPL_STM32_CAN_CreateCtxRange_CallbackCalls;
+  CMOCK_MEM_INDEX_TYPE IMPL_STM32_CAN_CreateCtxRange_CallInstance;
   char IMPL_STM32_CAN_GetOps_IgnoreBool;
   const CAN_Ops_s* IMPL_STM32_CAN_GetOps_FinalReturn;
   char IMPL_STM32_CAN_GetOps_CallbackBool;
@@ -749,6 +778,19 @@ void mock_board_deps_Verify(void)
     UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
   }
   if (Mock.IMPL_STM32_CAN_CreateCtx_CallbackFunctionPointer != NULL)
+  {
+    call_instance = CMOCK_GUTS_NONE;
+    (void)call_instance;
+  }
+  call_instance = Mock.IMPL_STM32_CAN_CreateCtxRange_CallInstance;
+  if (Mock.IMPL_STM32_CAN_CreateCtxRange_IgnoreBool)
+    call_instance = CMOCK_GUTS_NONE;
+  if (CMOCK_GUTS_NONE != call_instance)
+  {
+    UNITY_SET_DETAIL(CMockString_IMPL_STM32_CAN_CreateCtxRange);
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
+  }
+  if (Mock.IMPL_STM32_CAN_CreateCtxRange_CallbackFunctionPointer != NULL)
   {
     call_instance = CMOCK_GUTS_NONE;
     (void)call_instance;
@@ -3155,6 +3197,215 @@ void IMPL_STM32_CAN_CreateCtx_CMockIgnoreArg_rx_id(UNITY_LINE_TYPE cmock_line)
   CMOCK_IMPL_STM32_CAN_CreateCtx_CALL_INSTANCE* cmock_call_instance = (CMOCK_IMPL_STM32_CAN_CreateCtx_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.IMPL_STM32_CAN_CreateCtx_CallInstance));
   UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
   cmock_call_instance->IgnoreArg_rx_id = 1;
+}
+
+void* IMPL_STM32_CAN_CreateCtxRange(FDCAN_HandleTypeDef* hfdcan, uint32_t tx_id, uint32_t rx_id_first, uint32_t rx_id_last)
+{
+  UNITY_LINE_TYPE cmock_line = TEST_LINE_NUM;
+  CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE* cmock_call_instance;
+  UNITY_SET_DETAIL(CMockString_IMPL_STM32_CAN_CreateCtxRange);
+  cmock_call_instance = (CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE*)CMock_Guts_GetAddressFor(Mock.IMPL_STM32_CAN_CreateCtxRange_CallInstance);
+  Mock.IMPL_STM32_CAN_CreateCtxRange_CallInstance = CMock_Guts_MemNext(Mock.IMPL_STM32_CAN_CreateCtxRange_CallInstance);
+  if (Mock.IMPL_STM32_CAN_CreateCtxRange_IgnoreBool && cmock_call_instance != NULL &&
+      cmock_call_instance->ReturnThruPtr_hfdcan_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(hfdcan, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)hfdcan, (const void*)cmock_call_instance->ReturnThruPtr_hfdcan_Val,
+      cmock_call_instance->ReturnThruPtr_hfdcan_Size);
+  }
+  if (Mock.IMPL_STM32_CAN_CreateCtxRange_IgnoreBool)
+  {
+    UNITY_CLR_DETAILS();
+    if (cmock_call_instance == NULL)
+      return Mock.IMPL_STM32_CAN_CreateCtxRange_FinalReturn;
+    Mock.IMPL_STM32_CAN_CreateCtxRange_FinalReturn = cmock_call_instance->ReturnVal;
+    return cmock_call_instance->ReturnVal;
+  }
+  if (!Mock.IMPL_STM32_CAN_CreateCtxRange_CallbackBool &&
+      Mock.IMPL_STM32_CAN_CreateCtxRange_CallbackFunctionPointer != NULL)
+  {
+    void* cmock_cb_ret = Mock.IMPL_STM32_CAN_CreateCtxRange_CallbackFunctionPointer(hfdcan, tx_id, rx_id_first, rx_id_last, Mock.IMPL_STM32_CAN_CreateCtxRange_CallbackCalls++);
+    UNITY_CLR_DETAILS();
+    return cmock_cb_ret;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringCalledMore);
+  cmock_line = cmock_call_instance->LineNumber;
+  if (cmock_call_instance->CallOrder > ++GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledEarly);
+  if (cmock_call_instance->CallOrder < GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLate);
+  if (!cmock_call_instance->ExpectAnyArgsBool)
+  {
+  if (!cmock_call_instance->IgnoreArg_hfdcan)
+  {
+    UNITY_SET_DETAILS(CMockString_IMPL_STM32_CAN_CreateCtxRange,CMockString_hfdcan);
+    UNITY_TEST_ASSERT_EQUAL_MEMORY(cmock_call_instance->Expected_hfdcan, hfdcan, sizeof(FDCAN_HandleTypeDef), cmock_line, CMockStringMismatch);
+  }
+  if (!cmock_call_instance->IgnoreArg_tx_id)
+  {
+    UNITY_SET_DETAILS(CMockString_IMPL_STM32_CAN_CreateCtxRange,CMockString_tx_id);
+    UNITY_TEST_ASSERT_EQUAL_HEX32(cmock_call_instance->Expected_tx_id, tx_id, cmock_line, CMockStringMismatch);
+  }
+  if (!cmock_call_instance->IgnoreArg_rx_id_first)
+  {
+    UNITY_SET_DETAILS(CMockString_IMPL_STM32_CAN_CreateCtxRange,CMockString_rx_id_first);
+    UNITY_TEST_ASSERT_EQUAL_HEX32(cmock_call_instance->Expected_rx_id_first, rx_id_first, cmock_line, CMockStringMismatch);
+  }
+  if (!cmock_call_instance->IgnoreArg_rx_id_last)
+  {
+    UNITY_SET_DETAILS(CMockString_IMPL_STM32_CAN_CreateCtxRange,CMockString_rx_id_last);
+    UNITY_TEST_ASSERT_EQUAL_HEX32(cmock_call_instance->Expected_rx_id_last, rx_id_last, cmock_line, CMockStringMismatch);
+  }
+  }
+  if (Mock.IMPL_STM32_CAN_CreateCtxRange_CallbackFunctionPointer != NULL)
+  {
+    UNITY_SET_DETAIL(CMockString_IMPL_STM32_CAN_CreateCtxRange);
+    cmock_call_instance->ReturnVal = Mock.IMPL_STM32_CAN_CreateCtxRange_CallbackFunctionPointer(hfdcan, tx_id, rx_id_first, rx_id_last, Mock.IMPL_STM32_CAN_CreateCtxRange_CallbackCalls++);
+  }
+  if (cmock_call_instance->ReturnThruPtr_hfdcan_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(hfdcan, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)hfdcan, (const void*)cmock_call_instance->ReturnThruPtr_hfdcan_Val,
+      cmock_call_instance->ReturnThruPtr_hfdcan_Size);
+  }
+  UNITY_CLR_DETAILS();
+  return cmock_call_instance->ReturnVal;
+}
+
+void CMockExpectParameters_IMPL_STM32_CAN_CreateCtxRange(CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE* cmock_call_instance, FDCAN_HandleTypeDef* hfdcan, uint32_t tx_id, uint32_t rx_id_first, uint32_t rx_id_last);
+void CMockExpectParameters_IMPL_STM32_CAN_CreateCtxRange(CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE* cmock_call_instance, FDCAN_HandleTypeDef* hfdcan, uint32_t tx_id, uint32_t rx_id_first, uint32_t rx_id_last)
+{
+  cmock_call_instance->Expected_hfdcan = hfdcan;
+  cmock_call_instance->IgnoreArg_hfdcan = 0;
+  cmock_call_instance->ReturnThruPtr_hfdcan_Used = 0;
+  cmock_call_instance->Expected_tx_id = tx_id;
+  cmock_call_instance->IgnoreArg_tx_id = 0;
+  cmock_call_instance->Expected_rx_id_first = rx_id_first;
+  cmock_call_instance->IgnoreArg_rx_id_first = 0;
+  cmock_call_instance->Expected_rx_id_last = rx_id_last;
+  cmock_call_instance->IgnoreArg_rx_id_last = 0;
+}
+
+void IMPL_STM32_CAN_CreateCtxRange_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE));
+  CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE* cmock_call_instance = (CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.IMPL_STM32_CAN_CreateCtxRange_CallInstance = CMock_Guts_MemChain(Mock.IMPL_STM32_CAN_CreateCtxRange_CallInstance, cmock_guts_index);
+  Mock.IMPL_STM32_CAN_CreateCtxRange_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+  Mock.IMPL_STM32_CAN_CreateCtxRange_IgnoreBool = (char)1;
+}
+
+void IMPL_STM32_CAN_CreateCtxRange_CMockStopIgnore(void)
+{
+  if(Mock.IMPL_STM32_CAN_CreateCtxRange_IgnoreBool)
+    Mock.IMPL_STM32_CAN_CreateCtxRange_CallInstance = CMock_Guts_MemNext(Mock.IMPL_STM32_CAN_CreateCtxRange_CallInstance);
+  Mock.IMPL_STM32_CAN_CreateCtxRange_IgnoreBool = (char)0;
+}
+
+void IMPL_STM32_CAN_CreateCtxRange_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE));
+  CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE* cmock_call_instance = (CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.IMPL_STM32_CAN_CreateCtxRange_CallInstance = CMock_Guts_MemChain(Mock.IMPL_STM32_CAN_CreateCtxRange_CallInstance, cmock_guts_index);
+  Mock.IMPL_STM32_CAN_CreateCtxRange_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+  cmock_call_instance->ExpectAnyArgsBool = (char)1;
+}
+
+void IMPL_STM32_CAN_CreateCtxRange_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, FDCAN_HandleTypeDef* hfdcan, uint32_t tx_id, uint32_t rx_id_first, uint32_t rx_id_last, void* cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE));
+  CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE* cmock_call_instance = (CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.IMPL_STM32_CAN_CreateCtxRange_CallInstance = CMock_Guts_MemChain(Mock.IMPL_STM32_CAN_CreateCtxRange_CallInstance, cmock_guts_index);
+  Mock.IMPL_STM32_CAN_CreateCtxRange_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  CMockExpectParameters_IMPL_STM32_CAN_CreateCtxRange(cmock_call_instance, hfdcan, tx_id, rx_id_first, rx_id_last);
+  cmock_call_instance->ReturnVal = cmock_to_return;
+}
+
+void IMPL_STM32_CAN_CreateCtxRange_AddCallback(CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALLBACK Callback)
+{
+  Mock.IMPL_STM32_CAN_CreateCtxRange_IgnoreBool = (char)0;
+  Mock.IMPL_STM32_CAN_CreateCtxRange_CallbackBool = (char)1;
+  Mock.IMPL_STM32_CAN_CreateCtxRange_CallbackCalls = 0;
+  Mock.IMPL_STM32_CAN_CreateCtxRange_CallbackFunctionPointer = Callback;
+}
+
+int IMPL_STM32_CAN_CreateCtxRange_CallCount(void)
+{
+  return Mock.IMPL_STM32_CAN_CreateCtxRange_CallbackCalls;
+}
+
+void IMPL_STM32_CAN_CreateCtxRange_Stub(CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALLBACK Callback)
+{
+  Mock.IMPL_STM32_CAN_CreateCtxRange_IgnoreBool = (char)0;
+  Mock.IMPL_STM32_CAN_CreateCtxRange_CallbackBool = (char)0;
+  Mock.IMPL_STM32_CAN_CreateCtxRange_CallbackCalls = 0;
+  Mock.IMPL_STM32_CAN_CreateCtxRange_CallbackFunctionPointer = Callback;
+}
+
+void IMPL_STM32_CAN_CreateCtxRange_CMockReturnMemThruPtr_hfdcan(UNITY_LINE_TYPE cmock_line, FDCAN_HandleTypeDef const* hfdcan, size_t cmock_size)
+{
+  CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE* cmock_call_instance = (CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.IMPL_STM32_CAN_CreateCtxRange_CallInstance));
+  if (Mock.IMPL_STM32_CAN_CreateCtxRange_IgnoreBool &&
+      (cmock_call_instance == NULL || cmock_call_instance->ReturnThruPtr_hfdcan_Used))
+  {
+    CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE));
+    CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE* new_instance = (CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+    UNITY_TEST_ASSERT_NOT_NULL(new_instance, cmock_line, CMockStringOutOfMemory);
+    memset(new_instance, 0, sizeof(*new_instance));
+    new_instance->LineNumber = cmock_line;
+    if (cmock_call_instance != NULL)
+      new_instance->ReturnVal = cmock_call_instance->ReturnVal;
+    Mock.IMPL_STM32_CAN_CreateCtxRange_CallInstance = CMock_Guts_MemChain(Mock.IMPL_STM32_CAN_CreateCtxRange_CallInstance, cmock_guts_index);
+    cmock_call_instance = new_instance;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringPtrPreExp);
+  cmock_call_instance->ReturnThruPtr_hfdcan_Used = 1;
+  cmock_call_instance->ReturnThruPtr_hfdcan_Val = hfdcan;
+  cmock_call_instance->ReturnThruPtr_hfdcan_Size = cmock_size;
+}
+
+void IMPL_STM32_CAN_CreateCtxRange_CMockIgnoreArg_hfdcan(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE* cmock_call_instance = (CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.IMPL_STM32_CAN_CreateCtxRange_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_hfdcan = 1;
+}
+
+void IMPL_STM32_CAN_CreateCtxRange_CMockIgnoreArg_tx_id(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE* cmock_call_instance = (CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.IMPL_STM32_CAN_CreateCtxRange_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_tx_id = 1;
+}
+
+void IMPL_STM32_CAN_CreateCtxRange_CMockIgnoreArg_rx_id_first(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE* cmock_call_instance = (CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.IMPL_STM32_CAN_CreateCtxRange_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_rx_id_first = 1;
+}
+
+void IMPL_STM32_CAN_CreateCtxRange_CMockIgnoreArg_rx_id_last(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE* cmock_call_instance = (CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.IMPL_STM32_CAN_CreateCtxRange_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_rx_id_last = 1;
 }
 
 const CAN_Ops_s* IMPL_STM32_CAN_GetOps(void)

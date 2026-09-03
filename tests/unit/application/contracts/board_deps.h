@@ -34,6 +34,8 @@ void*              IMPL_STM32_FLASH_CreateCtx(uint32_t first_sector, uint32_t se
 const Flash_Ops_s* IMPL_STM32_FLASH_GetOps(void);
 void               IMPL_STM32_FLASH_DestroyCtx(void* ctx);
 void* IMPL_STM32_CAN_CreateCtx(FDCAN_HandleTypeDef* hfdcan, uint32_t tx_id, uint32_t rx_id);
+void* IMPL_STM32_CAN_CreateCtxRange(FDCAN_HandleTypeDef* hfdcan, uint32_t tx_id,
+                                    uint32_t rx_id_first, uint32_t rx_id_last);
 const CAN_Ops_s* IMPL_STM32_CAN_GetOps(void);
 void             IMPL_STM32_CAN_DestroyCtx(void* ctx);
 bool             PLAT_DWT_Init(DWT_Instance_s* inst, const DWT_Ops_s* ops, void* ctx);

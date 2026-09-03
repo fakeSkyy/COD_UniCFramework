@@ -28,338 +28,366 @@ void mock_board_backend_contract_Verify(void);
 
 
 
-#define HOST_DWT_CreateCtx_Ignore() TEST_FAIL_MESSAGE("HOST_DWT_CreateCtx requires _IgnoreAndReturn");
-#define HOST_DWT_CreateCtx_IgnoreAndReturn(cmock_retval) HOST_DWT_CreateCtx_CMockIgnoreAndReturn(__LINE__, cmock_retval)
-void HOST_DWT_CreateCtx_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
-#define HOST_DWT_CreateCtx_StopIgnore() HOST_DWT_CreateCtx_CMockStopIgnore()
-void HOST_DWT_CreateCtx_CMockStopIgnore(void);
-#define HOST_DWT_CreateCtx_ExpectAnyArgs() TEST_FAIL_MESSAGE("HOST_DWT_CreateCtx requires _ExpectAnyArgsAndReturn");
-#define HOST_DWT_CreateCtx_ExpectAnyArgsAndReturn(cmock_retval) HOST_DWT_CreateCtx_CMockExpectAnyArgsAndReturn(__LINE__, cmock_retval)
-void HOST_DWT_CreateCtx_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
-#define HOST_DWT_CreateCtx_Expect(cpu_freq_hz) TEST_FAIL_MESSAGE("HOST_DWT_CreateCtx requires _ExpectAndReturn");
-#define HOST_DWT_CreateCtx_ExpectAndReturn(cpu_freq_hz, cmock_retval) HOST_DWT_CreateCtx_CMockExpectAndReturn(__LINE__, cpu_freq_hz, cmock_retval)
-void HOST_DWT_CreateCtx_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, uint32_t cpu_freq_hz, void* cmock_to_return);
-typedef void* (* CMOCK_HOST_DWT_CreateCtx_CALLBACK)(uint32_t cpu_freq_hz, int cmock_num_calls);
-void HOST_DWT_CreateCtx_AddCallback(CMOCK_HOST_DWT_CreateCtx_CALLBACK Callback);
-void HOST_DWT_CreateCtx_Stub(CMOCK_HOST_DWT_CreateCtx_CALLBACK Callback);
-#define HOST_DWT_CreateCtx_StubWithCallback HOST_DWT_CreateCtx_Stub
-int HOST_DWT_CreateCtx_CallCount(void);
-#define HOST_DWT_CreateCtx_IgnoreArg_cpu_freq_hz() HOST_DWT_CreateCtx_CMockIgnoreArg_cpu_freq_hz(__LINE__)
-void HOST_DWT_CreateCtx_CMockIgnoreArg_cpu_freq_hz(UNITY_LINE_TYPE cmock_line);
-#define HOST_DWT_GetOps_Ignore() TEST_FAIL_MESSAGE("HOST_DWT_GetOps requires _IgnoreAndReturn");
-#define HOST_DWT_GetOps_IgnoreAndReturn(cmock_retval) HOST_DWT_GetOps_CMockIgnoreAndReturn(__LINE__, cmock_retval)
-void HOST_DWT_GetOps_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, const DWT_Ops_s* cmock_to_return);
-#define HOST_DWT_GetOps_StopIgnore() HOST_DWT_GetOps_CMockStopIgnore()
-void HOST_DWT_GetOps_CMockStopIgnore(void);
-#define HOST_DWT_GetOps_Expect() TEST_FAIL_MESSAGE("HOST_DWT_GetOps requires _ExpectAndReturn");
-#define HOST_DWT_GetOps_ExpectAndReturn(cmock_retval) HOST_DWT_GetOps_CMockExpectAndReturn(__LINE__, cmock_retval)
-void HOST_DWT_GetOps_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, const DWT_Ops_s* cmock_to_return);
-typedef const DWT_Ops_s* (* CMOCK_HOST_DWT_GetOps_CALLBACK)(int cmock_num_calls);
-void HOST_DWT_GetOps_AddCallback(CMOCK_HOST_DWT_GetOps_CALLBACK Callback);
-void HOST_DWT_GetOps_Stub(CMOCK_HOST_DWT_GetOps_CALLBACK Callback);
-#define HOST_DWT_GetOps_StubWithCallback HOST_DWT_GetOps_Stub
-int HOST_DWT_GetOps_CallCount(void);
-#define HOST_DWT_DestroyCtx_IgnoreAndReturn(cmock_retval) TEST_FAIL_MESSAGE("HOST_DWT_DestroyCtx requires _Ignore (not AndReturn)");
-#define HOST_DWT_DestroyCtx_Ignore() HOST_DWT_DestroyCtx_CMockIgnore()
-void HOST_DWT_DestroyCtx_CMockIgnore(void);
-#define HOST_DWT_DestroyCtx_StopIgnore() HOST_DWT_DestroyCtx_CMockStopIgnore()
-void HOST_DWT_DestroyCtx_CMockStopIgnore(void);
-#define HOST_DWT_DestroyCtx_ExpectAnyArgsAndReturn(cmock_retval) TEST_FAIL_MESSAGE("HOST_DWT_DestroyCtx requires _ExpectAnyArgs (not AndReturn)");
-#define HOST_DWT_DestroyCtx_ExpectAnyArgs() HOST_DWT_DestroyCtx_CMockExpectAnyArgs(__LINE__)
-void HOST_DWT_DestroyCtx_CMockExpectAnyArgs(UNITY_LINE_TYPE cmock_line);
-#define HOST_DWT_DestroyCtx_ExpectAndReturn(ctx, cmock_retval) TEST_FAIL_MESSAGE("HOST_DWT_DestroyCtx requires _Expect (not AndReturn)");
-#define HOST_DWT_DestroyCtx_Expect(ctx) HOST_DWT_DestroyCtx_CMockExpect(__LINE__, ctx)
-void HOST_DWT_DestroyCtx_CMockExpect(UNITY_LINE_TYPE cmock_line, void* ctx);
-typedef void (* CMOCK_HOST_DWT_DestroyCtx_CALLBACK)(void* ctx, int cmock_num_calls);
-void HOST_DWT_DestroyCtx_AddCallback(CMOCK_HOST_DWT_DestroyCtx_CALLBACK Callback);
-void HOST_DWT_DestroyCtx_Stub(CMOCK_HOST_DWT_DestroyCtx_CALLBACK Callback);
-#define HOST_DWT_DestroyCtx_StubWithCallback HOST_DWT_DestroyCtx_Stub
-int HOST_DWT_DestroyCtx_CallCount(void);
-#define HOST_DWT_DestroyCtx_ReturnThruPtr_ctx(ctx) HOST_DWT_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, sizeof(*ctx))
-#define HOST_DWT_DestroyCtx_ReturnArrayThruPtr_ctx(ctx, cmock_len) HOST_DWT_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, (cmock_len * sizeof(*ctx)))
-#define HOST_DWT_DestroyCtx_ReturnMemThruPtr_ctx(ctx, cmock_size) HOST_DWT_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, (cmock_size))
-void HOST_DWT_DestroyCtx_CMockReturnMemThruPtr_ctx(UNITY_LINE_TYPE cmock_line, void const* ctx, size_t cmock_size);
-#define HOST_DWT_DestroyCtx_IgnoreArg_ctx() HOST_DWT_DestroyCtx_CMockIgnoreArg_ctx(__LINE__)
-void HOST_DWT_DestroyCtx_CMockIgnoreArg_ctx(UNITY_LINE_TYPE cmock_line);
-#define HOST_SPI_CreateCtx_Ignore() TEST_FAIL_MESSAGE("HOST_SPI_CreateCtx requires _IgnoreAndReturn");
-#define HOST_SPI_CreateCtx_IgnoreAndReturn(cmock_retval) HOST_SPI_CreateCtx_CMockIgnoreAndReturn(__LINE__, cmock_retval)
-void HOST_SPI_CreateCtx_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
-#define HOST_SPI_CreateCtx_StopIgnore() HOST_SPI_CreateCtx_CMockStopIgnore()
-void HOST_SPI_CreateCtx_CMockStopIgnore(void);
-#define HOST_SPI_CreateCtx_ExpectAnyArgs() TEST_FAIL_MESSAGE("HOST_SPI_CreateCtx requires _ExpectAnyArgsAndReturn");
-#define HOST_SPI_CreateCtx_ExpectAnyArgsAndReturn(cmock_retval) HOST_SPI_CreateCtx_CMockExpectAnyArgsAndReturn(__LINE__, cmock_retval)
-void HOST_SPI_CreateCtx_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
-#define HOST_SPI_CreateCtx_Expect(hspi, cs_port, cs_pin, mode) TEST_FAIL_MESSAGE("HOST_SPI_CreateCtx requires _ExpectAndReturn");
-#define HOST_SPI_CreateCtx_ExpectAndReturn(hspi, cs_port, cs_pin, mode, cmock_retval) HOST_SPI_CreateCtx_CMockExpectAndReturn(__LINE__, hspi, cs_port, cs_pin, mode, cmock_retval)
-void HOST_SPI_CreateCtx_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, SPI_HandleTypeDef* hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin, SPI_Xfer_Mode_e mode, void* cmock_to_return);
-typedef void* (* CMOCK_HOST_SPI_CreateCtx_CALLBACK)(SPI_HandleTypeDef* hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin, SPI_Xfer_Mode_e mode, int cmock_num_calls);
-void HOST_SPI_CreateCtx_AddCallback(CMOCK_HOST_SPI_CreateCtx_CALLBACK Callback);
-void HOST_SPI_CreateCtx_Stub(CMOCK_HOST_SPI_CreateCtx_CALLBACK Callback);
-#define HOST_SPI_CreateCtx_StubWithCallback HOST_SPI_CreateCtx_Stub
-int HOST_SPI_CreateCtx_CallCount(void);
-#define HOST_SPI_CreateCtx_ReturnThruPtr_hspi(hspi) HOST_SPI_CreateCtx_CMockReturnMemThruPtr_hspi(__LINE__, hspi, sizeof(SPI_HandleTypeDef))
-#define HOST_SPI_CreateCtx_ReturnArrayThruPtr_hspi(hspi, cmock_len) HOST_SPI_CreateCtx_CMockReturnMemThruPtr_hspi(__LINE__, hspi, (cmock_len * sizeof(*hspi)))
-#define HOST_SPI_CreateCtx_ReturnMemThruPtr_hspi(hspi, cmock_size) HOST_SPI_CreateCtx_CMockReturnMemThruPtr_hspi(__LINE__, hspi, (cmock_size))
-void HOST_SPI_CreateCtx_CMockReturnMemThruPtr_hspi(UNITY_LINE_TYPE cmock_line, SPI_HandleTypeDef const* hspi, size_t cmock_size);
-#define HOST_SPI_CreateCtx_ReturnThruPtr_cs_port(cs_port) HOST_SPI_CreateCtx_CMockReturnMemThruPtr_cs_port(__LINE__, cs_port, sizeof(GPIO_TypeDef))
-#define HOST_SPI_CreateCtx_ReturnArrayThruPtr_cs_port(cs_port, cmock_len) HOST_SPI_CreateCtx_CMockReturnMemThruPtr_cs_port(__LINE__, cs_port, (cmock_len * sizeof(*cs_port)))
-#define HOST_SPI_CreateCtx_ReturnMemThruPtr_cs_port(cs_port, cmock_size) HOST_SPI_CreateCtx_CMockReturnMemThruPtr_cs_port(__LINE__, cs_port, (cmock_size))
-void HOST_SPI_CreateCtx_CMockReturnMemThruPtr_cs_port(UNITY_LINE_TYPE cmock_line, GPIO_TypeDef const* cs_port, size_t cmock_size);
-#define HOST_SPI_CreateCtx_IgnoreArg_hspi() HOST_SPI_CreateCtx_CMockIgnoreArg_hspi(__LINE__)
-void HOST_SPI_CreateCtx_CMockIgnoreArg_hspi(UNITY_LINE_TYPE cmock_line);
-#define HOST_SPI_CreateCtx_IgnoreArg_cs_port() HOST_SPI_CreateCtx_CMockIgnoreArg_cs_port(__LINE__)
-void HOST_SPI_CreateCtx_CMockIgnoreArg_cs_port(UNITY_LINE_TYPE cmock_line);
-#define HOST_SPI_CreateCtx_IgnoreArg_cs_pin() HOST_SPI_CreateCtx_CMockIgnoreArg_cs_pin(__LINE__)
-void HOST_SPI_CreateCtx_CMockIgnoreArg_cs_pin(UNITY_LINE_TYPE cmock_line);
-#define HOST_SPI_CreateCtx_IgnoreArg_mode() HOST_SPI_CreateCtx_CMockIgnoreArg_mode(__LINE__)
-void HOST_SPI_CreateCtx_CMockIgnoreArg_mode(UNITY_LINE_TYPE cmock_line);
-#define HOST_SPI_GetOps_Ignore() TEST_FAIL_MESSAGE("HOST_SPI_GetOps requires _IgnoreAndReturn");
-#define HOST_SPI_GetOps_IgnoreAndReturn(cmock_retval) HOST_SPI_GetOps_CMockIgnoreAndReturn(__LINE__, cmock_retval)
-void HOST_SPI_GetOps_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, const SPI_Ops_s* cmock_to_return);
-#define HOST_SPI_GetOps_StopIgnore() HOST_SPI_GetOps_CMockStopIgnore()
-void HOST_SPI_GetOps_CMockStopIgnore(void);
-#define HOST_SPI_GetOps_Expect() TEST_FAIL_MESSAGE("HOST_SPI_GetOps requires _ExpectAndReturn");
-#define HOST_SPI_GetOps_ExpectAndReturn(cmock_retval) HOST_SPI_GetOps_CMockExpectAndReturn(__LINE__, cmock_retval)
-void HOST_SPI_GetOps_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, const SPI_Ops_s* cmock_to_return);
-typedef const SPI_Ops_s* (* CMOCK_HOST_SPI_GetOps_CALLBACK)(int cmock_num_calls);
-void HOST_SPI_GetOps_AddCallback(CMOCK_HOST_SPI_GetOps_CALLBACK Callback);
-void HOST_SPI_GetOps_Stub(CMOCK_HOST_SPI_GetOps_CALLBACK Callback);
-#define HOST_SPI_GetOps_StubWithCallback HOST_SPI_GetOps_Stub
-int HOST_SPI_GetOps_CallCount(void);
-#define HOST_SPI_DestroyCtx_IgnoreAndReturn(cmock_retval) TEST_FAIL_MESSAGE("HOST_SPI_DestroyCtx requires _Ignore (not AndReturn)");
-#define HOST_SPI_DestroyCtx_Ignore() HOST_SPI_DestroyCtx_CMockIgnore()
-void HOST_SPI_DestroyCtx_CMockIgnore(void);
-#define HOST_SPI_DestroyCtx_StopIgnore() HOST_SPI_DestroyCtx_CMockStopIgnore()
-void HOST_SPI_DestroyCtx_CMockStopIgnore(void);
-#define HOST_SPI_DestroyCtx_ExpectAnyArgsAndReturn(cmock_retval) TEST_FAIL_MESSAGE("HOST_SPI_DestroyCtx requires _ExpectAnyArgs (not AndReturn)");
-#define HOST_SPI_DestroyCtx_ExpectAnyArgs() HOST_SPI_DestroyCtx_CMockExpectAnyArgs(__LINE__)
-void HOST_SPI_DestroyCtx_CMockExpectAnyArgs(UNITY_LINE_TYPE cmock_line);
-#define HOST_SPI_DestroyCtx_ExpectAndReturn(ctx, cmock_retval) TEST_FAIL_MESSAGE("HOST_SPI_DestroyCtx requires _Expect (not AndReturn)");
-#define HOST_SPI_DestroyCtx_Expect(ctx) HOST_SPI_DestroyCtx_CMockExpect(__LINE__, ctx)
-void HOST_SPI_DestroyCtx_CMockExpect(UNITY_LINE_TYPE cmock_line, void* ctx);
-typedef void (* CMOCK_HOST_SPI_DestroyCtx_CALLBACK)(void* ctx, int cmock_num_calls);
-void HOST_SPI_DestroyCtx_AddCallback(CMOCK_HOST_SPI_DestroyCtx_CALLBACK Callback);
-void HOST_SPI_DestroyCtx_Stub(CMOCK_HOST_SPI_DestroyCtx_CALLBACK Callback);
-#define HOST_SPI_DestroyCtx_StubWithCallback HOST_SPI_DestroyCtx_Stub
-int HOST_SPI_DestroyCtx_CallCount(void);
-#define HOST_SPI_DestroyCtx_ReturnThruPtr_ctx(ctx) HOST_SPI_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, sizeof(*ctx))
-#define HOST_SPI_DestroyCtx_ReturnArrayThruPtr_ctx(ctx, cmock_len) HOST_SPI_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, (cmock_len * sizeof(*ctx)))
-#define HOST_SPI_DestroyCtx_ReturnMemThruPtr_ctx(ctx, cmock_size) HOST_SPI_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, (cmock_size))
-void HOST_SPI_DestroyCtx_CMockReturnMemThruPtr_ctx(UNITY_LINE_TYPE cmock_line, void const* ctx, size_t cmock_size);
-#define HOST_SPI_DestroyCtx_IgnoreArg_ctx() HOST_SPI_DestroyCtx_CMockIgnoreArg_ctx(__LINE__)
-void HOST_SPI_DestroyCtx_CMockIgnoreArg_ctx(UNITY_LINE_TYPE cmock_line);
-#define HOST_UART_CreateCtx_Ignore() TEST_FAIL_MESSAGE("HOST_UART_CreateCtx requires _IgnoreAndReturn");
-#define HOST_UART_CreateCtx_IgnoreAndReturn(cmock_retval) HOST_UART_CreateCtx_CMockIgnoreAndReturn(__LINE__, cmock_retval)
-void HOST_UART_CreateCtx_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
-#define HOST_UART_CreateCtx_StopIgnore() HOST_UART_CreateCtx_CMockStopIgnore()
-void HOST_UART_CreateCtx_CMockStopIgnore(void);
-#define HOST_UART_CreateCtx_ExpectAnyArgs() TEST_FAIL_MESSAGE("HOST_UART_CreateCtx requires _ExpectAnyArgsAndReturn");
-#define HOST_UART_CreateCtx_ExpectAnyArgsAndReturn(cmock_retval) HOST_UART_CreateCtx_CMockExpectAnyArgsAndReturn(__LINE__, cmock_retval)
-void HOST_UART_CreateCtx_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
-#define HOST_UART_CreateCtx_Expect(huart, mode) TEST_FAIL_MESSAGE("HOST_UART_CreateCtx requires _ExpectAndReturn");
-#define HOST_UART_CreateCtx_ExpectAndReturn(huart, mode, cmock_retval) HOST_UART_CreateCtx_CMockExpectAndReturn(__LINE__, huart, mode, cmock_retval)
-void HOST_UART_CreateCtx_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, UART_HandleTypeDef* huart, UART_Xfer_Mode_e mode, void* cmock_to_return);
-typedef void* (* CMOCK_HOST_UART_CreateCtx_CALLBACK)(UART_HandleTypeDef* huart, UART_Xfer_Mode_e mode, int cmock_num_calls);
-void HOST_UART_CreateCtx_AddCallback(CMOCK_HOST_UART_CreateCtx_CALLBACK Callback);
-void HOST_UART_CreateCtx_Stub(CMOCK_HOST_UART_CreateCtx_CALLBACK Callback);
-#define HOST_UART_CreateCtx_StubWithCallback HOST_UART_CreateCtx_Stub
-int HOST_UART_CreateCtx_CallCount(void);
-#define HOST_UART_CreateCtx_ReturnThruPtr_huart(huart) HOST_UART_CreateCtx_CMockReturnMemThruPtr_huart(__LINE__, huart, sizeof(UART_HandleTypeDef))
-#define HOST_UART_CreateCtx_ReturnArrayThruPtr_huart(huart, cmock_len) HOST_UART_CreateCtx_CMockReturnMemThruPtr_huart(__LINE__, huart, (cmock_len * sizeof(*huart)))
-#define HOST_UART_CreateCtx_ReturnMemThruPtr_huart(huart, cmock_size) HOST_UART_CreateCtx_CMockReturnMemThruPtr_huart(__LINE__, huart, (cmock_size))
-void HOST_UART_CreateCtx_CMockReturnMemThruPtr_huart(UNITY_LINE_TYPE cmock_line, UART_HandleTypeDef const* huart, size_t cmock_size);
-#define HOST_UART_CreateCtx_IgnoreArg_huart() HOST_UART_CreateCtx_CMockIgnoreArg_huart(__LINE__)
-void HOST_UART_CreateCtx_CMockIgnoreArg_huart(UNITY_LINE_TYPE cmock_line);
-#define HOST_UART_CreateCtx_IgnoreArg_mode() HOST_UART_CreateCtx_CMockIgnoreArg_mode(__LINE__)
-void HOST_UART_CreateCtx_CMockIgnoreArg_mode(UNITY_LINE_TYPE cmock_line);
-#define HOST_UART_GetOps_Ignore() TEST_FAIL_MESSAGE("HOST_UART_GetOps requires _IgnoreAndReturn");
-#define HOST_UART_GetOps_IgnoreAndReturn(cmock_retval) HOST_UART_GetOps_CMockIgnoreAndReturn(__LINE__, cmock_retval)
-void HOST_UART_GetOps_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, const UART_Ops_s* cmock_to_return);
-#define HOST_UART_GetOps_StopIgnore() HOST_UART_GetOps_CMockStopIgnore()
-void HOST_UART_GetOps_CMockStopIgnore(void);
-#define HOST_UART_GetOps_Expect() TEST_FAIL_MESSAGE("HOST_UART_GetOps requires _ExpectAndReturn");
-#define HOST_UART_GetOps_ExpectAndReturn(cmock_retval) HOST_UART_GetOps_CMockExpectAndReturn(__LINE__, cmock_retval)
-void HOST_UART_GetOps_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, const UART_Ops_s* cmock_to_return);
-typedef const UART_Ops_s* (* CMOCK_HOST_UART_GetOps_CALLBACK)(int cmock_num_calls);
-void HOST_UART_GetOps_AddCallback(CMOCK_HOST_UART_GetOps_CALLBACK Callback);
-void HOST_UART_GetOps_Stub(CMOCK_HOST_UART_GetOps_CALLBACK Callback);
-#define HOST_UART_GetOps_StubWithCallback HOST_UART_GetOps_Stub
-int HOST_UART_GetOps_CallCount(void);
-#define HOST_UART_DestroyCtx_IgnoreAndReturn(cmock_retval) TEST_FAIL_MESSAGE("HOST_UART_DestroyCtx requires _Ignore (not AndReturn)");
-#define HOST_UART_DestroyCtx_Ignore() HOST_UART_DestroyCtx_CMockIgnore()
-void HOST_UART_DestroyCtx_CMockIgnore(void);
-#define HOST_UART_DestroyCtx_StopIgnore() HOST_UART_DestroyCtx_CMockStopIgnore()
-void HOST_UART_DestroyCtx_CMockStopIgnore(void);
-#define HOST_UART_DestroyCtx_ExpectAnyArgsAndReturn(cmock_retval) TEST_FAIL_MESSAGE("HOST_UART_DestroyCtx requires _ExpectAnyArgs (not AndReturn)");
-#define HOST_UART_DestroyCtx_ExpectAnyArgs() HOST_UART_DestroyCtx_CMockExpectAnyArgs(__LINE__)
-void HOST_UART_DestroyCtx_CMockExpectAnyArgs(UNITY_LINE_TYPE cmock_line);
-#define HOST_UART_DestroyCtx_ExpectAndReturn(ctx, cmock_retval) TEST_FAIL_MESSAGE("HOST_UART_DestroyCtx requires _Expect (not AndReturn)");
-#define HOST_UART_DestroyCtx_Expect(ctx) HOST_UART_DestroyCtx_CMockExpect(__LINE__, ctx)
-void HOST_UART_DestroyCtx_CMockExpect(UNITY_LINE_TYPE cmock_line, void* ctx);
-typedef void (* CMOCK_HOST_UART_DestroyCtx_CALLBACK)(void* ctx, int cmock_num_calls);
-void HOST_UART_DestroyCtx_AddCallback(CMOCK_HOST_UART_DestroyCtx_CALLBACK Callback);
-void HOST_UART_DestroyCtx_Stub(CMOCK_HOST_UART_DestroyCtx_CALLBACK Callback);
-#define HOST_UART_DestroyCtx_StubWithCallback HOST_UART_DestroyCtx_Stub
-int HOST_UART_DestroyCtx_CallCount(void);
-#define HOST_UART_DestroyCtx_ReturnThruPtr_ctx(ctx) HOST_UART_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, sizeof(*ctx))
-#define HOST_UART_DestroyCtx_ReturnArrayThruPtr_ctx(ctx, cmock_len) HOST_UART_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, (cmock_len * sizeof(*ctx)))
-#define HOST_UART_DestroyCtx_ReturnMemThruPtr_ctx(ctx, cmock_size) HOST_UART_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, (cmock_size))
-void HOST_UART_DestroyCtx_CMockReturnMemThruPtr_ctx(UNITY_LINE_TYPE cmock_line, void const* ctx, size_t cmock_size);
-#define HOST_UART_DestroyCtx_IgnoreArg_ctx() HOST_UART_DestroyCtx_CMockIgnoreArg_ctx(__LINE__)
-void HOST_UART_DestroyCtx_CMockIgnoreArg_ctx(UNITY_LINE_TYPE cmock_line);
-#define HOST_PWM_CreateCtx_Ignore() TEST_FAIL_MESSAGE("HOST_PWM_CreateCtx requires _IgnoreAndReturn");
-#define HOST_PWM_CreateCtx_IgnoreAndReturn(cmock_retval) HOST_PWM_CreateCtx_CMockIgnoreAndReturn(__LINE__, cmock_retval)
-void HOST_PWM_CreateCtx_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
-#define HOST_PWM_CreateCtx_StopIgnore() HOST_PWM_CreateCtx_CMockStopIgnore()
-void HOST_PWM_CreateCtx_CMockStopIgnore(void);
-#define HOST_PWM_CreateCtx_ExpectAnyArgs() TEST_FAIL_MESSAGE("HOST_PWM_CreateCtx requires _ExpectAnyArgsAndReturn");
-#define HOST_PWM_CreateCtx_ExpectAnyArgsAndReturn(cmock_retval) HOST_PWM_CreateCtx_CMockExpectAnyArgsAndReturn(__LINE__, cmock_retval)
-void HOST_PWM_CreateCtx_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
-#define HOST_PWM_CreateCtx_Expect(htim, channel) TEST_FAIL_MESSAGE("HOST_PWM_CreateCtx requires _ExpectAndReturn");
-#define HOST_PWM_CreateCtx_ExpectAndReturn(htim, channel, cmock_retval) HOST_PWM_CreateCtx_CMockExpectAndReturn(__LINE__, htim, channel, cmock_retval)
-void HOST_PWM_CreateCtx_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, TIM_HandleTypeDef* htim, uint32_t channel, void* cmock_to_return);
-typedef void* (* CMOCK_HOST_PWM_CreateCtx_CALLBACK)(TIM_HandleTypeDef* htim, uint32_t channel, int cmock_num_calls);
-void HOST_PWM_CreateCtx_AddCallback(CMOCK_HOST_PWM_CreateCtx_CALLBACK Callback);
-void HOST_PWM_CreateCtx_Stub(CMOCK_HOST_PWM_CreateCtx_CALLBACK Callback);
-#define HOST_PWM_CreateCtx_StubWithCallback HOST_PWM_CreateCtx_Stub
-int HOST_PWM_CreateCtx_CallCount(void);
-#define HOST_PWM_CreateCtx_ReturnThruPtr_htim(htim) HOST_PWM_CreateCtx_CMockReturnMemThruPtr_htim(__LINE__, htim, sizeof(TIM_HandleTypeDef))
-#define HOST_PWM_CreateCtx_ReturnArrayThruPtr_htim(htim, cmock_len) HOST_PWM_CreateCtx_CMockReturnMemThruPtr_htim(__LINE__, htim, (cmock_len * sizeof(*htim)))
-#define HOST_PWM_CreateCtx_ReturnMemThruPtr_htim(htim, cmock_size) HOST_PWM_CreateCtx_CMockReturnMemThruPtr_htim(__LINE__, htim, (cmock_size))
-void HOST_PWM_CreateCtx_CMockReturnMemThruPtr_htim(UNITY_LINE_TYPE cmock_line, TIM_HandleTypeDef const* htim, size_t cmock_size);
-#define HOST_PWM_CreateCtx_IgnoreArg_htim() HOST_PWM_CreateCtx_CMockIgnoreArg_htim(__LINE__)
-void HOST_PWM_CreateCtx_CMockIgnoreArg_htim(UNITY_LINE_TYPE cmock_line);
-#define HOST_PWM_CreateCtx_IgnoreArg_channel() HOST_PWM_CreateCtx_CMockIgnoreArg_channel(__LINE__)
-void HOST_PWM_CreateCtx_CMockIgnoreArg_channel(UNITY_LINE_TYPE cmock_line);
-#define HOST_PWM_GetOps_Ignore() TEST_FAIL_MESSAGE("HOST_PWM_GetOps requires _IgnoreAndReturn");
-#define HOST_PWM_GetOps_IgnoreAndReturn(cmock_retval) HOST_PWM_GetOps_CMockIgnoreAndReturn(__LINE__, cmock_retval)
-void HOST_PWM_GetOps_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, const PWM_Ops_s* cmock_to_return);
-#define HOST_PWM_GetOps_StopIgnore() HOST_PWM_GetOps_CMockStopIgnore()
-void HOST_PWM_GetOps_CMockStopIgnore(void);
-#define HOST_PWM_GetOps_Expect() TEST_FAIL_MESSAGE("HOST_PWM_GetOps requires _ExpectAndReturn");
-#define HOST_PWM_GetOps_ExpectAndReturn(cmock_retval) HOST_PWM_GetOps_CMockExpectAndReturn(__LINE__, cmock_retval)
-void HOST_PWM_GetOps_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, const PWM_Ops_s* cmock_to_return);
-typedef const PWM_Ops_s* (* CMOCK_HOST_PWM_GetOps_CALLBACK)(int cmock_num_calls);
-void HOST_PWM_GetOps_AddCallback(CMOCK_HOST_PWM_GetOps_CALLBACK Callback);
-void HOST_PWM_GetOps_Stub(CMOCK_HOST_PWM_GetOps_CALLBACK Callback);
-#define HOST_PWM_GetOps_StubWithCallback HOST_PWM_GetOps_Stub
-int HOST_PWM_GetOps_CallCount(void);
-#define HOST_PWM_DestroyCtx_IgnoreAndReturn(cmock_retval) TEST_FAIL_MESSAGE("HOST_PWM_DestroyCtx requires _Ignore (not AndReturn)");
-#define HOST_PWM_DestroyCtx_Ignore() HOST_PWM_DestroyCtx_CMockIgnore()
-void HOST_PWM_DestroyCtx_CMockIgnore(void);
-#define HOST_PWM_DestroyCtx_StopIgnore() HOST_PWM_DestroyCtx_CMockStopIgnore()
-void HOST_PWM_DestroyCtx_CMockStopIgnore(void);
-#define HOST_PWM_DestroyCtx_ExpectAnyArgsAndReturn(cmock_retval) TEST_FAIL_MESSAGE("HOST_PWM_DestroyCtx requires _ExpectAnyArgs (not AndReturn)");
-#define HOST_PWM_DestroyCtx_ExpectAnyArgs() HOST_PWM_DestroyCtx_CMockExpectAnyArgs(__LINE__)
-void HOST_PWM_DestroyCtx_CMockExpectAnyArgs(UNITY_LINE_TYPE cmock_line);
-#define HOST_PWM_DestroyCtx_ExpectAndReturn(ctx, cmock_retval) TEST_FAIL_MESSAGE("HOST_PWM_DestroyCtx requires _Expect (not AndReturn)");
-#define HOST_PWM_DestroyCtx_Expect(ctx) HOST_PWM_DestroyCtx_CMockExpect(__LINE__, ctx)
-void HOST_PWM_DestroyCtx_CMockExpect(UNITY_LINE_TYPE cmock_line, void* ctx);
-typedef void (* CMOCK_HOST_PWM_DestroyCtx_CALLBACK)(void* ctx, int cmock_num_calls);
-void HOST_PWM_DestroyCtx_AddCallback(CMOCK_HOST_PWM_DestroyCtx_CALLBACK Callback);
-void HOST_PWM_DestroyCtx_Stub(CMOCK_HOST_PWM_DestroyCtx_CALLBACK Callback);
-#define HOST_PWM_DestroyCtx_StubWithCallback HOST_PWM_DestroyCtx_Stub
-int HOST_PWM_DestroyCtx_CallCount(void);
-#define HOST_PWM_DestroyCtx_ReturnThruPtr_ctx(ctx) HOST_PWM_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, sizeof(*ctx))
-#define HOST_PWM_DestroyCtx_ReturnArrayThruPtr_ctx(ctx, cmock_len) HOST_PWM_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, (cmock_len * sizeof(*ctx)))
-#define HOST_PWM_DestroyCtx_ReturnMemThruPtr_ctx(ctx, cmock_size) HOST_PWM_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, (cmock_size))
-void HOST_PWM_DestroyCtx_CMockReturnMemThruPtr_ctx(UNITY_LINE_TYPE cmock_line, void const* ctx, size_t cmock_size);
-#define HOST_PWM_DestroyCtx_IgnoreArg_ctx() HOST_PWM_DestroyCtx_CMockIgnoreArg_ctx(__LINE__)
-void HOST_PWM_DestroyCtx_CMockIgnoreArg_ctx(UNITY_LINE_TYPE cmock_line);
-#define HOST_FLASH_CreateCtx_Ignore() TEST_FAIL_MESSAGE("HOST_FLASH_CreateCtx requires _IgnoreAndReturn");
-#define HOST_FLASH_CreateCtx_IgnoreAndReturn(cmock_retval) HOST_FLASH_CreateCtx_CMockIgnoreAndReturn(__LINE__, cmock_retval)
-void HOST_FLASH_CreateCtx_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
-#define HOST_FLASH_CreateCtx_StopIgnore() HOST_FLASH_CreateCtx_CMockStopIgnore()
-void HOST_FLASH_CreateCtx_CMockStopIgnore(void);
-#define HOST_FLASH_CreateCtx_ExpectAnyArgs() TEST_FAIL_MESSAGE("HOST_FLASH_CreateCtx requires _ExpectAnyArgsAndReturn");
-#define HOST_FLASH_CreateCtx_ExpectAnyArgsAndReturn(cmock_retval) HOST_FLASH_CreateCtx_CMockExpectAnyArgsAndReturn(__LINE__, cmock_retval)
-void HOST_FLASH_CreateCtx_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
-#define HOST_FLASH_CreateCtx_Expect(first_sector, sector_count) TEST_FAIL_MESSAGE("HOST_FLASH_CreateCtx requires _ExpectAndReturn");
-#define HOST_FLASH_CreateCtx_ExpectAndReturn(first_sector, sector_count, cmock_retval) HOST_FLASH_CreateCtx_CMockExpectAndReturn(__LINE__, first_sector, sector_count, cmock_retval)
-void HOST_FLASH_CreateCtx_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, uint32_t first_sector, uint32_t sector_count, void* cmock_to_return);
-typedef void* (* CMOCK_HOST_FLASH_CreateCtx_CALLBACK)(uint32_t first_sector, uint32_t sector_count, int cmock_num_calls);
-void HOST_FLASH_CreateCtx_AddCallback(CMOCK_HOST_FLASH_CreateCtx_CALLBACK Callback);
-void HOST_FLASH_CreateCtx_Stub(CMOCK_HOST_FLASH_CreateCtx_CALLBACK Callback);
-#define HOST_FLASH_CreateCtx_StubWithCallback HOST_FLASH_CreateCtx_Stub
-int HOST_FLASH_CreateCtx_CallCount(void);
-#define HOST_FLASH_CreateCtx_IgnoreArg_first_sector() HOST_FLASH_CreateCtx_CMockIgnoreArg_first_sector(__LINE__)
-void HOST_FLASH_CreateCtx_CMockIgnoreArg_first_sector(UNITY_LINE_TYPE cmock_line);
-#define HOST_FLASH_CreateCtx_IgnoreArg_sector_count() HOST_FLASH_CreateCtx_CMockIgnoreArg_sector_count(__LINE__)
-void HOST_FLASH_CreateCtx_CMockIgnoreArg_sector_count(UNITY_LINE_TYPE cmock_line);
-#define HOST_FLASH_GetOps_Ignore() TEST_FAIL_MESSAGE("HOST_FLASH_GetOps requires _IgnoreAndReturn");
-#define HOST_FLASH_GetOps_IgnoreAndReturn(cmock_retval) HOST_FLASH_GetOps_CMockIgnoreAndReturn(__LINE__, cmock_retval)
-void HOST_FLASH_GetOps_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, const Flash_Ops_s* cmock_to_return);
-#define HOST_FLASH_GetOps_StopIgnore() HOST_FLASH_GetOps_CMockStopIgnore()
-void HOST_FLASH_GetOps_CMockStopIgnore(void);
-#define HOST_FLASH_GetOps_Expect() TEST_FAIL_MESSAGE("HOST_FLASH_GetOps requires _ExpectAndReturn");
-#define HOST_FLASH_GetOps_ExpectAndReturn(cmock_retval) HOST_FLASH_GetOps_CMockExpectAndReturn(__LINE__, cmock_retval)
-void HOST_FLASH_GetOps_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, const Flash_Ops_s* cmock_to_return);
-typedef const Flash_Ops_s* (* CMOCK_HOST_FLASH_GetOps_CALLBACK)(int cmock_num_calls);
-void HOST_FLASH_GetOps_AddCallback(CMOCK_HOST_FLASH_GetOps_CALLBACK Callback);
-void HOST_FLASH_GetOps_Stub(CMOCK_HOST_FLASH_GetOps_CALLBACK Callback);
-#define HOST_FLASH_GetOps_StubWithCallback HOST_FLASH_GetOps_Stub
-int HOST_FLASH_GetOps_CallCount(void);
-#define HOST_FLASH_DestroyCtx_IgnoreAndReturn(cmock_retval) TEST_FAIL_MESSAGE("HOST_FLASH_DestroyCtx requires _Ignore (not AndReturn)");
-#define HOST_FLASH_DestroyCtx_Ignore() HOST_FLASH_DestroyCtx_CMockIgnore()
-void HOST_FLASH_DestroyCtx_CMockIgnore(void);
-#define HOST_FLASH_DestroyCtx_StopIgnore() HOST_FLASH_DestroyCtx_CMockStopIgnore()
-void HOST_FLASH_DestroyCtx_CMockStopIgnore(void);
-#define HOST_FLASH_DestroyCtx_ExpectAnyArgsAndReturn(cmock_retval) TEST_FAIL_MESSAGE("HOST_FLASH_DestroyCtx requires _ExpectAnyArgs (not AndReturn)");
-#define HOST_FLASH_DestroyCtx_ExpectAnyArgs() HOST_FLASH_DestroyCtx_CMockExpectAnyArgs(__LINE__)
-void HOST_FLASH_DestroyCtx_CMockExpectAnyArgs(UNITY_LINE_TYPE cmock_line);
-#define HOST_FLASH_DestroyCtx_ExpectAndReturn(ctx, cmock_retval) TEST_FAIL_MESSAGE("HOST_FLASH_DestroyCtx requires _Expect (not AndReturn)");
-#define HOST_FLASH_DestroyCtx_Expect(ctx) HOST_FLASH_DestroyCtx_CMockExpect(__LINE__, ctx)
-void HOST_FLASH_DestroyCtx_CMockExpect(UNITY_LINE_TYPE cmock_line, void* ctx);
-typedef void (* CMOCK_HOST_FLASH_DestroyCtx_CALLBACK)(void* ctx, int cmock_num_calls);
-void HOST_FLASH_DestroyCtx_AddCallback(CMOCK_HOST_FLASH_DestroyCtx_CALLBACK Callback);
-void HOST_FLASH_DestroyCtx_Stub(CMOCK_HOST_FLASH_DestroyCtx_CALLBACK Callback);
-#define HOST_FLASH_DestroyCtx_StubWithCallback HOST_FLASH_DestroyCtx_Stub
-int HOST_FLASH_DestroyCtx_CallCount(void);
-#define HOST_FLASH_DestroyCtx_ReturnThruPtr_ctx(ctx) HOST_FLASH_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, sizeof(*ctx))
-#define HOST_FLASH_DestroyCtx_ReturnArrayThruPtr_ctx(ctx, cmock_len) HOST_FLASH_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, (cmock_len * sizeof(*ctx)))
-#define HOST_FLASH_DestroyCtx_ReturnMemThruPtr_ctx(ctx, cmock_size) HOST_FLASH_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, (cmock_size))
-void HOST_FLASH_DestroyCtx_CMockReturnMemThruPtr_ctx(UNITY_LINE_TYPE cmock_line, void const* ctx, size_t cmock_size);
-#define HOST_FLASH_DestroyCtx_IgnoreArg_ctx() HOST_FLASH_DestroyCtx_CMockIgnoreArg_ctx(__LINE__)
-void HOST_FLASH_DestroyCtx_CMockIgnoreArg_ctx(UNITY_LINE_TYPE cmock_line);
-#define HOST_CAN_CreateCtx_Ignore() TEST_FAIL_MESSAGE("HOST_CAN_CreateCtx requires _IgnoreAndReturn");
-#define HOST_CAN_CreateCtx_IgnoreAndReturn(cmock_retval) HOST_CAN_CreateCtx_CMockIgnoreAndReturn(__LINE__, cmock_retval)
-void HOST_CAN_CreateCtx_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
-#define HOST_CAN_CreateCtx_StopIgnore() HOST_CAN_CreateCtx_CMockStopIgnore()
-void HOST_CAN_CreateCtx_CMockStopIgnore(void);
-#define HOST_CAN_CreateCtx_ExpectAnyArgs() TEST_FAIL_MESSAGE("HOST_CAN_CreateCtx requires _ExpectAnyArgsAndReturn");
-#define HOST_CAN_CreateCtx_ExpectAnyArgsAndReturn(cmock_retval) HOST_CAN_CreateCtx_CMockExpectAnyArgsAndReturn(__LINE__, cmock_retval)
-void HOST_CAN_CreateCtx_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
-#define HOST_CAN_CreateCtx_Expect(hfdcan, tx_id, rx_id) TEST_FAIL_MESSAGE("HOST_CAN_CreateCtx requires _ExpectAndReturn");
-#define HOST_CAN_CreateCtx_ExpectAndReturn(hfdcan, tx_id, rx_id, cmock_retval) HOST_CAN_CreateCtx_CMockExpectAndReturn(__LINE__, hfdcan, tx_id, rx_id, cmock_retval)
-void HOST_CAN_CreateCtx_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, FDCAN_HandleTypeDef* hfdcan, uint32_t tx_id, uint32_t rx_id, void* cmock_to_return);
-typedef void* (* CMOCK_HOST_CAN_CreateCtx_CALLBACK)(FDCAN_HandleTypeDef* hfdcan, uint32_t tx_id, uint32_t rx_id, int cmock_num_calls);
-void HOST_CAN_CreateCtx_AddCallback(CMOCK_HOST_CAN_CreateCtx_CALLBACK Callback);
-void HOST_CAN_CreateCtx_Stub(CMOCK_HOST_CAN_CreateCtx_CALLBACK Callback);
-#define HOST_CAN_CreateCtx_StubWithCallback HOST_CAN_CreateCtx_Stub
-int HOST_CAN_CreateCtx_CallCount(void);
-#define HOST_CAN_CreateCtx_ReturnThruPtr_hfdcan(hfdcan) HOST_CAN_CreateCtx_CMockReturnMemThruPtr_hfdcan(__LINE__, hfdcan, sizeof(FDCAN_HandleTypeDef))
-#define HOST_CAN_CreateCtx_ReturnArrayThruPtr_hfdcan(hfdcan, cmock_len) HOST_CAN_CreateCtx_CMockReturnMemThruPtr_hfdcan(__LINE__, hfdcan, (cmock_len * sizeof(*hfdcan)))
-#define HOST_CAN_CreateCtx_ReturnMemThruPtr_hfdcan(hfdcan, cmock_size) HOST_CAN_CreateCtx_CMockReturnMemThruPtr_hfdcan(__LINE__, hfdcan, (cmock_size))
-void HOST_CAN_CreateCtx_CMockReturnMemThruPtr_hfdcan(UNITY_LINE_TYPE cmock_line, FDCAN_HandleTypeDef const* hfdcan, size_t cmock_size);
-#define HOST_CAN_CreateCtx_IgnoreArg_hfdcan() HOST_CAN_CreateCtx_CMockIgnoreArg_hfdcan(__LINE__)
-void HOST_CAN_CreateCtx_CMockIgnoreArg_hfdcan(UNITY_LINE_TYPE cmock_line);
-#define HOST_CAN_CreateCtx_IgnoreArg_tx_id() HOST_CAN_CreateCtx_CMockIgnoreArg_tx_id(__LINE__)
-void HOST_CAN_CreateCtx_CMockIgnoreArg_tx_id(UNITY_LINE_TYPE cmock_line);
-#define HOST_CAN_CreateCtx_IgnoreArg_rx_id() HOST_CAN_CreateCtx_CMockIgnoreArg_rx_id(__LINE__)
-void HOST_CAN_CreateCtx_CMockIgnoreArg_rx_id(UNITY_LINE_TYPE cmock_line);
-#define HOST_CAN_GetOps_Ignore() TEST_FAIL_MESSAGE("HOST_CAN_GetOps requires _IgnoreAndReturn");
-#define HOST_CAN_GetOps_IgnoreAndReturn(cmock_retval) HOST_CAN_GetOps_CMockIgnoreAndReturn(__LINE__, cmock_retval)
-void HOST_CAN_GetOps_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, const CAN_Ops_s* cmock_to_return);
-#define HOST_CAN_GetOps_StopIgnore() HOST_CAN_GetOps_CMockStopIgnore()
-void HOST_CAN_GetOps_CMockStopIgnore(void);
-#define HOST_CAN_GetOps_Expect() TEST_FAIL_MESSAGE("HOST_CAN_GetOps requires _ExpectAndReturn");
-#define HOST_CAN_GetOps_ExpectAndReturn(cmock_retval) HOST_CAN_GetOps_CMockExpectAndReturn(__LINE__, cmock_retval)
-void HOST_CAN_GetOps_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, const CAN_Ops_s* cmock_to_return);
-typedef const CAN_Ops_s* (* CMOCK_HOST_CAN_GetOps_CALLBACK)(int cmock_num_calls);
-void HOST_CAN_GetOps_AddCallback(CMOCK_HOST_CAN_GetOps_CALLBACK Callback);
-void HOST_CAN_GetOps_Stub(CMOCK_HOST_CAN_GetOps_CALLBACK Callback);
-#define HOST_CAN_GetOps_StubWithCallback HOST_CAN_GetOps_Stub
-int HOST_CAN_GetOps_CallCount(void);
+#define IMPL_STM32_DWT_CreateCtx_Ignore() TEST_FAIL_MESSAGE("IMPL_STM32_DWT_CreateCtx requires _IgnoreAndReturn");
+#define IMPL_STM32_DWT_CreateCtx_IgnoreAndReturn(cmock_retval) IMPL_STM32_DWT_CreateCtx_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_DWT_CreateCtx_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
+#define IMPL_STM32_DWT_CreateCtx_StopIgnore() IMPL_STM32_DWT_CreateCtx_CMockStopIgnore()
+void IMPL_STM32_DWT_CreateCtx_CMockStopIgnore(void);
+#define IMPL_STM32_DWT_CreateCtx_ExpectAnyArgs() TEST_FAIL_MESSAGE("IMPL_STM32_DWT_CreateCtx requires _ExpectAnyArgsAndReturn");
+#define IMPL_STM32_DWT_CreateCtx_ExpectAnyArgsAndReturn(cmock_retval) IMPL_STM32_DWT_CreateCtx_CMockExpectAnyArgsAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_DWT_CreateCtx_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
+#define IMPL_STM32_DWT_CreateCtx_Expect(cpu_freq_hz) TEST_FAIL_MESSAGE("IMPL_STM32_DWT_CreateCtx requires _ExpectAndReturn");
+#define IMPL_STM32_DWT_CreateCtx_ExpectAndReturn(cpu_freq_hz, cmock_retval) IMPL_STM32_DWT_CreateCtx_CMockExpectAndReturn(__LINE__, cpu_freq_hz, cmock_retval)
+void IMPL_STM32_DWT_CreateCtx_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, uint32_t cpu_freq_hz, void* cmock_to_return);
+typedef void* (* CMOCK_IMPL_STM32_DWT_CreateCtx_CALLBACK)(uint32_t cpu_freq_hz, int cmock_num_calls);
+void IMPL_STM32_DWT_CreateCtx_AddCallback(CMOCK_IMPL_STM32_DWT_CreateCtx_CALLBACK Callback);
+void IMPL_STM32_DWT_CreateCtx_Stub(CMOCK_IMPL_STM32_DWT_CreateCtx_CALLBACK Callback);
+#define IMPL_STM32_DWT_CreateCtx_StubWithCallback IMPL_STM32_DWT_CreateCtx_Stub
+int IMPL_STM32_DWT_CreateCtx_CallCount(void);
+#define IMPL_STM32_DWT_CreateCtx_IgnoreArg_cpu_freq_hz() IMPL_STM32_DWT_CreateCtx_CMockIgnoreArg_cpu_freq_hz(__LINE__)
+void IMPL_STM32_DWT_CreateCtx_CMockIgnoreArg_cpu_freq_hz(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_DWT_GetOps_Ignore() TEST_FAIL_MESSAGE("IMPL_STM32_DWT_GetOps requires _IgnoreAndReturn");
+#define IMPL_STM32_DWT_GetOps_IgnoreAndReturn(cmock_retval) IMPL_STM32_DWT_GetOps_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_DWT_GetOps_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, const DWT_Ops_s* cmock_to_return);
+#define IMPL_STM32_DWT_GetOps_StopIgnore() IMPL_STM32_DWT_GetOps_CMockStopIgnore()
+void IMPL_STM32_DWT_GetOps_CMockStopIgnore(void);
+#define IMPL_STM32_DWT_GetOps_Expect() TEST_FAIL_MESSAGE("IMPL_STM32_DWT_GetOps requires _ExpectAndReturn");
+#define IMPL_STM32_DWT_GetOps_ExpectAndReturn(cmock_retval) IMPL_STM32_DWT_GetOps_CMockExpectAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_DWT_GetOps_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, const DWT_Ops_s* cmock_to_return);
+typedef const DWT_Ops_s* (* CMOCK_IMPL_STM32_DWT_GetOps_CALLBACK)(int cmock_num_calls);
+void IMPL_STM32_DWT_GetOps_AddCallback(CMOCK_IMPL_STM32_DWT_GetOps_CALLBACK Callback);
+void IMPL_STM32_DWT_GetOps_Stub(CMOCK_IMPL_STM32_DWT_GetOps_CALLBACK Callback);
+#define IMPL_STM32_DWT_GetOps_StubWithCallback IMPL_STM32_DWT_GetOps_Stub
+int IMPL_STM32_DWT_GetOps_CallCount(void);
+#define IMPL_STM32_DWT_DestroyCtx_IgnoreAndReturn(cmock_retval) TEST_FAIL_MESSAGE("IMPL_STM32_DWT_DestroyCtx requires _Ignore (not AndReturn)");
+#define IMPL_STM32_DWT_DestroyCtx_Ignore() IMPL_STM32_DWT_DestroyCtx_CMockIgnore()
+void IMPL_STM32_DWT_DestroyCtx_CMockIgnore(void);
+#define IMPL_STM32_DWT_DestroyCtx_StopIgnore() IMPL_STM32_DWT_DestroyCtx_CMockStopIgnore()
+void IMPL_STM32_DWT_DestroyCtx_CMockStopIgnore(void);
+#define IMPL_STM32_DWT_DestroyCtx_ExpectAnyArgsAndReturn(cmock_retval) TEST_FAIL_MESSAGE("IMPL_STM32_DWT_DestroyCtx requires _ExpectAnyArgs (not AndReturn)");
+#define IMPL_STM32_DWT_DestroyCtx_ExpectAnyArgs() IMPL_STM32_DWT_DestroyCtx_CMockExpectAnyArgs(__LINE__)
+void IMPL_STM32_DWT_DestroyCtx_CMockExpectAnyArgs(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_DWT_DestroyCtx_ExpectAndReturn(ctx, cmock_retval) TEST_FAIL_MESSAGE("IMPL_STM32_DWT_DestroyCtx requires _Expect (not AndReturn)");
+#define IMPL_STM32_DWT_DestroyCtx_Expect(ctx) IMPL_STM32_DWT_DestroyCtx_CMockExpect(__LINE__, ctx)
+void IMPL_STM32_DWT_DestroyCtx_CMockExpect(UNITY_LINE_TYPE cmock_line, void* ctx);
+typedef void (* CMOCK_IMPL_STM32_DWT_DestroyCtx_CALLBACK)(void* ctx, int cmock_num_calls);
+void IMPL_STM32_DWT_DestroyCtx_AddCallback(CMOCK_IMPL_STM32_DWT_DestroyCtx_CALLBACK Callback);
+void IMPL_STM32_DWT_DestroyCtx_Stub(CMOCK_IMPL_STM32_DWT_DestroyCtx_CALLBACK Callback);
+#define IMPL_STM32_DWT_DestroyCtx_StubWithCallback IMPL_STM32_DWT_DestroyCtx_Stub
+int IMPL_STM32_DWT_DestroyCtx_CallCount(void);
+#define IMPL_STM32_DWT_DestroyCtx_ReturnThruPtr_ctx(ctx) IMPL_STM32_DWT_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, sizeof(*ctx))
+#define IMPL_STM32_DWT_DestroyCtx_ReturnArrayThruPtr_ctx(ctx, cmock_len) IMPL_STM32_DWT_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, (cmock_len * sizeof(*ctx)))
+#define IMPL_STM32_DWT_DestroyCtx_ReturnMemThruPtr_ctx(ctx, cmock_size) IMPL_STM32_DWT_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, (cmock_size))
+void IMPL_STM32_DWT_DestroyCtx_CMockReturnMemThruPtr_ctx(UNITY_LINE_TYPE cmock_line, void const* ctx, size_t cmock_size);
+#define IMPL_STM32_DWT_DestroyCtx_IgnoreArg_ctx() IMPL_STM32_DWT_DestroyCtx_CMockIgnoreArg_ctx(__LINE__)
+void IMPL_STM32_DWT_DestroyCtx_CMockIgnoreArg_ctx(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_SPI_CreateCtx_Ignore() TEST_FAIL_MESSAGE("IMPL_STM32_SPI_CreateCtx requires _IgnoreAndReturn");
+#define IMPL_STM32_SPI_CreateCtx_IgnoreAndReturn(cmock_retval) IMPL_STM32_SPI_CreateCtx_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_SPI_CreateCtx_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
+#define IMPL_STM32_SPI_CreateCtx_StopIgnore() IMPL_STM32_SPI_CreateCtx_CMockStopIgnore()
+void IMPL_STM32_SPI_CreateCtx_CMockStopIgnore(void);
+#define IMPL_STM32_SPI_CreateCtx_ExpectAnyArgs() TEST_FAIL_MESSAGE("IMPL_STM32_SPI_CreateCtx requires _ExpectAnyArgsAndReturn");
+#define IMPL_STM32_SPI_CreateCtx_ExpectAnyArgsAndReturn(cmock_retval) IMPL_STM32_SPI_CreateCtx_CMockExpectAnyArgsAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_SPI_CreateCtx_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
+#define IMPL_STM32_SPI_CreateCtx_Expect(hspi, cs_port, cs_pin, mode) TEST_FAIL_MESSAGE("IMPL_STM32_SPI_CreateCtx requires _ExpectAndReturn");
+#define IMPL_STM32_SPI_CreateCtx_ExpectAndReturn(hspi, cs_port, cs_pin, mode, cmock_retval) IMPL_STM32_SPI_CreateCtx_CMockExpectAndReturn(__LINE__, hspi, cs_port, cs_pin, mode, cmock_retval)
+void IMPL_STM32_SPI_CreateCtx_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, SPI_HandleTypeDef* hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin, SPI_Xfer_Mode_e mode, void* cmock_to_return);
+typedef void* (* CMOCK_IMPL_STM32_SPI_CreateCtx_CALLBACK)(SPI_HandleTypeDef* hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin, SPI_Xfer_Mode_e mode, int cmock_num_calls);
+void IMPL_STM32_SPI_CreateCtx_AddCallback(CMOCK_IMPL_STM32_SPI_CreateCtx_CALLBACK Callback);
+void IMPL_STM32_SPI_CreateCtx_Stub(CMOCK_IMPL_STM32_SPI_CreateCtx_CALLBACK Callback);
+#define IMPL_STM32_SPI_CreateCtx_StubWithCallback IMPL_STM32_SPI_CreateCtx_Stub
+int IMPL_STM32_SPI_CreateCtx_CallCount(void);
+#define IMPL_STM32_SPI_CreateCtx_ReturnThruPtr_hspi(hspi) IMPL_STM32_SPI_CreateCtx_CMockReturnMemThruPtr_hspi(__LINE__, hspi, sizeof(SPI_HandleTypeDef))
+#define IMPL_STM32_SPI_CreateCtx_ReturnArrayThruPtr_hspi(hspi, cmock_len) IMPL_STM32_SPI_CreateCtx_CMockReturnMemThruPtr_hspi(__LINE__, hspi, (cmock_len * sizeof(*hspi)))
+#define IMPL_STM32_SPI_CreateCtx_ReturnMemThruPtr_hspi(hspi, cmock_size) IMPL_STM32_SPI_CreateCtx_CMockReturnMemThruPtr_hspi(__LINE__, hspi, (cmock_size))
+void IMPL_STM32_SPI_CreateCtx_CMockReturnMemThruPtr_hspi(UNITY_LINE_TYPE cmock_line, SPI_HandleTypeDef const* hspi, size_t cmock_size);
+#define IMPL_STM32_SPI_CreateCtx_ReturnThruPtr_cs_port(cs_port) IMPL_STM32_SPI_CreateCtx_CMockReturnMemThruPtr_cs_port(__LINE__, cs_port, sizeof(GPIO_TypeDef))
+#define IMPL_STM32_SPI_CreateCtx_ReturnArrayThruPtr_cs_port(cs_port, cmock_len) IMPL_STM32_SPI_CreateCtx_CMockReturnMemThruPtr_cs_port(__LINE__, cs_port, (cmock_len * sizeof(*cs_port)))
+#define IMPL_STM32_SPI_CreateCtx_ReturnMemThruPtr_cs_port(cs_port, cmock_size) IMPL_STM32_SPI_CreateCtx_CMockReturnMemThruPtr_cs_port(__LINE__, cs_port, (cmock_size))
+void IMPL_STM32_SPI_CreateCtx_CMockReturnMemThruPtr_cs_port(UNITY_LINE_TYPE cmock_line, GPIO_TypeDef const* cs_port, size_t cmock_size);
+#define IMPL_STM32_SPI_CreateCtx_IgnoreArg_hspi() IMPL_STM32_SPI_CreateCtx_CMockIgnoreArg_hspi(__LINE__)
+void IMPL_STM32_SPI_CreateCtx_CMockIgnoreArg_hspi(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_SPI_CreateCtx_IgnoreArg_cs_port() IMPL_STM32_SPI_CreateCtx_CMockIgnoreArg_cs_port(__LINE__)
+void IMPL_STM32_SPI_CreateCtx_CMockIgnoreArg_cs_port(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_SPI_CreateCtx_IgnoreArg_cs_pin() IMPL_STM32_SPI_CreateCtx_CMockIgnoreArg_cs_pin(__LINE__)
+void IMPL_STM32_SPI_CreateCtx_CMockIgnoreArg_cs_pin(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_SPI_CreateCtx_IgnoreArg_mode() IMPL_STM32_SPI_CreateCtx_CMockIgnoreArg_mode(__LINE__)
+void IMPL_STM32_SPI_CreateCtx_CMockIgnoreArg_mode(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_SPI_GetOps_Ignore() TEST_FAIL_MESSAGE("IMPL_STM32_SPI_GetOps requires _IgnoreAndReturn");
+#define IMPL_STM32_SPI_GetOps_IgnoreAndReturn(cmock_retval) IMPL_STM32_SPI_GetOps_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_SPI_GetOps_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, const SPI_Ops_s* cmock_to_return);
+#define IMPL_STM32_SPI_GetOps_StopIgnore() IMPL_STM32_SPI_GetOps_CMockStopIgnore()
+void IMPL_STM32_SPI_GetOps_CMockStopIgnore(void);
+#define IMPL_STM32_SPI_GetOps_Expect() TEST_FAIL_MESSAGE("IMPL_STM32_SPI_GetOps requires _ExpectAndReturn");
+#define IMPL_STM32_SPI_GetOps_ExpectAndReturn(cmock_retval) IMPL_STM32_SPI_GetOps_CMockExpectAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_SPI_GetOps_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, const SPI_Ops_s* cmock_to_return);
+typedef const SPI_Ops_s* (* CMOCK_IMPL_STM32_SPI_GetOps_CALLBACK)(int cmock_num_calls);
+void IMPL_STM32_SPI_GetOps_AddCallback(CMOCK_IMPL_STM32_SPI_GetOps_CALLBACK Callback);
+void IMPL_STM32_SPI_GetOps_Stub(CMOCK_IMPL_STM32_SPI_GetOps_CALLBACK Callback);
+#define IMPL_STM32_SPI_GetOps_StubWithCallback IMPL_STM32_SPI_GetOps_Stub
+int IMPL_STM32_SPI_GetOps_CallCount(void);
+#define IMPL_STM32_SPI_DestroyCtx_IgnoreAndReturn(cmock_retval) TEST_FAIL_MESSAGE("IMPL_STM32_SPI_DestroyCtx requires _Ignore (not AndReturn)");
+#define IMPL_STM32_SPI_DestroyCtx_Ignore() IMPL_STM32_SPI_DestroyCtx_CMockIgnore()
+void IMPL_STM32_SPI_DestroyCtx_CMockIgnore(void);
+#define IMPL_STM32_SPI_DestroyCtx_StopIgnore() IMPL_STM32_SPI_DestroyCtx_CMockStopIgnore()
+void IMPL_STM32_SPI_DestroyCtx_CMockStopIgnore(void);
+#define IMPL_STM32_SPI_DestroyCtx_ExpectAnyArgsAndReturn(cmock_retval) TEST_FAIL_MESSAGE("IMPL_STM32_SPI_DestroyCtx requires _ExpectAnyArgs (not AndReturn)");
+#define IMPL_STM32_SPI_DestroyCtx_ExpectAnyArgs() IMPL_STM32_SPI_DestroyCtx_CMockExpectAnyArgs(__LINE__)
+void IMPL_STM32_SPI_DestroyCtx_CMockExpectAnyArgs(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_SPI_DestroyCtx_ExpectAndReturn(ctx, cmock_retval) TEST_FAIL_MESSAGE("IMPL_STM32_SPI_DestroyCtx requires _Expect (not AndReturn)");
+#define IMPL_STM32_SPI_DestroyCtx_Expect(ctx) IMPL_STM32_SPI_DestroyCtx_CMockExpect(__LINE__, ctx)
+void IMPL_STM32_SPI_DestroyCtx_CMockExpect(UNITY_LINE_TYPE cmock_line, void* ctx);
+typedef void (* CMOCK_IMPL_STM32_SPI_DestroyCtx_CALLBACK)(void* ctx, int cmock_num_calls);
+void IMPL_STM32_SPI_DestroyCtx_AddCallback(CMOCK_IMPL_STM32_SPI_DestroyCtx_CALLBACK Callback);
+void IMPL_STM32_SPI_DestroyCtx_Stub(CMOCK_IMPL_STM32_SPI_DestroyCtx_CALLBACK Callback);
+#define IMPL_STM32_SPI_DestroyCtx_StubWithCallback IMPL_STM32_SPI_DestroyCtx_Stub
+int IMPL_STM32_SPI_DestroyCtx_CallCount(void);
+#define IMPL_STM32_SPI_DestroyCtx_ReturnThruPtr_ctx(ctx) IMPL_STM32_SPI_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, sizeof(*ctx))
+#define IMPL_STM32_SPI_DestroyCtx_ReturnArrayThruPtr_ctx(ctx, cmock_len) IMPL_STM32_SPI_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, (cmock_len * sizeof(*ctx)))
+#define IMPL_STM32_SPI_DestroyCtx_ReturnMemThruPtr_ctx(ctx, cmock_size) IMPL_STM32_SPI_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, (cmock_size))
+void IMPL_STM32_SPI_DestroyCtx_CMockReturnMemThruPtr_ctx(UNITY_LINE_TYPE cmock_line, void const* ctx, size_t cmock_size);
+#define IMPL_STM32_SPI_DestroyCtx_IgnoreArg_ctx() IMPL_STM32_SPI_DestroyCtx_CMockIgnoreArg_ctx(__LINE__)
+void IMPL_STM32_SPI_DestroyCtx_CMockIgnoreArg_ctx(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_UART_CreateCtx_Ignore() TEST_FAIL_MESSAGE("IMPL_STM32_UART_CreateCtx requires _IgnoreAndReturn");
+#define IMPL_STM32_UART_CreateCtx_IgnoreAndReturn(cmock_retval) IMPL_STM32_UART_CreateCtx_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_UART_CreateCtx_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
+#define IMPL_STM32_UART_CreateCtx_StopIgnore() IMPL_STM32_UART_CreateCtx_CMockStopIgnore()
+void IMPL_STM32_UART_CreateCtx_CMockStopIgnore(void);
+#define IMPL_STM32_UART_CreateCtx_ExpectAnyArgs() TEST_FAIL_MESSAGE("IMPL_STM32_UART_CreateCtx requires _ExpectAnyArgsAndReturn");
+#define IMPL_STM32_UART_CreateCtx_ExpectAnyArgsAndReturn(cmock_retval) IMPL_STM32_UART_CreateCtx_CMockExpectAnyArgsAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_UART_CreateCtx_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
+#define IMPL_STM32_UART_CreateCtx_Expect(huart, mode) TEST_FAIL_MESSAGE("IMPL_STM32_UART_CreateCtx requires _ExpectAndReturn");
+#define IMPL_STM32_UART_CreateCtx_ExpectAndReturn(huart, mode, cmock_retval) IMPL_STM32_UART_CreateCtx_CMockExpectAndReturn(__LINE__, huart, mode, cmock_retval)
+void IMPL_STM32_UART_CreateCtx_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, UART_HandleTypeDef* huart, UART_Xfer_Mode_e mode, void* cmock_to_return);
+typedef void* (* CMOCK_IMPL_STM32_UART_CreateCtx_CALLBACK)(UART_HandleTypeDef* huart, UART_Xfer_Mode_e mode, int cmock_num_calls);
+void IMPL_STM32_UART_CreateCtx_AddCallback(CMOCK_IMPL_STM32_UART_CreateCtx_CALLBACK Callback);
+void IMPL_STM32_UART_CreateCtx_Stub(CMOCK_IMPL_STM32_UART_CreateCtx_CALLBACK Callback);
+#define IMPL_STM32_UART_CreateCtx_StubWithCallback IMPL_STM32_UART_CreateCtx_Stub
+int IMPL_STM32_UART_CreateCtx_CallCount(void);
+#define IMPL_STM32_UART_CreateCtx_ReturnThruPtr_huart(huart) IMPL_STM32_UART_CreateCtx_CMockReturnMemThruPtr_huart(__LINE__, huart, sizeof(UART_HandleTypeDef))
+#define IMPL_STM32_UART_CreateCtx_ReturnArrayThruPtr_huart(huart, cmock_len) IMPL_STM32_UART_CreateCtx_CMockReturnMemThruPtr_huart(__LINE__, huart, (cmock_len * sizeof(*huart)))
+#define IMPL_STM32_UART_CreateCtx_ReturnMemThruPtr_huart(huart, cmock_size) IMPL_STM32_UART_CreateCtx_CMockReturnMemThruPtr_huart(__LINE__, huart, (cmock_size))
+void IMPL_STM32_UART_CreateCtx_CMockReturnMemThruPtr_huart(UNITY_LINE_TYPE cmock_line, UART_HandleTypeDef const* huart, size_t cmock_size);
+#define IMPL_STM32_UART_CreateCtx_IgnoreArg_huart() IMPL_STM32_UART_CreateCtx_CMockIgnoreArg_huart(__LINE__)
+void IMPL_STM32_UART_CreateCtx_CMockIgnoreArg_huart(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_UART_CreateCtx_IgnoreArg_mode() IMPL_STM32_UART_CreateCtx_CMockIgnoreArg_mode(__LINE__)
+void IMPL_STM32_UART_CreateCtx_CMockIgnoreArg_mode(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_UART_GetOps_Ignore() TEST_FAIL_MESSAGE("IMPL_STM32_UART_GetOps requires _IgnoreAndReturn");
+#define IMPL_STM32_UART_GetOps_IgnoreAndReturn(cmock_retval) IMPL_STM32_UART_GetOps_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_UART_GetOps_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, const UART_Ops_s* cmock_to_return);
+#define IMPL_STM32_UART_GetOps_StopIgnore() IMPL_STM32_UART_GetOps_CMockStopIgnore()
+void IMPL_STM32_UART_GetOps_CMockStopIgnore(void);
+#define IMPL_STM32_UART_GetOps_Expect() TEST_FAIL_MESSAGE("IMPL_STM32_UART_GetOps requires _ExpectAndReturn");
+#define IMPL_STM32_UART_GetOps_ExpectAndReturn(cmock_retval) IMPL_STM32_UART_GetOps_CMockExpectAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_UART_GetOps_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, const UART_Ops_s* cmock_to_return);
+typedef const UART_Ops_s* (* CMOCK_IMPL_STM32_UART_GetOps_CALLBACK)(int cmock_num_calls);
+void IMPL_STM32_UART_GetOps_AddCallback(CMOCK_IMPL_STM32_UART_GetOps_CALLBACK Callback);
+void IMPL_STM32_UART_GetOps_Stub(CMOCK_IMPL_STM32_UART_GetOps_CALLBACK Callback);
+#define IMPL_STM32_UART_GetOps_StubWithCallback IMPL_STM32_UART_GetOps_Stub
+int IMPL_STM32_UART_GetOps_CallCount(void);
+#define IMPL_STM32_UART_DestroyCtx_IgnoreAndReturn(cmock_retval) TEST_FAIL_MESSAGE("IMPL_STM32_UART_DestroyCtx requires _Ignore (not AndReturn)");
+#define IMPL_STM32_UART_DestroyCtx_Ignore() IMPL_STM32_UART_DestroyCtx_CMockIgnore()
+void IMPL_STM32_UART_DestroyCtx_CMockIgnore(void);
+#define IMPL_STM32_UART_DestroyCtx_StopIgnore() IMPL_STM32_UART_DestroyCtx_CMockStopIgnore()
+void IMPL_STM32_UART_DestroyCtx_CMockStopIgnore(void);
+#define IMPL_STM32_UART_DestroyCtx_ExpectAnyArgsAndReturn(cmock_retval) TEST_FAIL_MESSAGE("IMPL_STM32_UART_DestroyCtx requires _ExpectAnyArgs (not AndReturn)");
+#define IMPL_STM32_UART_DestroyCtx_ExpectAnyArgs() IMPL_STM32_UART_DestroyCtx_CMockExpectAnyArgs(__LINE__)
+void IMPL_STM32_UART_DestroyCtx_CMockExpectAnyArgs(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_UART_DestroyCtx_ExpectAndReturn(ctx, cmock_retval) TEST_FAIL_MESSAGE("IMPL_STM32_UART_DestroyCtx requires _Expect (not AndReturn)");
+#define IMPL_STM32_UART_DestroyCtx_Expect(ctx) IMPL_STM32_UART_DestroyCtx_CMockExpect(__LINE__, ctx)
+void IMPL_STM32_UART_DestroyCtx_CMockExpect(UNITY_LINE_TYPE cmock_line, void* ctx);
+typedef void (* CMOCK_IMPL_STM32_UART_DestroyCtx_CALLBACK)(void* ctx, int cmock_num_calls);
+void IMPL_STM32_UART_DestroyCtx_AddCallback(CMOCK_IMPL_STM32_UART_DestroyCtx_CALLBACK Callback);
+void IMPL_STM32_UART_DestroyCtx_Stub(CMOCK_IMPL_STM32_UART_DestroyCtx_CALLBACK Callback);
+#define IMPL_STM32_UART_DestroyCtx_StubWithCallback IMPL_STM32_UART_DestroyCtx_Stub
+int IMPL_STM32_UART_DestroyCtx_CallCount(void);
+#define IMPL_STM32_UART_DestroyCtx_ReturnThruPtr_ctx(ctx) IMPL_STM32_UART_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, sizeof(*ctx))
+#define IMPL_STM32_UART_DestroyCtx_ReturnArrayThruPtr_ctx(ctx, cmock_len) IMPL_STM32_UART_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, (cmock_len * sizeof(*ctx)))
+#define IMPL_STM32_UART_DestroyCtx_ReturnMemThruPtr_ctx(ctx, cmock_size) IMPL_STM32_UART_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, (cmock_size))
+void IMPL_STM32_UART_DestroyCtx_CMockReturnMemThruPtr_ctx(UNITY_LINE_TYPE cmock_line, void const* ctx, size_t cmock_size);
+#define IMPL_STM32_UART_DestroyCtx_IgnoreArg_ctx() IMPL_STM32_UART_DestroyCtx_CMockIgnoreArg_ctx(__LINE__)
+void IMPL_STM32_UART_DestroyCtx_CMockIgnoreArg_ctx(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_PWM_CreateCtx_Ignore() TEST_FAIL_MESSAGE("IMPL_STM32_PWM_CreateCtx requires _IgnoreAndReturn");
+#define IMPL_STM32_PWM_CreateCtx_IgnoreAndReturn(cmock_retval) IMPL_STM32_PWM_CreateCtx_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_PWM_CreateCtx_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
+#define IMPL_STM32_PWM_CreateCtx_StopIgnore() IMPL_STM32_PWM_CreateCtx_CMockStopIgnore()
+void IMPL_STM32_PWM_CreateCtx_CMockStopIgnore(void);
+#define IMPL_STM32_PWM_CreateCtx_ExpectAnyArgs() TEST_FAIL_MESSAGE("IMPL_STM32_PWM_CreateCtx requires _ExpectAnyArgsAndReturn");
+#define IMPL_STM32_PWM_CreateCtx_ExpectAnyArgsAndReturn(cmock_retval) IMPL_STM32_PWM_CreateCtx_CMockExpectAnyArgsAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_PWM_CreateCtx_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
+#define IMPL_STM32_PWM_CreateCtx_Expect(htim, channel) TEST_FAIL_MESSAGE("IMPL_STM32_PWM_CreateCtx requires _ExpectAndReturn");
+#define IMPL_STM32_PWM_CreateCtx_ExpectAndReturn(htim, channel, cmock_retval) IMPL_STM32_PWM_CreateCtx_CMockExpectAndReturn(__LINE__, htim, channel, cmock_retval)
+void IMPL_STM32_PWM_CreateCtx_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, TIM_HandleTypeDef* htim, uint32_t channel, void* cmock_to_return);
+typedef void* (* CMOCK_IMPL_STM32_PWM_CreateCtx_CALLBACK)(TIM_HandleTypeDef* htim, uint32_t channel, int cmock_num_calls);
+void IMPL_STM32_PWM_CreateCtx_AddCallback(CMOCK_IMPL_STM32_PWM_CreateCtx_CALLBACK Callback);
+void IMPL_STM32_PWM_CreateCtx_Stub(CMOCK_IMPL_STM32_PWM_CreateCtx_CALLBACK Callback);
+#define IMPL_STM32_PWM_CreateCtx_StubWithCallback IMPL_STM32_PWM_CreateCtx_Stub
+int IMPL_STM32_PWM_CreateCtx_CallCount(void);
+#define IMPL_STM32_PWM_CreateCtx_ReturnThruPtr_htim(htim) IMPL_STM32_PWM_CreateCtx_CMockReturnMemThruPtr_htim(__LINE__, htim, sizeof(TIM_HandleTypeDef))
+#define IMPL_STM32_PWM_CreateCtx_ReturnArrayThruPtr_htim(htim, cmock_len) IMPL_STM32_PWM_CreateCtx_CMockReturnMemThruPtr_htim(__LINE__, htim, (cmock_len * sizeof(*htim)))
+#define IMPL_STM32_PWM_CreateCtx_ReturnMemThruPtr_htim(htim, cmock_size) IMPL_STM32_PWM_CreateCtx_CMockReturnMemThruPtr_htim(__LINE__, htim, (cmock_size))
+void IMPL_STM32_PWM_CreateCtx_CMockReturnMemThruPtr_htim(UNITY_LINE_TYPE cmock_line, TIM_HandleTypeDef const* htim, size_t cmock_size);
+#define IMPL_STM32_PWM_CreateCtx_IgnoreArg_htim() IMPL_STM32_PWM_CreateCtx_CMockIgnoreArg_htim(__LINE__)
+void IMPL_STM32_PWM_CreateCtx_CMockIgnoreArg_htim(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_PWM_CreateCtx_IgnoreArg_channel() IMPL_STM32_PWM_CreateCtx_CMockIgnoreArg_channel(__LINE__)
+void IMPL_STM32_PWM_CreateCtx_CMockIgnoreArg_channel(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_PWM_GetOps_Ignore() TEST_FAIL_MESSAGE("IMPL_STM32_PWM_GetOps requires _IgnoreAndReturn");
+#define IMPL_STM32_PWM_GetOps_IgnoreAndReturn(cmock_retval) IMPL_STM32_PWM_GetOps_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_PWM_GetOps_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, const PWM_Ops_s* cmock_to_return);
+#define IMPL_STM32_PWM_GetOps_StopIgnore() IMPL_STM32_PWM_GetOps_CMockStopIgnore()
+void IMPL_STM32_PWM_GetOps_CMockStopIgnore(void);
+#define IMPL_STM32_PWM_GetOps_Expect() TEST_FAIL_MESSAGE("IMPL_STM32_PWM_GetOps requires _ExpectAndReturn");
+#define IMPL_STM32_PWM_GetOps_ExpectAndReturn(cmock_retval) IMPL_STM32_PWM_GetOps_CMockExpectAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_PWM_GetOps_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, const PWM_Ops_s* cmock_to_return);
+typedef const PWM_Ops_s* (* CMOCK_IMPL_STM32_PWM_GetOps_CALLBACK)(int cmock_num_calls);
+void IMPL_STM32_PWM_GetOps_AddCallback(CMOCK_IMPL_STM32_PWM_GetOps_CALLBACK Callback);
+void IMPL_STM32_PWM_GetOps_Stub(CMOCK_IMPL_STM32_PWM_GetOps_CALLBACK Callback);
+#define IMPL_STM32_PWM_GetOps_StubWithCallback IMPL_STM32_PWM_GetOps_Stub
+int IMPL_STM32_PWM_GetOps_CallCount(void);
+#define IMPL_STM32_PWM_DestroyCtx_IgnoreAndReturn(cmock_retval) TEST_FAIL_MESSAGE("IMPL_STM32_PWM_DestroyCtx requires _Ignore (not AndReturn)");
+#define IMPL_STM32_PWM_DestroyCtx_Ignore() IMPL_STM32_PWM_DestroyCtx_CMockIgnore()
+void IMPL_STM32_PWM_DestroyCtx_CMockIgnore(void);
+#define IMPL_STM32_PWM_DestroyCtx_StopIgnore() IMPL_STM32_PWM_DestroyCtx_CMockStopIgnore()
+void IMPL_STM32_PWM_DestroyCtx_CMockStopIgnore(void);
+#define IMPL_STM32_PWM_DestroyCtx_ExpectAnyArgsAndReturn(cmock_retval) TEST_FAIL_MESSAGE("IMPL_STM32_PWM_DestroyCtx requires _ExpectAnyArgs (not AndReturn)");
+#define IMPL_STM32_PWM_DestroyCtx_ExpectAnyArgs() IMPL_STM32_PWM_DestroyCtx_CMockExpectAnyArgs(__LINE__)
+void IMPL_STM32_PWM_DestroyCtx_CMockExpectAnyArgs(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_PWM_DestroyCtx_ExpectAndReturn(ctx, cmock_retval) TEST_FAIL_MESSAGE("IMPL_STM32_PWM_DestroyCtx requires _Expect (not AndReturn)");
+#define IMPL_STM32_PWM_DestroyCtx_Expect(ctx) IMPL_STM32_PWM_DestroyCtx_CMockExpect(__LINE__, ctx)
+void IMPL_STM32_PWM_DestroyCtx_CMockExpect(UNITY_LINE_TYPE cmock_line, void* ctx);
+typedef void (* CMOCK_IMPL_STM32_PWM_DestroyCtx_CALLBACK)(void* ctx, int cmock_num_calls);
+void IMPL_STM32_PWM_DestroyCtx_AddCallback(CMOCK_IMPL_STM32_PWM_DestroyCtx_CALLBACK Callback);
+void IMPL_STM32_PWM_DestroyCtx_Stub(CMOCK_IMPL_STM32_PWM_DestroyCtx_CALLBACK Callback);
+#define IMPL_STM32_PWM_DestroyCtx_StubWithCallback IMPL_STM32_PWM_DestroyCtx_Stub
+int IMPL_STM32_PWM_DestroyCtx_CallCount(void);
+#define IMPL_STM32_PWM_DestroyCtx_ReturnThruPtr_ctx(ctx) IMPL_STM32_PWM_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, sizeof(*ctx))
+#define IMPL_STM32_PWM_DestroyCtx_ReturnArrayThruPtr_ctx(ctx, cmock_len) IMPL_STM32_PWM_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, (cmock_len * sizeof(*ctx)))
+#define IMPL_STM32_PWM_DestroyCtx_ReturnMemThruPtr_ctx(ctx, cmock_size) IMPL_STM32_PWM_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, (cmock_size))
+void IMPL_STM32_PWM_DestroyCtx_CMockReturnMemThruPtr_ctx(UNITY_LINE_TYPE cmock_line, void const* ctx, size_t cmock_size);
+#define IMPL_STM32_PWM_DestroyCtx_IgnoreArg_ctx() IMPL_STM32_PWM_DestroyCtx_CMockIgnoreArg_ctx(__LINE__)
+void IMPL_STM32_PWM_DestroyCtx_CMockIgnoreArg_ctx(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_FLASH_CreateCtx_Ignore() TEST_FAIL_MESSAGE("IMPL_STM32_FLASH_CreateCtx requires _IgnoreAndReturn");
+#define IMPL_STM32_FLASH_CreateCtx_IgnoreAndReturn(cmock_retval) IMPL_STM32_FLASH_CreateCtx_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_FLASH_CreateCtx_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
+#define IMPL_STM32_FLASH_CreateCtx_StopIgnore() IMPL_STM32_FLASH_CreateCtx_CMockStopIgnore()
+void IMPL_STM32_FLASH_CreateCtx_CMockStopIgnore(void);
+#define IMPL_STM32_FLASH_CreateCtx_ExpectAnyArgs() TEST_FAIL_MESSAGE("IMPL_STM32_FLASH_CreateCtx requires _ExpectAnyArgsAndReturn");
+#define IMPL_STM32_FLASH_CreateCtx_ExpectAnyArgsAndReturn(cmock_retval) IMPL_STM32_FLASH_CreateCtx_CMockExpectAnyArgsAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_FLASH_CreateCtx_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
+#define IMPL_STM32_FLASH_CreateCtx_Expect(first_sector, sector_count) TEST_FAIL_MESSAGE("IMPL_STM32_FLASH_CreateCtx requires _ExpectAndReturn");
+#define IMPL_STM32_FLASH_CreateCtx_ExpectAndReturn(first_sector, sector_count, cmock_retval) IMPL_STM32_FLASH_CreateCtx_CMockExpectAndReturn(__LINE__, first_sector, sector_count, cmock_retval)
+void IMPL_STM32_FLASH_CreateCtx_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, uint32_t first_sector, uint32_t sector_count, void* cmock_to_return);
+typedef void* (* CMOCK_IMPL_STM32_FLASH_CreateCtx_CALLBACK)(uint32_t first_sector, uint32_t sector_count, int cmock_num_calls);
+void IMPL_STM32_FLASH_CreateCtx_AddCallback(CMOCK_IMPL_STM32_FLASH_CreateCtx_CALLBACK Callback);
+void IMPL_STM32_FLASH_CreateCtx_Stub(CMOCK_IMPL_STM32_FLASH_CreateCtx_CALLBACK Callback);
+#define IMPL_STM32_FLASH_CreateCtx_StubWithCallback IMPL_STM32_FLASH_CreateCtx_Stub
+int IMPL_STM32_FLASH_CreateCtx_CallCount(void);
+#define IMPL_STM32_FLASH_CreateCtx_IgnoreArg_first_sector() IMPL_STM32_FLASH_CreateCtx_CMockIgnoreArg_first_sector(__LINE__)
+void IMPL_STM32_FLASH_CreateCtx_CMockIgnoreArg_first_sector(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_FLASH_CreateCtx_IgnoreArg_sector_count() IMPL_STM32_FLASH_CreateCtx_CMockIgnoreArg_sector_count(__LINE__)
+void IMPL_STM32_FLASH_CreateCtx_CMockIgnoreArg_sector_count(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_FLASH_GetOps_Ignore() TEST_FAIL_MESSAGE("IMPL_STM32_FLASH_GetOps requires _IgnoreAndReturn");
+#define IMPL_STM32_FLASH_GetOps_IgnoreAndReturn(cmock_retval) IMPL_STM32_FLASH_GetOps_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_FLASH_GetOps_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, const Flash_Ops_s* cmock_to_return);
+#define IMPL_STM32_FLASH_GetOps_StopIgnore() IMPL_STM32_FLASH_GetOps_CMockStopIgnore()
+void IMPL_STM32_FLASH_GetOps_CMockStopIgnore(void);
+#define IMPL_STM32_FLASH_GetOps_Expect() TEST_FAIL_MESSAGE("IMPL_STM32_FLASH_GetOps requires _ExpectAndReturn");
+#define IMPL_STM32_FLASH_GetOps_ExpectAndReturn(cmock_retval) IMPL_STM32_FLASH_GetOps_CMockExpectAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_FLASH_GetOps_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, const Flash_Ops_s* cmock_to_return);
+typedef const Flash_Ops_s* (* CMOCK_IMPL_STM32_FLASH_GetOps_CALLBACK)(int cmock_num_calls);
+void IMPL_STM32_FLASH_GetOps_AddCallback(CMOCK_IMPL_STM32_FLASH_GetOps_CALLBACK Callback);
+void IMPL_STM32_FLASH_GetOps_Stub(CMOCK_IMPL_STM32_FLASH_GetOps_CALLBACK Callback);
+#define IMPL_STM32_FLASH_GetOps_StubWithCallback IMPL_STM32_FLASH_GetOps_Stub
+int IMPL_STM32_FLASH_GetOps_CallCount(void);
+#define IMPL_STM32_FLASH_DestroyCtx_IgnoreAndReturn(cmock_retval) TEST_FAIL_MESSAGE("IMPL_STM32_FLASH_DestroyCtx requires _Ignore (not AndReturn)");
+#define IMPL_STM32_FLASH_DestroyCtx_Ignore() IMPL_STM32_FLASH_DestroyCtx_CMockIgnore()
+void IMPL_STM32_FLASH_DestroyCtx_CMockIgnore(void);
+#define IMPL_STM32_FLASH_DestroyCtx_StopIgnore() IMPL_STM32_FLASH_DestroyCtx_CMockStopIgnore()
+void IMPL_STM32_FLASH_DestroyCtx_CMockStopIgnore(void);
+#define IMPL_STM32_FLASH_DestroyCtx_ExpectAnyArgsAndReturn(cmock_retval) TEST_FAIL_MESSAGE("IMPL_STM32_FLASH_DestroyCtx requires _ExpectAnyArgs (not AndReturn)");
+#define IMPL_STM32_FLASH_DestroyCtx_ExpectAnyArgs() IMPL_STM32_FLASH_DestroyCtx_CMockExpectAnyArgs(__LINE__)
+void IMPL_STM32_FLASH_DestroyCtx_CMockExpectAnyArgs(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_FLASH_DestroyCtx_ExpectAndReturn(ctx, cmock_retval) TEST_FAIL_MESSAGE("IMPL_STM32_FLASH_DestroyCtx requires _Expect (not AndReturn)");
+#define IMPL_STM32_FLASH_DestroyCtx_Expect(ctx) IMPL_STM32_FLASH_DestroyCtx_CMockExpect(__LINE__, ctx)
+void IMPL_STM32_FLASH_DestroyCtx_CMockExpect(UNITY_LINE_TYPE cmock_line, void* ctx);
+typedef void (* CMOCK_IMPL_STM32_FLASH_DestroyCtx_CALLBACK)(void* ctx, int cmock_num_calls);
+void IMPL_STM32_FLASH_DestroyCtx_AddCallback(CMOCK_IMPL_STM32_FLASH_DestroyCtx_CALLBACK Callback);
+void IMPL_STM32_FLASH_DestroyCtx_Stub(CMOCK_IMPL_STM32_FLASH_DestroyCtx_CALLBACK Callback);
+#define IMPL_STM32_FLASH_DestroyCtx_StubWithCallback IMPL_STM32_FLASH_DestroyCtx_Stub
+int IMPL_STM32_FLASH_DestroyCtx_CallCount(void);
+#define IMPL_STM32_FLASH_DestroyCtx_ReturnThruPtr_ctx(ctx) IMPL_STM32_FLASH_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, sizeof(*ctx))
+#define IMPL_STM32_FLASH_DestroyCtx_ReturnArrayThruPtr_ctx(ctx, cmock_len) IMPL_STM32_FLASH_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, (cmock_len * sizeof(*ctx)))
+#define IMPL_STM32_FLASH_DestroyCtx_ReturnMemThruPtr_ctx(ctx, cmock_size) IMPL_STM32_FLASH_DestroyCtx_CMockReturnMemThruPtr_ctx(__LINE__, ctx, (cmock_size))
+void IMPL_STM32_FLASH_DestroyCtx_CMockReturnMemThruPtr_ctx(UNITY_LINE_TYPE cmock_line, void const* ctx, size_t cmock_size);
+#define IMPL_STM32_FLASH_DestroyCtx_IgnoreArg_ctx() IMPL_STM32_FLASH_DestroyCtx_CMockIgnoreArg_ctx(__LINE__)
+void IMPL_STM32_FLASH_DestroyCtx_CMockIgnoreArg_ctx(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_CAN_CreateCtx_Ignore() TEST_FAIL_MESSAGE("IMPL_STM32_CAN_CreateCtx requires _IgnoreAndReturn");
+#define IMPL_STM32_CAN_CreateCtx_IgnoreAndReturn(cmock_retval) IMPL_STM32_CAN_CreateCtx_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_CAN_CreateCtx_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
+#define IMPL_STM32_CAN_CreateCtx_StopIgnore() IMPL_STM32_CAN_CreateCtx_CMockStopIgnore()
+void IMPL_STM32_CAN_CreateCtx_CMockStopIgnore(void);
+#define IMPL_STM32_CAN_CreateCtx_ExpectAnyArgs() TEST_FAIL_MESSAGE("IMPL_STM32_CAN_CreateCtx requires _ExpectAnyArgsAndReturn");
+#define IMPL_STM32_CAN_CreateCtx_ExpectAnyArgsAndReturn(cmock_retval) IMPL_STM32_CAN_CreateCtx_CMockExpectAnyArgsAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_CAN_CreateCtx_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
+#define IMPL_STM32_CAN_CreateCtx_Expect(hfdcan, tx_id, rx_id) TEST_FAIL_MESSAGE("IMPL_STM32_CAN_CreateCtx requires _ExpectAndReturn");
+#define IMPL_STM32_CAN_CreateCtx_ExpectAndReturn(hfdcan, tx_id, rx_id, cmock_retval) IMPL_STM32_CAN_CreateCtx_CMockExpectAndReturn(__LINE__, hfdcan, tx_id, rx_id, cmock_retval)
+void IMPL_STM32_CAN_CreateCtx_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, FDCAN_HandleTypeDef* hfdcan, uint32_t tx_id, uint32_t rx_id, void* cmock_to_return);
+typedef void* (* CMOCK_IMPL_STM32_CAN_CreateCtx_CALLBACK)(FDCAN_HandleTypeDef* hfdcan, uint32_t tx_id, uint32_t rx_id, int cmock_num_calls);
+void IMPL_STM32_CAN_CreateCtx_AddCallback(CMOCK_IMPL_STM32_CAN_CreateCtx_CALLBACK Callback);
+void IMPL_STM32_CAN_CreateCtx_Stub(CMOCK_IMPL_STM32_CAN_CreateCtx_CALLBACK Callback);
+#define IMPL_STM32_CAN_CreateCtx_StubWithCallback IMPL_STM32_CAN_CreateCtx_Stub
+int IMPL_STM32_CAN_CreateCtx_CallCount(void);
+#define IMPL_STM32_CAN_CreateCtx_ReturnThruPtr_hfdcan(hfdcan) IMPL_STM32_CAN_CreateCtx_CMockReturnMemThruPtr_hfdcan(__LINE__, hfdcan, sizeof(FDCAN_HandleTypeDef))
+#define IMPL_STM32_CAN_CreateCtx_ReturnArrayThruPtr_hfdcan(hfdcan, cmock_len) IMPL_STM32_CAN_CreateCtx_CMockReturnMemThruPtr_hfdcan(__LINE__, hfdcan, (cmock_len * sizeof(*hfdcan)))
+#define IMPL_STM32_CAN_CreateCtx_ReturnMemThruPtr_hfdcan(hfdcan, cmock_size) IMPL_STM32_CAN_CreateCtx_CMockReturnMemThruPtr_hfdcan(__LINE__, hfdcan, (cmock_size))
+void IMPL_STM32_CAN_CreateCtx_CMockReturnMemThruPtr_hfdcan(UNITY_LINE_TYPE cmock_line, FDCAN_HandleTypeDef const* hfdcan, size_t cmock_size);
+#define IMPL_STM32_CAN_CreateCtx_IgnoreArg_hfdcan() IMPL_STM32_CAN_CreateCtx_CMockIgnoreArg_hfdcan(__LINE__)
+void IMPL_STM32_CAN_CreateCtx_CMockIgnoreArg_hfdcan(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_CAN_CreateCtx_IgnoreArg_tx_id() IMPL_STM32_CAN_CreateCtx_CMockIgnoreArg_tx_id(__LINE__)
+void IMPL_STM32_CAN_CreateCtx_CMockIgnoreArg_tx_id(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_CAN_CreateCtx_IgnoreArg_rx_id() IMPL_STM32_CAN_CreateCtx_CMockIgnoreArg_rx_id(__LINE__)
+void IMPL_STM32_CAN_CreateCtx_CMockIgnoreArg_rx_id(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_CAN_CreateCtxRange_Ignore() TEST_FAIL_MESSAGE("IMPL_STM32_CAN_CreateCtxRange requires _IgnoreAndReturn");
+#define IMPL_STM32_CAN_CreateCtxRange_IgnoreAndReturn(cmock_retval) IMPL_STM32_CAN_CreateCtxRange_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_CAN_CreateCtxRange_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
+#define IMPL_STM32_CAN_CreateCtxRange_StopIgnore() IMPL_STM32_CAN_CreateCtxRange_CMockStopIgnore()
+void IMPL_STM32_CAN_CreateCtxRange_CMockStopIgnore(void);
+#define IMPL_STM32_CAN_CreateCtxRange_ExpectAnyArgs() TEST_FAIL_MESSAGE("IMPL_STM32_CAN_CreateCtxRange requires _ExpectAnyArgsAndReturn");
+#define IMPL_STM32_CAN_CreateCtxRange_ExpectAnyArgsAndReturn(cmock_retval) IMPL_STM32_CAN_CreateCtxRange_CMockExpectAnyArgsAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_CAN_CreateCtxRange_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);
+#define IMPL_STM32_CAN_CreateCtxRange_Expect(hfdcan, tx_id, rx_id_first, rx_id_last) TEST_FAIL_MESSAGE("IMPL_STM32_CAN_CreateCtxRange requires _ExpectAndReturn");
+#define IMPL_STM32_CAN_CreateCtxRange_ExpectAndReturn(hfdcan, tx_id, rx_id_first, rx_id_last, cmock_retval) IMPL_STM32_CAN_CreateCtxRange_CMockExpectAndReturn(__LINE__, hfdcan, tx_id, rx_id_first, rx_id_last, cmock_retval)
+void IMPL_STM32_CAN_CreateCtxRange_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, FDCAN_HandleTypeDef* hfdcan, uint32_t tx_id, uint32_t rx_id_first, uint32_t rx_id_last, void* cmock_to_return);
+typedef void* (* CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALLBACK)(FDCAN_HandleTypeDef* hfdcan, uint32_t tx_id, uint32_t rx_id_first, uint32_t rx_id_last, int cmock_num_calls);
+void IMPL_STM32_CAN_CreateCtxRange_AddCallback(CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALLBACK Callback);
+void IMPL_STM32_CAN_CreateCtxRange_Stub(CMOCK_IMPL_STM32_CAN_CreateCtxRange_CALLBACK Callback);
+#define IMPL_STM32_CAN_CreateCtxRange_StubWithCallback IMPL_STM32_CAN_CreateCtxRange_Stub
+int IMPL_STM32_CAN_CreateCtxRange_CallCount(void);
+#define IMPL_STM32_CAN_CreateCtxRange_ReturnThruPtr_hfdcan(hfdcan) IMPL_STM32_CAN_CreateCtxRange_CMockReturnMemThruPtr_hfdcan(__LINE__, hfdcan, sizeof(FDCAN_HandleTypeDef))
+#define IMPL_STM32_CAN_CreateCtxRange_ReturnArrayThruPtr_hfdcan(hfdcan, cmock_len) IMPL_STM32_CAN_CreateCtxRange_CMockReturnMemThruPtr_hfdcan(__LINE__, hfdcan, (cmock_len * sizeof(*hfdcan)))
+#define IMPL_STM32_CAN_CreateCtxRange_ReturnMemThruPtr_hfdcan(hfdcan, cmock_size) IMPL_STM32_CAN_CreateCtxRange_CMockReturnMemThruPtr_hfdcan(__LINE__, hfdcan, (cmock_size))
+void IMPL_STM32_CAN_CreateCtxRange_CMockReturnMemThruPtr_hfdcan(UNITY_LINE_TYPE cmock_line, FDCAN_HandleTypeDef const* hfdcan, size_t cmock_size);
+#define IMPL_STM32_CAN_CreateCtxRange_IgnoreArg_hfdcan() IMPL_STM32_CAN_CreateCtxRange_CMockIgnoreArg_hfdcan(__LINE__)
+void IMPL_STM32_CAN_CreateCtxRange_CMockIgnoreArg_hfdcan(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_CAN_CreateCtxRange_IgnoreArg_tx_id() IMPL_STM32_CAN_CreateCtxRange_CMockIgnoreArg_tx_id(__LINE__)
+void IMPL_STM32_CAN_CreateCtxRange_CMockIgnoreArg_tx_id(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_CAN_CreateCtxRange_IgnoreArg_rx_id_first() IMPL_STM32_CAN_CreateCtxRange_CMockIgnoreArg_rx_id_first(__LINE__)
+void IMPL_STM32_CAN_CreateCtxRange_CMockIgnoreArg_rx_id_first(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_CAN_CreateCtxRange_IgnoreArg_rx_id_last() IMPL_STM32_CAN_CreateCtxRange_CMockIgnoreArg_rx_id_last(__LINE__)
+void IMPL_STM32_CAN_CreateCtxRange_CMockIgnoreArg_rx_id_last(UNITY_LINE_TYPE cmock_line);
+#define IMPL_STM32_CAN_GetOps_Ignore() TEST_FAIL_MESSAGE("IMPL_STM32_CAN_GetOps requires _IgnoreAndReturn");
+#define IMPL_STM32_CAN_GetOps_IgnoreAndReturn(cmock_retval) IMPL_STM32_CAN_GetOps_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_CAN_GetOps_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, const CAN_Ops_s* cmock_to_return);
+#define IMPL_STM32_CAN_GetOps_StopIgnore() IMPL_STM32_CAN_GetOps_CMockStopIgnore()
+void IMPL_STM32_CAN_GetOps_CMockStopIgnore(void);
+#define IMPL_STM32_CAN_GetOps_Expect() TEST_FAIL_MESSAGE("IMPL_STM32_CAN_GetOps requires _ExpectAndReturn");
+#define IMPL_STM32_CAN_GetOps_ExpectAndReturn(cmock_retval) IMPL_STM32_CAN_GetOps_CMockExpectAndReturn(__LINE__, cmock_retval)
+void IMPL_STM32_CAN_GetOps_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, const CAN_Ops_s* cmock_to_return);
+typedef const CAN_Ops_s* (* CMOCK_IMPL_STM32_CAN_GetOps_CALLBACK)(int cmock_num_calls);
+void IMPL_STM32_CAN_GetOps_AddCallback(CMOCK_IMPL_STM32_CAN_GetOps_CALLBACK Callback);
+void IMPL_STM32_CAN_GetOps_Stub(CMOCK_IMPL_STM32_CAN_GetOps_CALLBACK Callback);
+#define IMPL_STM32_CAN_GetOps_StubWithCallback IMPL_STM32_CAN_GetOps_Stub
+int IMPL_STM32_CAN_GetOps_CallCount(void);
 #define PLAT_malloc_Ignore() TEST_FAIL_MESSAGE("PLAT_malloc requires _IgnoreAndReturn");
 #define PLAT_malloc_IgnoreAndReturn(cmock_retval) PLAT_malloc_CMockIgnoreAndReturn(__LINE__, cmock_retval)
 void PLAT_malloc_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, void* cmock_to_return);

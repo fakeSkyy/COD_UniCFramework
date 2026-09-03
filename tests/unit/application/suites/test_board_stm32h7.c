@@ -1,5 +1,5 @@
 /**
- * @file test_board_devices.c
+ * @file test_board_stm32h7.c
  * @author Kiro
  * @date 2026/8/23
  * @version 1.0
@@ -13,7 +13,7 @@
 #include "board.h"
 #include "case_runner.h"
 #include "fdcan.h"
-#include "impl_stm32_bind.h"
+#include "impl_stm32_flash.h" /* IMPL_STM32_FLASH_PARAM_SECTOR */
 #include "main.h"
 #include "mock_board_deps.h"
 #include "spi.h"
@@ -159,7 +159,7 @@ static void expect_device(unsigned device, bool ctx_ok, bool init_ok)
         break;
 
     case DEVICE_PARAM_FLASH:
-        IMPL_STM32_FLASH_CreateCtx_ExpectAndReturn(IMPL_FLASH_PARAM_SECTOR, 1u, ctx);
+        IMPL_STM32_FLASH_CreateCtx_ExpectAndReturn(IMPL_STM32_FLASH_PARAM_SECTOR, 1u, ctx);
         if (ctx_ok)
         {
             IMPL_STM32_FLASH_GetOps_ExpectAndReturn(&flash_ops);
@@ -180,14 +180,20 @@ static void expect_device(unsigned device, bool ctx_ok, bool init_ok)
  * so every test that calls it must expect these before its bring-up
  * expectations — under enforce_strict_ordering, a mocked call that runs
  * before its expectation was set up fails the test rather than the call
- * simply going unverified. The teardown loop walks the device table
- * backwards, so the DestroyCtx calls are expected in reverse table order
- * regardless of which contexts are actually non-NULL: production code calls
- * IMPL_DESTROY_CTX unconditionally and leaves the NULL check to the backend.
+ * simply going unverified.
+ *
+ * @param held  How many devices the previous call actually built, i.e. how many
+ *              contexts the ledger holds. Only those are released, newest first.
+ *              An earlier version of the composition root called every backend's
+ *              DestroyCtx unconditionally and relied on each accepting NULL, so
+ *              this always expected DEVICE_COUNT calls; the ledger releases
+ *              exactly what exists, which means a first Board_Init releases
+ *              nothing at all. Passing the real count is what makes these tests
+ *              detect a leak rather than tolerate one.
  */
-static void expect_teardown(void)
+static void expect_teardown(unsigned held)
 {
-    for (unsigned i = DEVICE_COUNT; i > 0u; i--)
+    for (unsigned i = held; i > 0u; i--)
     {
         switch (i - 1u)
         {
@@ -218,18 +224,18 @@ static void expect_teardown(void)
     }
 }
 
-static void expect_success(void)
+static void expect_success(unsigned held)
 {
-    expect_teardown();
+    expect_teardown(held);
     for (unsigned i = 0u; i < DEVICE_COUNT; i++)
     {
         expect_device(i, true, true);
     }
 }
 
-static void expect_failure(unsigned failed_device, bool ctx_failure)
+static void expect_failure(unsigned failed_device, bool ctx_failure, unsigned held)
 {
-    expect_teardown();
+    expect_teardown(held);
     for (unsigned i = 0u; i <= failed_device; i++)
     {
         const bool at_failure = i == failed_device;
@@ -263,7 +269,9 @@ static void test_accessors_are_null_before_first_init(void)
 
 static void test_eight_devices_initialize_in_strict_table_order(void)
 {
-    expect_success();
+    /* First Board_Init in this process, so the ledger is empty and teardown releases
+     * nothing. */
+    expect_success(0u);
     TEST_ASSERT_TRUE(Board_Init());
     TEST_ASSERT_NULL(Board_FailedDevice());
 
@@ -275,41 +283,57 @@ static void test_eight_devices_initialize_in_strict_table_order(void)
 
 static void test_each_null_context_is_first_failure_and_short_circuits(void)
 {
+    unsigned held = 0u; /* nothing built before the first pass */
+
     for (unsigned failed = 0u; failed < DEVICE_COUNT; failed++)
     {
-        expect_failure(failed, true);
+        expect_failure(failed, true, held);
         TEST_ASSERT_FALSE(Board_Init());
         TEST_ASSERT_EQUAL_STRING(device_names[failed], Board_FailedDevice());
         assert_accessors_around_failure(failed);
         reset_mocks();
+
+        /* A create that returned NULL stored no context, so this pass leaves only the
+         * devices before the failure in the ledger. */
+        held = failed;
     }
 }
 
 static void test_each_platform_init_failure_is_first_and_short_circuits(void)
 {
+    unsigned held = 0u;
+
     for (unsigned failed = 0u; failed < DEVICE_COUNT; failed++)
     {
-        expect_failure(failed, false);
+        expect_failure(failed, false, held);
         TEST_ASSERT_FALSE(Board_Init());
         TEST_ASSERT_EQUAL_STRING(device_names[failed], Board_FailedDevice());
         assert_accessors_around_failure(failed);
         reset_mocks();
+
+        /* Unlike the NULL-create case the refused context WAS stored, so one more
+         * entry is held than in the loop above. Testing both is the point: the two
+         * failure modes leave different amounts to release. */
+        held = failed + 1u;
     }
 }
 
 static void test_reinit_clears_failure_and_rebuilds_all_accessor_state(void)
 {
-    expect_success();
+    expect_success(0u);
     TEST_ASSERT_TRUE(Board_Init());
     reset_mocks();
 
-    expect_failure(DEVICE_STATUS_LED, true);
+    /* All eight are up, so the next call releases all eight. */
+    expect_failure(DEVICE_STATUS_LED, true, DEVICE_COUNT);
     TEST_ASSERT_FALSE(Board_Init());
     TEST_ASSERT_EQUAL_STRING("status_led", Board_FailedDevice());
     assert_accessors_around_failure(DEVICE_STATUS_LED);
     reset_mocks();
 
-    expect_success();
+    /* The failed pass built timebase, imu_accel and imu_gyro before status_led's
+     * create returned NULL, so three contexts are held. */
+    expect_success(DEVICE_STATUS_LED);
     TEST_ASSERT_TRUE(Board_Init());
     TEST_ASSERT_NULL(Board_FailedDevice());
     for (unsigned i = 0u; i < DEVICE_COUNT; i++)
@@ -353,7 +377,7 @@ static void test_can_create_failure_is_returned(void)
 
 static void test_reinit_destroys_each_previous_context_exactly_once(void)
 {
-    expect_success();
+    expect_success(0u);
     TEST_ASSERT_TRUE(Board_Init());
     reset_mocks();
 
@@ -379,22 +403,18 @@ static void test_reinit_destroys_each_previous_context_exactly_once(void)
 
 static void test_midway_failure_leaves_contexts_that_the_next_call_still_releases(void)
 {
-    /* status_led (index 3) fails its PLAT_*_Init, so its context exists (ctx_ok)
-     * but its _up flag never gets set — this is exactly the case the teardown
-     * must cover by testing the stored context pointer rather than _up: an
-     * entry can have a context with no _up, and the next call must still
-     * release it. Devices after status_led (debug_uart, buzzer_pwm,
-     * imu_heater, param_flash) never ran, so their contexts are NULL and their
-     * DestroyCtx calls fire but touch nothing. */
-    expect_failure(DEVICE_STATUS_LED, false);
+    /* status_led (index 3) fails its PLAT_*_Init, so its context exists (ctx_ok) but
+     * its _up flag never gets set — exactly the case teardown must cover: the ledger
+     * records a context the moment CreateCtx returns it, before PLAT_*_Init is even
+     * attempted, so a device that failed to initialise is still released. Devices
+     * after status_led never ran, so they are not in the ledger at all and no
+     * DestroyCtx fires for them — which is the difference from the composition root
+     * this suite used to cover, where all eight fired unconditionally. */
+    expect_failure(DEVICE_STATUS_LED, false, 0u);
     TEST_ASSERT_FALSE(Board_Init());
     TEST_ASSERT_EQUAL_STRING("status_led", Board_FailedDevice());
     reset_mocks();
 
-    IMPL_STM32_FLASH_DestroyCtx_Expect(NULL);
-    IMPL_STM32_PWM_DestroyCtx_Expect(NULL);
-    IMPL_STM32_PWM_DestroyCtx_Expect(NULL);
-    IMPL_STM32_UART_DestroyCtx_Expect(NULL);
     IMPL_STM32_SPI_DestroyCtx_Expect(&contexts[DEVICE_STATUS_LED]);
     IMPL_STM32_SPI_DestroyCtx_Expect(&contexts[DEVICE_IMU_GYRO]);
     IMPL_STM32_SPI_DestroyCtx_Expect(&contexts[DEVICE_IMU_ACCEL]);
@@ -416,11 +436,11 @@ static void test_third_consecutive_init_frees_nothing_twice(void)
     /* Two prior calls, each rebuilding cleanly, to reach a third with real
      * state behind it rather than starting from the all-NULL first-call case
      * every other test exercises. */
-    expect_success();
+    expect_success(0u);
     TEST_ASSERT_TRUE(Board_Init());
     reset_mocks();
 
-    expect_success();
+    expect_success(DEVICE_COUNT);
     TEST_ASSERT_TRUE(Board_Init());
     reset_mocks();
 

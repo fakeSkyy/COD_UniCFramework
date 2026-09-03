@@ -140,7 +140,7 @@ integration_test(integration_msgbus_rtos)
 add_executable(integration_board_platform
     board_platform/test_board_platform.c
     board_platform/host/host_vendor.c
-    ${APP}/board/board_devices.c
+    ${APP}/board/board_stm32h7.c
     ${PLAT}/bsp/dwt/plat_dwt.c
     ${PLAT}/bsp/spi/plat_spi.c
     ${PLAT}/bsp/uart/plat_uart.c

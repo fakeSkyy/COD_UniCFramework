@@ -297,42 +297,34 @@ void tearDown(void)
  *
  * Board_Init tears down before it builds, on every call including the first,
  * so both tests below must expect these before their bring-up expectations —
- * enforce_strict_ordering fails the test otherwise. NULL is what a fresh
- * Board_Init actually tears down: nothing has been created yet in either
- * test, so every DestroyCtx here runs against a never-populated context.
+ * enforce_strict_ordering fails the test otherwise.
+ *
+ * Nothing is expected for the first Board_Init: the composition root records each
+ * context in a teardown ledger as it is created, so a first call has nothing to
+ * release and calls no DestroyCtx at all. An earlier version called every backend's
+ * DestroyCtx unconditionally against a never-populated context, which is why this
+ * used to expect eight calls with NULL.
  */
-static void expect_teardown(void)
-{
-    HOST_FLASH_DestroyCtx_Expect(NULL);
-    HOST_PWM_DestroyCtx_Expect(NULL);
-    HOST_PWM_DestroyCtx_Expect(NULL);
-    HOST_UART_DestroyCtx_Expect(NULL);
-    HOST_SPI_DestroyCtx_Expect(NULL);
-    HOST_SPI_DestroyCtx_Expect(NULL);
-    HOST_SPI_DestroyCtx_Expect(NULL);
-    HOST_DWT_DestroyCtx_Expect(NULL);
-}
 static void expect_all(void)
 {
-    expect_teardown();
-    HOST_DWT_CreateCtx_ExpectAndReturn(SystemCoreClock, &contexts[0]);
-    HOST_DWT_GetOps_ExpectAndReturn(&dwt_ops);
-    HOST_SPI_CreateCtx_ExpectAndReturn(&hspi2, ACCEL_CS_GPIO_Port, ACCEL_CS_Pin, SPI_XFER_IT,
-                                       &contexts[1]);
-    HOST_SPI_GetOps_ExpectAndReturn(&spi_ops);
-    HOST_SPI_CreateCtx_ExpectAndReturn(&hspi2, GYRO_CS_GPIO_Port, GYRO_CS_Pin, SPI_XFER_IT,
-                                       &contexts[2]);
-    HOST_SPI_GetOps_ExpectAndReturn(&spi_ops);
-    HOST_SPI_CreateCtx_ExpectAndReturn(&hspi6, NULL, 0u, SPI_XFER_IT, &contexts[3]);
-    HOST_SPI_GetOps_ExpectAndReturn(&spi_ops);
-    HOST_UART_CreateCtx_ExpectAndReturn(&huart10, UART_XFER_IT, &contexts[4]);
-    HOST_UART_GetOps_ExpectAndReturn(&uart_ops);
-    HOST_PWM_CreateCtx_ExpectAndReturn(&htim12, TIM_CHANNEL_2, &contexts[5]);
-    HOST_PWM_GetOps_ExpectAndReturn(&pwm_ops);
-    HOST_PWM_CreateCtx_ExpectAndReturn(&htim3, TIM_CHANNEL_4, &contexts[6]);
-    HOST_PWM_GetOps_ExpectAndReturn(&pwm_ops);
-    HOST_FLASH_CreateCtx_ExpectAndReturn(7u, 1u, &contexts[7]);
-    HOST_FLASH_GetOps_ExpectAndReturn(&flash_ops);
+    IMPL_STM32_DWT_CreateCtx_ExpectAndReturn(SystemCoreClock, &contexts[0]);
+    IMPL_STM32_DWT_GetOps_ExpectAndReturn(&dwt_ops);
+    IMPL_STM32_SPI_CreateCtx_ExpectAndReturn(&hspi2, ACCEL_CS_GPIO_Port, ACCEL_CS_Pin, SPI_XFER_IT,
+                                             &contexts[1]);
+    IMPL_STM32_SPI_GetOps_ExpectAndReturn(&spi_ops);
+    IMPL_STM32_SPI_CreateCtx_ExpectAndReturn(&hspi2, GYRO_CS_GPIO_Port, GYRO_CS_Pin, SPI_XFER_IT,
+                                             &contexts[2]);
+    IMPL_STM32_SPI_GetOps_ExpectAndReturn(&spi_ops);
+    IMPL_STM32_SPI_CreateCtx_ExpectAndReturn(&hspi6, NULL, 0u, SPI_XFER_IT, &contexts[3]);
+    IMPL_STM32_SPI_GetOps_ExpectAndReturn(&spi_ops);
+    IMPL_STM32_UART_CreateCtx_ExpectAndReturn(&huart10, UART_XFER_IT, &contexts[4]);
+    IMPL_STM32_UART_GetOps_ExpectAndReturn(&uart_ops);
+    IMPL_STM32_PWM_CreateCtx_ExpectAndReturn(&htim12, TIM_CHANNEL_2, &contexts[5]);
+    IMPL_STM32_PWM_GetOps_ExpectAndReturn(&pwm_ops);
+    IMPL_STM32_PWM_CreateCtx_ExpectAndReturn(&htim3, TIM_CHANNEL_4, &contexts[6]);
+    IMPL_STM32_PWM_GetOps_ExpectAndReturn(&pwm_ops);
+    IMPL_STM32_FLASH_CreateCtx_ExpectAndReturn(7u, 1u, &contexts[7]);
+    IMPL_STM32_FLASH_GetOps_ExpectAndReturn(&flash_ops);
 }
 static void test_real_platform_init_order_accessors_and_can_factory(void)
 {
@@ -349,29 +341,30 @@ static void test_real_platform_init_order_accessors_and_can_factory(void)
     TEST_ASSERT_NOT_NULL(Board_ParamFlash());
     TEST_ASSERT_EQUAL_UINT(3u, spi_attaches);
     TEST_ASSERT_EQUAL_UINT(1u, uart_attaches);
-    HOST_CAN_CreateCtx_ExpectAndReturn(&hfdcan2, 0x200u, 0x205u, &contexts[8]);
-    HOST_CAN_GetOps_ExpectAndReturn(&can_ops);
+    IMPL_STM32_CAN_CreateCtx_ExpectAndReturn(&hfdcan2, 0x200u, 0x205u, &contexts[8]);
+    IMPL_STM32_CAN_GetOps_ExpectAndReturn(&can_ops);
     CAN_Instance_s* can = Board_CANCreate(BOARD_CAN2, 0x200u, 0x205u);
     TEST_ASSERT_NOT_NULL(can);
     TEST_ASSERT_EQUAL_UINT(1u, can_attaches);
 }
 static void test_first_context_error_short_circuits_remaining_definitions(void)
 {
-    /* This runs second in the same process, so board_devices.c's static state
+    /* This runs second in the same process, so the composition root's static state
      * still holds what the previous test built — its teardown must release
      * those exact pointers, not NULL, mirroring test_reinit_destroys_each_
      * previous_context_exactly_once in the unit suite. */
-    HOST_FLASH_DestroyCtx_Expect(&contexts[7]);
-    HOST_PWM_DestroyCtx_Expect(&contexts[6]);
-    HOST_PWM_DestroyCtx_Expect(&contexts[5]);
-    HOST_UART_DestroyCtx_Expect(&contexts[4]);
-    HOST_SPI_DestroyCtx_Expect(&contexts[3]);
-    HOST_SPI_DestroyCtx_Expect(&contexts[2]);
-    HOST_SPI_DestroyCtx_Expect(&contexts[1]);
-    HOST_DWT_DestroyCtx_Expect(&contexts[0]);
-    HOST_DWT_CreateCtx_ExpectAndReturn(SystemCoreClock, &contexts[0]);
-    HOST_DWT_GetOps_ExpectAndReturn(&dwt_ops);
-    HOST_SPI_CreateCtx_ExpectAndReturn(&hspi2, ACCEL_CS_GPIO_Port, ACCEL_CS_Pin, SPI_XFER_IT, NULL);
+    IMPL_STM32_FLASH_DestroyCtx_Expect(&contexts[7]);
+    IMPL_STM32_PWM_DestroyCtx_Expect(&contexts[6]);
+    IMPL_STM32_PWM_DestroyCtx_Expect(&contexts[5]);
+    IMPL_STM32_UART_DestroyCtx_Expect(&contexts[4]);
+    IMPL_STM32_SPI_DestroyCtx_Expect(&contexts[3]);
+    IMPL_STM32_SPI_DestroyCtx_Expect(&contexts[2]);
+    IMPL_STM32_SPI_DestroyCtx_Expect(&contexts[1]);
+    IMPL_STM32_DWT_DestroyCtx_Expect(&contexts[0]);
+    IMPL_STM32_DWT_CreateCtx_ExpectAndReturn(SystemCoreClock, &contexts[0]);
+    IMPL_STM32_DWT_GetOps_ExpectAndReturn(&dwt_ops);
+    IMPL_STM32_SPI_CreateCtx_ExpectAndReturn(&hspi2, ACCEL_CS_GPIO_Port, ACCEL_CS_Pin, SPI_XFER_IT,
+                                             NULL);
     TEST_ASSERT_FALSE(Board_Init());
     TEST_ASSERT_EQUAL_STRING("imu_accel", Board_FailedDevice());
     TEST_ASSERT_NOT_NULL(Board_Timebase());

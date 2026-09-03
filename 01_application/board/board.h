@@ -38,20 +38,20 @@ typedef struct UART_Instance_s  UART_Instance_s;
 /**
  * @brief Which CAN peripheral a node belongs to.
  *
- * Generated from board_devices.def, so the selectors and the vendor handles they
- * map to cannot drift apart — adding a bus is one line in that file rather than a
- * new enumerator here plus a new branch in the factory.
+ * Adding a bus is two edits that must agree: an enumerator here, and a row in
+ * board_<chip>.c's handle_of table. A _Static_assert in that file compares the
+ * table's length against BOARD_CAN_COUNT, so a mismatch stops the build rather
+ * than producing a selector with no handle behind it.
  *
- * Only BOARD_BUS is defined here; the .def supplies an empty BOARD_DEVICE, so this
- * header never names a peripheral macro and stays free of vendor symbols.
+ * Only the buses actually wired are listed. FDCAN3 exists on this part and CubeMX
+ * initialises it, but an enumerator for a connector nothing is plugged into only
+ * invites a node to be created on it.
  */
 typedef enum
 {
-#define BOARD_DEVICE(getter, name, Class, ...)
-#define BOARD_BUS(name, handle) BOARD_##name,
-#include "board_devices.def"
-#undef BOARD_BUS
-#undef BOARD_DEVICE
+    BOARD_CAN1 = 0, /**< FDCAN1. */
+    BOARD_CAN2,     /**< FDCAN2; receives on FIFO 1, see board_<chip>.c. */
+
     BOARD_CAN_COUNT /**< Number of buses; not a selector. */
 } Board_CANBus_e;
 
@@ -74,7 +74,7 @@ typedef enum
  * even if this wanted to. Only the per-device context is ever this call's to
  * free — see each backend's IMPL_*_DestroyCtx.
  *
- * Peripherals come up in the order they are listed in board_devices.def, and the
+ * Peripherals come up in the order they are written in board_<chip>.c, and the
  * first failure stops the rest — so a later entry may rely on an earlier one.
  *
  * @return true when every peripheral came up. On false the accessors for anything
@@ -90,7 +90,7 @@ bool Board_Init(void);
  * @brief Which peripheral failed to come up.
  *
  * @return Storage name of the first failure exactly as written in
- *         board_devices.def, or NULL when Board_Init succeeded. The string is
+ *         board_<chip>.c, or NULL when Board_Init succeeded. The string is
  *         static.
  */
 const char* Board_FailedDevice(void);
@@ -99,17 +99,34 @@ const char* Board_FailedDevice(void);
 /*  Accessors                                                                */
 /* ========================================================================= */
 
-/* Declared from the same table that defines them, so an entry cannot have an
- * accessor in one place and not the other. Each returns NULL until its entry has
- * come up, so a caller that ignored Board_Init's return value gets a NULL it can
- * test rather than a zeroed instance the platform layer would dereference.
+/* ----- EDIT HERE (4/4): the accessor prototype --------------------------- *
+ * One line per device, matching the Getter name in board_<chip>.c's device table
+ * exactly — that file makes a mismatch a named compile error rather than a link
+ * failure. A new peripheral class also needs its typedef added above.
  *
- * What each one is, and why, is documented at its line in board_devices.def. */
-#define BOARD_BUS(name, handle)
-#define BOARD_DEVICE(getter, name, Class, ...) Class##_Instance_s* Board_##getter(void);
-#include "board_devices.def"
-#undef BOARD_DEVICE
-#undef BOARD_BUS
+ * This is the fourth and last of the four edit sites; the other three are in
+ * board_<chip>.c, listed at the top of that file.
+ * ------------------------------------------------------------------------- */
+
+/* One per peripheral this board has. Each returns NULL until its device has come
+ * up, so a caller that ignored Board_Init's return value gets a NULL it can test
+ * rather than a zeroed instance the platform layer would dereference.
+ *
+ * These names are the board's vendor-neutral interface: nothing above this header
+ * learns which chip implements them, which is what lets board_stm32f4.c be swapped
+ * in for board_stm32h7.c by changing one CMake source-list entry.
+ *
+ * What each one is, and why its arguments are what they are, is documented at its
+ * bring-up call in board_<chip>.c. */
+
+DWT_Instance_s*   Board_Timebase(void);
+SPI_Instance_s*   Board_ImuAccel(void);
+SPI_Instance_s*   Board_ImuGyro(void);
+SPI_Instance_s*   Board_StatusLed(void);
+UART_Instance_s*  Board_DebugUart(void);
+PWM_Instance_s*   Board_BuzzerPWM(void);
+PWM_Instance_s*   Board_ImuHeater(void);
+Flash_Instance_s* Board_ParamFlash(void);
 
 /**
  * @brief Create one CAN node on a board bus.
@@ -143,5 +160,29 @@ const char* Board_FailedDevice(void);
  *         for will never receive anything.
  */
 CAN_Instance_s* Board_CANCreate(Board_CANBus_e bus, uint32_t tx_id, uint32_t rx_id);
+
+/**
+ * @brief Create one CAN node that receives a contiguous range of identifiers.
+ *
+ * Same as Board_CANCreate, but the node is addressed by every identifier from
+ * @p rx_id_first to @p rx_id_last inclusive. Use it when several devices report under
+ * consecutive identifiers and one callback can serve them all — four DJI wheels on
+ * 0x201..0x204 become one node instead of four.
+ *
+ * The receive callback must then dispatch on the identifier it is handed, since every
+ * frame in the span arrives through this one node. The range is claimed as a unit: no
+ * later node can take a single identifier out of it.
+ *
+ * @param bus           Which peripheral, from Board_CANBus_e.
+ * @param tx_id         Identifier this node transmits under with PLAT_CAN_Send.
+ * @param rx_id_first   First identifier routed here.
+ * @param rx_id_last    Last identifier, inclusive. Passing the same value as
+ *                      @p rx_id_first is identical to Board_CANCreate.
+ * @return Vendor-neutral CAN handle, or NULL if @p bus is not a valid selector, an
+ *         identifier exceeds 11 bits, the range is inverted, any identifier in it is
+ *         already claimed on that bus, or allocation failed.
+ */
+CAN_Instance_s* Board_CANCreateRange(Board_CANBus_e bus, uint32_t tx_id, uint32_t rx_id_first,
+                                     uint32_t rx_id_last);
 
 #endif /* BOARD_H */
