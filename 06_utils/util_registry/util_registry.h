@@ -33,26 +33,32 @@ typedef struct
  *   - interrupt routing tables (map a peripheral handle to a callback token),
  *   - instance registries (iterate all instances via UTIL_Registry_ForEach).
  *
- * @par Append-only by design
- * There is deliberately no remove operation. Entries occupy slots 0..count-1
- * with no holes, which is what lets a lookup stop at @c count instead of
- * scanning the whole capacity — an over-provisioned table costs nothing at
- * runtime, so capacity can be sized for the worst case without penalty.
+ * @par Registrations describe ownership, not state
+ * An entry says which instance owns a peripheral handle or an identifier, which is
+ * fixed for as long as that instance exists. State that genuinely changes at runtime
+ * — whether a transfer is armed, which mode is active — belongs in the owner's own
+ * fields, checked by the callback after the lookup. Conflating the two would mean
+ * mutating this table on every start/stop.
  *
- * This fits the intended use: registrations describe ownership (which instance
- * owns this peripheral handle), which is fixed once the instance is created.
- * State that genuinely changes at runtime — whether a transfer is armed, which
- * mode is active — belongs in the owner's own fields, checked by the callback
- * after the lookup. Conflating the two would mean mutating this table on every
- * start/stop, and holes would both cost lookup time and make the lock-free
- * guarantee below much harder to state.
+ * @par Removal is by tombstone, so @c count is a high-water mark
+ * UTIL_Registry_Remove clears a slot's key in place rather than compacting the
+ * table, so @c count never decreases and is the bound a lookup scans — not the
+ * number of live entries. Add reuses a retired slot before growing, so repeated
+ * create/destroy cycles do not exhaust the capacity.
+ *
+ * Leaving the slot where it is preserves the lock-free guarantee below. Moving the
+ * last entry into the hole would be tidier but is not safe: shrinking @c count first
+ * makes the moved entry briefly unreachable, so an ISR looking up an *unrelated* key
+ * in that window would miss it.
  *
  * @par Concurrency (single-core, e.g. Cortex-M)
  * UTIL_Registry_Find and UTIL_Registry_ForEach are lock-free and ISR-safe.
- * UTIL_Registry_Add must run in task context; its write ordering keeps a
- * concurrent Find consistent without disabling interrupts. Because entries never
- * move once written, a lookup in progress can never miss an entry that was
- * already present when it started. On multi-core targets, guard Add externally.
+ * UTIL_Registry_Add and UTIL_Registry_Remove must run in task context; their write
+ * ordering keeps a concurrent Find consistent without disabling interrupts. Because
+ * entries never move once written, a lookup in progress can never miss an entry that
+ * was already present when it started — except the one entry a concurrent Remove is
+ * retiring, which is by definition the one the caller is done with. On multi-core
+ * targets, guard Add and Remove externally.
  */
 typedef struct
 {
@@ -86,6 +92,24 @@ void UTIL_Registry_Init(UTIL_Registry_s* reg, UTIL_Registry_Slot_s* slots, uint1
 bool UTIL_Registry_Add(UTIL_Registry_s* reg, const void* key, void* value);
 
 /**
+ * @brief Retire the mapping for @p key.
+ *
+ * Clears the slot in place, leaving @c count unchanged (see the type's
+ * documentation for why the table is not compacted). A later Add reuses the slot.
+ *
+ * Must run in task context. A Find concurrent with this call either still sees the
+ * entry or no longer does; no other entry is affected. Callers that free the stored
+ * value must Remove it first, or an ISR-side Find can hand a callback a pointer to
+ * freed memory.
+ *
+ * @param reg  Registry.
+ * @param key  Key to retire.
+ * @return true if @p key was present and is now retired; false if @p key is NULL or
+ *         was not registered.
+ */
+bool UTIL_Registry_Remove(UTIL_Registry_s* reg, const void* key);
+
+/**
  * @brief Look up the value bound to @p key.
  *
  * Scans only the live entries, so cost tracks how many registrations exist
@@ -100,7 +124,9 @@ void* UTIL_Registry_Find(const UTIL_Registry_s* reg, const void* key);
 /**
  * @brief Invoke a visitor for every entry.
  *
- * Iteration order is registration order. Do not add entries from within @p fn.
+ * Iteration order is registration order. Slots retired by UTIL_Registry_Remove are
+ * skipped, so @p fn sees only live entries. Do not add or remove entries from
+ * within @p fn.
  *
  * @param reg   Registry.
  * @param fn    Visitor called as fn(key, value, user) for each entry.

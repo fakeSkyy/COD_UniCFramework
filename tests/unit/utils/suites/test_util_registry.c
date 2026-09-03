@@ -391,6 +391,159 @@ static void test_util_registry_foreach_accepts_a_null_user_argument(void)
     TEST_ASSERT_EQUAL_UINT(1u, null_user_calls);
 }
 
+/* ========================================================================= */
+/*  Remove                                                                   */
+/* ========================================================================= */
+
+static void test_util_registry_remove_makes_the_key_unfindable(void)
+{
+    fixture_init();
+
+    TEST_ASSERT_TRUE(UTIL_Registry_Add(&reg, &key_a, &val_1));
+    TEST_ASSERT_TRUE(UTIL_Registry_Remove(&reg, &key_a));
+
+    TEST_ASSERT_NULL(UTIL_Registry_Find(&reg, &key_a));
+}
+
+static void test_util_registry_remove_leaves_its_neighbours_findable(void)
+{
+    fixture_init();
+
+    TEST_ASSERT_TRUE(UTIL_Registry_Add(&reg, &key_a, &val_1));
+    TEST_ASSERT_TRUE(UTIL_Registry_Add(&reg, &key_b, &val_2));
+    TEST_ASSERT_TRUE(UTIL_Registry_Add(&reg, &key_c, &val_3));
+
+    /* Retiring the middle entry must not disturb either side. This is the property
+     * that rules out compacting the table: moving the last entry into the hole would
+     * make key_c briefly unreachable to a concurrent lookup. */
+    TEST_ASSERT_TRUE(UTIL_Registry_Remove(&reg, &key_b));
+
+    TEST_ASSERT_EQUAL_PTR(&val_1, UTIL_Registry_Find(&reg, &key_a));
+    TEST_ASSERT_NULL(UTIL_Registry_Find(&reg, &key_b));
+    TEST_ASSERT_EQUAL_PTR(&val_3, UTIL_Registry_Find(&reg, &key_c));
+}
+
+static void test_util_registry_remove_does_not_move_the_last_entry(void)
+{
+    fixture_init();
+
+    TEST_ASSERT_TRUE(UTIL_Registry_Add(&reg, &key_a, &val_1));
+    TEST_ASSERT_TRUE(UTIL_Registry_Add(&reg, &key_b, &val_2));
+    TEST_ASSERT_TRUE(UTIL_Registry_Remove(&reg, &key_a));
+
+    /* Asserted on the slots directly, because "nothing moved" is the whole safety
+     * argument and Find alone cannot distinguish it from a compacting Remove. */
+    TEST_ASSERT_NULL(slots[0].key);
+    TEST_ASSERT_NULL(slots[0].value);
+    TEST_ASSERT_EQUAL_PTR(&key_b, slots[1].key);
+    TEST_ASSERT_EQUAL_PTR(&val_2, slots[1].value);
+}
+
+static void test_util_registry_remove_keeps_count_as_a_high_water_mark(void)
+{
+    fixture_init();
+
+    TEST_ASSERT_TRUE(UTIL_Registry_Add(&reg, &key_a, &val_1));
+    TEST_ASSERT_TRUE(UTIL_Registry_Add(&reg, &key_b, &val_2));
+    TEST_ASSERT_TRUE(UTIL_Registry_Remove(&reg, &key_a));
+
+    /* count is the lookup bound, not the live-entry count. It must not shrink, or a
+     * lookup would stop before entries that are still live. */
+    TEST_ASSERT_EQUAL_UINT16(2u, reg.count);
+}
+
+static void test_util_registry_add_reuses_a_removed_slot(void)
+{
+    fixture_init();
+
+    for (uint16_t i = 0u; i < CAPACITY; i++)
+    {
+        TEST_ASSERT_TRUE(UTIL_Registry_Add(&reg, &slots[i], &val_1));
+    }
+    TEST_ASSERT_FALSE(UTIL_Registry_Add(&reg, &key_absent, &val_2));
+
+    /* Free one and the table must accept one more: without slot reuse a
+     * create/destroy cycle would exhaust the capacity even though the number of live
+     * entries never grew. */
+    TEST_ASSERT_TRUE(UTIL_Registry_Remove(&reg, &slots[1]));
+    TEST_ASSERT_TRUE(UTIL_Registry_Add(&reg, &key_absent, &val_2));
+
+    TEST_ASSERT_EQUAL_PTR(&val_2, UTIL_Registry_Find(&reg, &key_absent));
+    TEST_ASSERT_EQUAL_UINT16(CAPACITY, reg.count);
+}
+
+static void test_util_registry_remove_add_cycles_never_exhaust_capacity(void)
+{
+    fixture_init();
+
+    /* Many more cycles than there are slots, which is what a long-running system
+     * creating and destroying CAN nodes on one bus would do. */
+    for (unsigned cycle = 0u; cycle < 64u; cycle++)
+    {
+        TEST_ASSERT_TRUE(UTIL_Registry_Add(&reg, &key_a, &val_1));
+        TEST_ASSERT_TRUE(UTIL_Registry_Remove(&reg, &key_a));
+    }
+
+    TEST_ASSERT_TRUE(UTIL_Registry_Add(&reg, &key_a, &val_1));
+    TEST_ASSERT_EQUAL_PTR(&val_1, UTIL_Registry_Find(&reg, &key_a));
+    TEST_ASSERT_TRUE(reg.count <= CAPACITY);
+}
+
+static void test_util_registry_remove_rejects_a_null_key(void)
+{
+    fixture_init();
+
+    TEST_ASSERT_TRUE(UTIL_Registry_Add(&reg, &key_a, &val_1));
+
+    /* A NULL key is how a retired slot is marked, so accepting it here would let a
+     * caller "remove" the first tombstone it happened to find. */
+    TEST_ASSERT_FALSE(UTIL_Registry_Remove(&reg, NULL));
+    TEST_ASSERT_EQUAL_PTR(&val_1, UTIL_Registry_Find(&reg, &key_a));
+}
+
+static void test_util_registry_remove_absent_key_reports_false(void)
+{
+    fixture_init();
+
+    TEST_ASSERT_TRUE(UTIL_Registry_Add(&reg, &key_a, &val_1));
+
+    TEST_ASSERT_FALSE(UTIL_Registry_Remove(&reg, &key_absent));
+
+    /* Removing twice must report the second as absent, so a double-destroy cannot
+     * look like it retired something. */
+    TEST_ASSERT_TRUE(UTIL_Registry_Remove(&reg, &key_a));
+    TEST_ASSERT_FALSE(UTIL_Registry_Remove(&reg, &key_a));
+}
+
+static void test_util_registry_remove_on_empty_reports_false(void)
+{
+    fixture_init();
+
+    TEST_ASSERT_FALSE(UTIL_Registry_Remove(&reg, &key_a));
+    TEST_ASSERT_EQUAL_UINT16(0u, reg.count);
+}
+
+static void test_util_registry_foreach_skips_removed_entries(void)
+{
+    Visit_Log_s log;
+
+    fixture_init();
+    memset(&log, 0, sizeof(log));
+
+    TEST_ASSERT_TRUE(UTIL_Registry_Add(&reg, &key_a, &val_1));
+    TEST_ASSERT_TRUE(UTIL_Registry_Add(&reg, &key_b, &val_2));
+    TEST_ASSERT_TRUE(UTIL_Registry_Add(&reg, &key_c, &val_3));
+    TEST_ASSERT_TRUE(UTIL_Registry_Remove(&reg, &key_b));
+
+    UTIL_Registry_ForEach(&reg, visit_record, &log);
+
+    /* A visitor must never be handed a retired slot: count still spans it, so
+     * ForEach has to test the key rather than trust the bound. */
+    TEST_ASSERT_EQUAL_UINT(2u, log.calls);
+    TEST_ASSERT_EQUAL_PTR(&key_a, log.keys[0]);
+    TEST_ASSERT_EQUAL_PTR(&key_c, log.keys[1]);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -417,6 +570,17 @@ int main(void)
     RUN_TEST(test_util_registry_foreach_on_empty_never_calls_the_visitor);
     RUN_TEST(test_util_registry_foreach_reflects_an_update_not_a_reinsert);
     RUN_TEST(test_util_registry_foreach_accepts_a_null_user_argument);
+    RUN_TEST(test_util_registry_foreach_skips_removed_entries);
+
+    RUN_TEST(test_util_registry_remove_makes_the_key_unfindable);
+    RUN_TEST(test_util_registry_remove_leaves_its_neighbours_findable);
+    RUN_TEST(test_util_registry_remove_does_not_move_the_last_entry);
+    RUN_TEST(test_util_registry_remove_keeps_count_as_a_high_water_mark);
+    RUN_TEST(test_util_registry_add_reuses_a_removed_slot);
+    RUN_TEST(test_util_registry_remove_add_cycles_never_exhaust_capacity);
+    RUN_TEST(test_util_registry_remove_rejects_a_null_key);
+    RUN_TEST(test_util_registry_remove_absent_key_reports_false);
+    RUN_TEST(test_util_registry_remove_on_empty_reports_false);
 
     return UNITY_END();
 }

@@ -39,6 +39,20 @@ bool UTIL_Registry_Add(UTIL_Registry_s* reg, const void* key, void* value)
         }
     }
 
+    /* Reuse a slot a Remove retired before growing the table. Without this a
+     * create/destroy cycle would consume a fresh slot every time and a
+     * long-running system would exhaust the capacity even though the number of
+     * live entries never grew. */
+    for (uint16_t i = 0; i < n; i++)
+    {
+        if (reg->slots[i].key == NULL)
+        {
+            reg->slots[i].value = value;
+            reg->slots[i].key   = key;
+            return true;
+        }
+    }
+
     if (n >= reg->capacity)
     {
         return false; /* registry full */
@@ -80,6 +94,49 @@ void UTIL_Registry_ForEach(const UTIL_Registry_s* reg,
 
     for (; s != end; s++)
     {
-        fn(s->key, s->value, user);
+        /* Skip slots a Remove retired: count is the high-water mark, not the number
+         * of live entries, so a visitor would otherwise be handed a NULL key. */
+        if (s->key != NULL)
+        {
+            fn(s->key, s->value, user);
+        }
     }
+}
+
+bool UTIL_Registry_Remove(UTIL_Registry_s* reg, const void* key)
+{
+    if (key == NULL)
+    {
+        return false;
+    }
+
+    uint16_t n = reg->count;
+
+    for (uint16_t i = 0; i < n; i++)
+    {
+        if (reg->slots[i].key != key)
+        {
+            continue;
+        }
+
+        /* Unpublish by clearing the key, and leave the slot where it is.
+         *
+         * The alternative — move the last entry into the hole and decrement count —
+         * would break the lock-free guarantee: shrinking count first makes the moved
+         * entry briefly unreachable, so an ISR looking up an *unrelated* identifier
+         * in that window misses it. Clearing in place cannot affect any other entry,
+         * because Find matches on the key and nothing moves.
+         *
+         * Key first, then value: Find returns the value only after matching the key,
+         * so once the key is gone no lookup can reach the value. Clearing the value
+         * first would leave a live key bound to NULL, which the CAN routing path
+         * would read as "no callback yet" rather than "not present" — a real
+         * difference, since that path tests c->rx_cb.
+         */
+        reg->slots[i].key   = NULL;
+        reg->slots[i].value = NULL;
+        return true;
+    }
+
+    return false;
 }
