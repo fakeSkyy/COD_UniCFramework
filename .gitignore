@@ -8,10 +8,17 @@ compile_commands.json
 
 # Tool state and caches
 .cache/
-.claude/
 .kiro/
 
-# Legacy code kept for reference only, not part of the build
+# Tool state stays out, but the skills under .claude/ are project documentation and
+# must survive a clone. The authoritative rules document once lived under .claude/
+# and was invisible to everyone who cloned this repo; do not repeat that.
+.claude/*
+!.claude/skills/
+
+# Kept only so a local scratch copy of pre-refactor code cannot be committed by
+# accident. No such tree has ever existed in this repository's history -- several
+# documents used to claim otherwise; see docs/ai-memory/ref-directory-never-existed.md
 ref/
 
 # Editor and OS noise
