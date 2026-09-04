@@ -14,7 +14,12 @@
 #
 # Environment:
 #   JOBS=<n>                   parallelism for one run, overriding JOBS_DEFAULT
-#   BUILD_TYPE=<cfg>           Debug (default) | Release | RelWithDebInfo
+#   BUILD_TYPE=<cfg>           RelWithDebInfo (default) | Debug | Release.
+#                              Read ONLY when configuring, i.e. when the build
+#                              directory has no CMakeCache.txt -- an existing
+#                              directory keeps whatever it was configured with,
+#                              silently. Use `clean`, or a different directory,
+#                              to change it.
 #   ALLOW_WARNINGS=1           report warnings without failing; for triaging a
 #                              vendor regeneration, never for normal work
 
@@ -103,6 +108,18 @@ if [ ! -f "$build_dir/CMakeCache.txt" ]; then
     cmake -S "$root" -B "$build_dir" -G "Unix Makefiles" \
         -DCMAKE_TOOLCHAIN_FILE="$toolchain" \
         -DCMAKE_BUILD_TYPE="$build_type"
+else
+    # An existing cache wins, and silently: -DCMAKE_BUILD_TYPE above never runs
+    # again for this directory. So a `build/` first configured as Debug stays
+    # Debug however many times BUILD_TYPE=RelWithDebInfo is exported, and the
+    # only visible symptom is a text figure tens of KB off -- which reads as code
+    # growth, not as a configuration mismatch. That cost a debugging session on
+    # 2026/9/4, so say it rather than let the size speak for it.
+    cached=$(sed -n 's/^CMAKE_BUILD_TYPE:STRING=//p' "$build_dir/CMakeCache.txt")
+    if [ "$cached" != "$build_type" ]; then
+        echo "==> NOTE  $build_dir is configured as ${cached:-<empty>}, not $build_type"
+        echo "          building ${cached:-<empty>}. Use '$0 clean' to switch."
+    fi
 fi
 
 echo "==> building with $jobs jobs"

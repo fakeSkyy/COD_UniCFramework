@@ -24,6 +24,15 @@ The toolchain is `arm-none-eabi-gcc` (15.2 on this machine, at `/home/stg/tools/
 
 Note what the warning gate can and cannot see: warnings only appear in a build's output for files it actually recompiled, so an incremental run over an unchanged tree proves nothing about warnings. The script says `UP TO DATE` rather than `0 warnings` in that case — take a zero-warning claim only from a run that reports files compiled.
 
+`BUILD_TYPE` has a trap of the same shape, and it is worth knowing before trusting any size figure: **it is only read when there is no `CMakeCache.txt`.** `build.sh` configures on the first run and skips configuring thereafter, so a `build/` directory first created as `Debug` stays `Debug` forever — every later `./build.sh` reports `OK (… 0 warnings)` while building a configuration you did not ask for, and says nothing about it. This was caught on 2026/9/4 by a text figure 70 KB above the documented one. Check rather than assume, and use `./build.sh clean` (or a fresh directory) to change configuration:
+
+```bash
+grep CMAKE_BUILD_TYPE build/CMakeCache.txt         # what you are actually building
+BUILD_TYPE=RelWithDebInfo ./build.sh clean         # what changes it
+```
+
+Same family as the two hazards either side of it — `--gc-sections` (compiled is not linked) and the incremental gate (`UP TO DATE` is not `0 warnings`): **the script reports success, and the thing it succeeded at is not the thing you wanted.**
+
 The underlying commands, for when a script is in the way:
 
 ```bash

@@ -41,9 +41,9 @@ set(CMAKE_C_EXTENSIONS ON)
 # RelWithDebInfo (-O2 -g) rather than Debug (-O0 -g3), because -O0 is not a neutral
 # choice here: the platform layer is a vtable forwarder per call, and at -O0 each one
 # compiles to a 14-instruction function with a stack frame instead of the 7-instruction
-# tail call -O2 emits. Measured on this tree, Debug is 164960 bytes of text against
-# 100192 for RelWithDebInfo and 86608 for Release -- so the layering was costing 65 KB
-# of flash and a per-call overhead that no design change could have recovered.
+# tail call -O2 emits. Measured on this tree 2026/9/4, Debug is 176500 bytes of text
+# against 106248 for RelWithDebInfo and 91912 for Release -- so the layering was costing
+# 68.6 KB of flash and a per-call overhead that no design change could have recovered.
 #
 # Not Release: that is -Os -g0 here, and a stripped image breaks the debugging method
 # this repository actually relies on (reset halt, then a stack backtrace -- see
@@ -52,7 +52,11 @@ set(CMAKE_C_EXTENSIONS ON)
 #
 # Both other types remain available: `BUILD_TYPE=Debug ./build.sh` when stepping
 # through optimised-away locals is the point, `BUILD_TYPE=Release ./build.sh` for the
-# smallest image. All 238 host tests pass at -O0, -O2 and -Os.
+# smallest image. All 258 host tests pass at -O0, -O2 and -Os.
+#
+# Note this only takes effect when CONFIGURING. An existing build directory keeps the
+# type it was configured with, and build.sh cannot override it -- see
+# docs/ai-memory/build-type-is-cached.md.
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "RelWithDebInfo")
 endif()
