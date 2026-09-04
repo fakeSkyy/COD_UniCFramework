@@ -30,7 +30,9 @@ and the idea is dropped — configuration lives in the header of whatever module
   `03_platform`.
 - **05_vender** — Third-party code, replaceable wholesale. Three subtrees: `stm32cubemx/` (CubeMX
   owns it, rewritten on Generate Code), `freertos/` and `segger_rtt/` (upstream, byte-for-byte,
-  each with a `MANIFEST.sha256`). **Never edit any of it.**
+  each with a `VERSION`, and every file of both listed in the one reviewed checksum baseline at
+  `tests/gates/quality/vendor_checksums.sha256`, enforced as a closed set by the `quality_gate`
+  CTest). **Never edit any of it.**
 - **06_utils** — Hardware-independent algorithms and services. Usable from any layer; may not
   depend on anything above it. Depending *downward* is allowed and happens: `util_log` and
   `util_assert` include `SEGGER_RTT.h` from `05_vender`, which is below them.

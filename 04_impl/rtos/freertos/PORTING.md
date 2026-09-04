@@ -68,12 +68,15 @@ Commit: 9b777ae5c5b8e9e456065a00294d1e5f5f9facf5
 
 ### 2.2 如何自行复核
 
-内核目录内有 `MANIFEST.sha256`,记录了全部 27 个文件的校验和。三种独立方式,任选:
+校验和基线**不在内核目录里**,而在 `tests/gates/quality/vendor_checksums.sha256` —— 它同时覆盖
+FreeRTOS 和 SEGGER RTT 两个包共 38 个文件,并由 `quality_gate` 这个 CTest 按**闭集**校验:
+两个包里出现任何未列出的文件都是失败。所以只有一份基线,不存在两份互相漂移的可能。三种独立方式,
+任选:
 
 **方式一 —— 校验和自检(最快,不需要网络):**
 
 ```bash
-cd 05_vender/freertos && sha256sum -c MANIFEST.sha256
+ctest --test-dir /tmp/COD_UniCFramework-build-host -L quality --output-on-failure
 ```
 
 **方式二 —— git blob 哈希对比上游(不需要下载内核):**
@@ -192,19 +195,18 @@ F407 确实有 MPU(`stm32f407xx.h:48` 的 `__MPU_PRESENT 1`),8 个区域。它�
 ```
 05_vender/                          厂商拥有,可被整体替换
 ├── stm32cubemx/                    CubeMX 生成,Generate Code 会重写
-│   ├── Makefile  *.ioc  *.ld
+│   ├── *.ioc  *.ld  *.svd  CMakePresets.json  cmake/
 │   └── Core/  Drivers/  USB_DEVICE/  Middlewares/ST/
 ├── freertos/                       上游 V11.3.0 pristine,勿手改
-│   ├── MANIFEST.sha256             ← 来源与校验和
-│   ├── VERSION                     ← "V11.3.0"
+│   ├── VERSION                     ← "V11.3.0"(校验和基线在 tests/gates/quality/)
 │   ├── LICENSE.md
 │   ├── tasks.c  queue.c  list.c
-│   ├── include/                    (21 个头文件)
+│   ├── include/                    (21 个头文件 + CMakeLists.txt + stdint.readme)
 │   └── portable/
 │       ├── GCC/ARM_CM4F/{port.c,portmacro.h}
 │       └── MemMang/heap_4.c
 └── segger_rtt/                     上游 V8.58.0 pristine,同一套规矩
-    ├── MANIFEST.sha256   VERSION   LICENSE.md
+    ├── VERSION   LICENSE.md
     └── RTT/                        RTT.c/.h、printf、ConfDefaults、ASM
 
 04_impl/rtos/freertos/              本项目自有(RTOS 侧)
@@ -282,7 +284,9 @@ cp $U/LICENSE.md $K/
 echo "V11.3.0" > $K/VERSION
 ```
 
-然后生成校验清单(内容见 `MANIFEST.sha256` 头部注释)。
+然后把新文件的哈希加进 `tests/gates/quality/vendor_checksums.sha256`。**那份基线是手工维护的,
+没有 `--update` 开关** —— 它的意义就在于每一行都被人看过一遍。`cd 05_vender && sha256sum <文件>`
+生成行,审阅是机制本身。
 
 ### 步骤 2:检查 V10 → V11 的破坏性变更
 
@@ -554,7 +558,8 @@ motor: online          (或 OFFLINE)
 ### 升级内核
 
 1. 从上游取新 tag,按步骤 1 覆盖 `05_vender/freertos/`。
-2. 重新生成 `MANIFEST.sha256`,更新 `VERSION`。
+2. 更新 `VERSION`,并把新哈希写进 `tests/gates/quality/vendor_checksums.sha256`(闭集,漏一个
+   文件 `quality_gate` 就红)。
 3. 按步骤 2 的表逐项核 API 与结构体尺寸 —— 尤其两个 `_Static_assert` 的上界。
 4. `cmake --build build --clean-first -j16`,要求零 warning。
 
@@ -571,6 +576,7 @@ motor: online          (或 OFFLINE)
 
 ### 不要做的事
 
-- 不要手改 `05_vender/freertos/` 下的任何文件。要改行为就改 `FreeRTOSConfig.h` 或钩子。若确有必须打的补丁,单独存为 patch 文件并在 `MANIFEST.sha256` 里注明,别让修改隐没在源码树中。
+- 不要手改 `05_vender/freertos/` 下的任何文件。要改行为就改 `FreeRTOSConfig.h` 或钩子。若确有必须打的补丁,单独存为 patch 文件并在 `tests/gates/quality/vendor_checksums.sha256` 的
+  审阅记录里注明,别让修改隐没在源码树中。
 - 不要把 `FreeRTOSConfig.h` 挪回 `05_vender/Core/Inc/` —— 那等于把所有权交还 CubeMX。
 - 不要重新启用 CMSIS-RTOS。项目已有 `PLAT_Task_*`,两套并存正是此前问题的来源。

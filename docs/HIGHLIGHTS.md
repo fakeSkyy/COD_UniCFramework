@@ -32,14 +32,15 @@ $ grep -rln "stm32h7xx_hal\|stm32f4xx_hal" --include=*.c --include=*.h 01_applic
 
 | 层 | 文件 | 代码行 | 职责 |
 |---|---|---|---|
-| `01_application` | 12 | 948 | 板级组装 + 任务 |
-| `02_device` | 23 | 3057 | 器件驱动（BMI088、DJI/DM 电机、WS2812…） |
-| `03_platform` | 27 | 1465 | 中立外设 API（`PLAT_*`） |
-| `04_impl` | 60 | 6461 | 后端实现（STM32H7 / STM32F4 / FreeRTOS / RTT） |
-| `06_utils` | 31 | 3321 | 无依赖算法（卡尔曼、AHRS、PID、LPF、TD、轨迹限制…） |
+| `01_application` | 14 | 1273 | 板级组装 + 任务 |
+| `02_device` | 23 | 3247 | 器件驱动（BMI088、DJI/DM 电机、WS2812…） |
+| `03_platform` | 27 | 1605 | 中立外设 API（`PLAT_*`） |
+| `04_impl` | 58 | 6887 | 后端实现（STM32H7 / STM32F4 / FreeRTOS / RTT） |
+| `06_utils` | 31 | 3529 | 无依赖算法（卡尔曼、AHRS、PID、LPF、TD、轨迹限制…） |
 
-（2026/9/1 实测。"代码行"是去掉注释与空行后的净行数 —— 早先版本这一列填的是含注释总行数，
-两者差三倍，见第 10 节。）
+（2026/9/4 实测。"代码行"是去掉注释与空行后的净行数 —— 早先版本这一列填的是含注释总行数，
+两者差三倍，见第 10 节。复现方式：`find <层> -name '*.c' -o -name '*.h' | xargs cat |
+gcc -fpreprocessed -dD -E - | grep -cvE '^\s*$'`。）
 
 依赖方向严格单向：`01 → 02 → 03 → 04`，`06` 谁都能用且不依赖任何人。
 
@@ -81,6 +82,13 @@ $ diff <(ls 04_impl/bsp/stm32h7) <(ls 04_impl/bsp/stm32f4)
 
 两个芯片暴露完全相同的类集合，每个类的 `CreateCtx` / `GetOps` / `DestroyCtx` 三件套同名同形。
 
+**对称的是签名，不是实现**，而且这正是这一层该做的事。CAN 的"一个节点认领一段 id"就是个例子：
+FDCAN 有 `FDCAN_FILTER_RANGE`，H7 后端一个滤波元件覆盖整段；bxCAN 根本没有精确范围滤波器，而
+`0x201..0x204` 既不是 2 的幂长度也不对齐，用掩码会**多收**（最窄的掩码同时放进 `0x200..0x207`，
+把 DJI 的控制 id 和三个 GM6020 的反馈一起收了），所以 F4 后端把整段展开成逐 id 的滤波槽和注册表
+条目。调用方拿到的仍然是一个节点、一个回调、一次 teardown —— **差异被吸收在后端里，而不是泄漏
+成两套 API**。每个后端的头文件都写了自己这么做的硬件理由。
+
 换芯片换的是**组合根整个文件**：组合根按芯片命名（`board_stm32h7.c`），旁边写一个
 `board_stm32f4.c`，改 `CMakeLists.txt` 的一行源文件列表。两个文件同时在构建里是链接错误
 （同名符号），这是有意的 —— 一块板子只有一个组合根。
@@ -115,7 +123,8 @@ SPI2 预分频必须是 32（8 会让加速度计返回一个看起来很合理�
 
 2026-09-02 换成显式调用,因为八个设备的规模下 `grep` 这一个文件就能回答同样的问题,而代价是
 读任何一处都要把一个文件的六次展开一起读、宏体里的错误报在 `#include` 行并乘以表项数、IDE 跳转
-补全和调试器求值全部失效。行为完全一致,**237 个主机测试原样通过**。
+补全和调试器求值全部失效。行为完全一致,**当时的 237 个主机测试原样通过**(那是 2026-09-02
+的基线;现在是 258)。
 
 没有放弃的:ops + 不透明 context、调用方持有存储、bring-up 顺序、反序幂等 teardown、访问器
 NULL 契约。取舍的完整记录在 [`build/x-macro.md`](build/x-macro.md) 第九节 —— 那份文档仍然有用,
@@ -152,27 +161,34 @@ _Static_assert((sizeof handle_of / sizeof handle_of[0]) == (size_t) BOARD_CAN_CO
 
 ---
 
-## 7. 上机镜像里零动态分配
+## 7. 分配只发生在 bring-up，不发生在控制环
 
 板级实例存储全部是**调用方持有的静态对象**（组合根里一个 `static <Class>_Instance_s` 加一个
 `up` 标志）。数量在编译期已定，分配不带来任何好处，只多一条与硬件无关的失败路径（堆不够）。
 
 每个 `PLAT_*` 类因此有两个入口：`PLAT_Xxx_Init(inst, ops, ctx)` 用调用方给的存储，
-`PLAT_Xxx_Create(ops, ctx)` 是它外面一层 `PLAT_malloc` 包装。**板级走的是 `Init`**，所以
-`Create` 全部被 `--gc-sections` 丢掉了，可以直接验证：
+`PLAT_Xxx_Create(ops, ctx)` 是它外面一层 `PLAT_malloc` 包装。**固定外设走的是 `Init`**，所以
+它们的 `Create` 被 `--gc-sections` 丢掉了：
 
 ```bash
 $ arm-none-eabi-nm build/COD_UniFramework_H7.elf | grep -E 'PLAT_[A-Z]+_Create'
-（无输出 —— 一个 Create 都没进镜像）
+0800905c T PLAT_CAN_Create      ← 只剩这一个
 
 $ arm-none-eabi-nm build/COD_UniFramework_H7.elf | grep PLAT_SPI_Init
-0800d2a8 T PLAT_SPI_Init
+08008f58 T PLAT_SPI_Init
 ```
 
-也就是说"零动态分配"在这份构建里是**关于最终镜像的事实**，不是关于源码的：
-`03_platform/bsp/*/plat_*.c` 各有一处 `PLAT_malloc`（就在 `Create` 里），
-`dev_buzzer` / `dev_remote` / `dev_steer_chassis` 三个驱动也有 —— 那三个模块目前都不在镜像里。
-唯一的堆开关仍然只有一个：`04_impl/rtos/freertos/memory/impl_memory.c`。
+**这一节的标题现在只对固定外设成立，`PLAT_CAN` 是有意的例外。** 一条总线上有几个节点是
+*机器人*的属性而不是*板子*的属性 —— `app_chassis` 在运行时决定要两个，所以没有固定存储可交，
+`board_can_create` 明确注释了 "Create, not Init"。分配发生在 `Board_Init` 期间、只此一次、
+之后再不发生；这与"每帧分配"是两件事，但它确实是一次堆分配，说成零是不对的。
+
+所以这一节真正的不变量不是"没有 `PLAT_malloc`"，而是**分配只发生在 bring-up，不发生在控制环**。
+静态存储仍然是默认，`Create` 是需要论证的例外(目前只有一个,理由写在调用点)。
+
+`dev_buzzer` / `dev_remote` / `dev_steer_chassis` 三个驱动也各有一处 `PLAT_malloc`。其中
+**`dev_buzzer` 现在在镜像里**（`app_indicator` 调用它），另两个不在 —— 这一条早先版本说三个都
+不在，是错的。唯一的堆开关仍然只有一个：`04_impl/rtos/freertos/memory/impl_memory.c`。
 
 `UTIL_AHRS` 也不分配 —— 卡尔曼矩阵放在调用方给的 buffer 里，长度由 `UTIL_AHRS_BUF_SIZE` 从状态维度推出，不用手工同步。
 
@@ -186,9 +202,15 @@ $ arm-none-eabi-nm build/COD_UniFramework_H7.elf | grep PLAT_SPI_Init
 if (!App_Indicator_StartTask(PRIO_INDICATOR)) { ... }
 if (!App_Health_StartTask(PRIO_HEALTH))       { ... }
 if (!App_Imu_StartTask(PRIO_IMU))             { ... }
+if (!App_Chassis_StartTask(PRIO_CHASSIS))     { ... }   /* 唯一非致命的一个 */
 ```
 
 栈深、周期、循环体都跟着它们服务的工作放在各模块里，因为只有模块知道。
+
+底盘那一行值得单独看：它失败时**不返回 false**，只抬起 `INDICATOR_FAULT_CHASSIS` 并继续启动。
+"没有电机"和"没有姿态"不是同一量级的故障 —— 姿态环起不来这块板子没有任何用处，而轮子驱动不了
+的板子仍然能上报、能被诊断、能亮灯说明自己缺什么。哪种失败是致命的只有应用层知道，这也是这个
+文件存在的第二个理由。
 
 **唯一留在中心的是优先级**，因为它在单个模块内部无法定义 —— "心跳要最先被饿死"是关于*其他任务*的断言；而且它稀缺，`configMAX_PRIORITIES` 只有 7 个格子，所有模块共享。分散选号迟早撞车，而证据会散在两个互不 include 的文件里。
 
@@ -254,22 +276,22 @@ add_subdirectory(${VENDOR_DIR}/cmake/stm32cubemx)
 
 ```
    text    data     bss     dec filename
- 100192     344   71288  171824 COD_UniFramework_H7.elf
+ 106248     344   74560  181152 COD_UniFramework_H7.elf
 
-FLASH   9.59% of 1 MB       DTCMRAM  54.39% of 128 KB      RAM_D1  32 B of 320 KB
-零 warning（CFLAGS 带 -Wall）
+FLASH  10.17% of 1 MB       DTCMRAM  57.12% of 128 KB      RAM_D1  32 B of 320 KB
+零 warning（CFLAGS 带 -Wall，120 个文件全部重编译）
 ```
 
 默认构建类型是 **RelWithDebInfo**(`-O2 -g`),2026-09-03 从 `Debug`(`-O0 -g3`)改过来 ——
 `-O0` 对这个架构不是中性选择:平台层每次调用都是一次 vtable 转发,`-O0` 下编成 14 条指令带栈帧,
-`-O2` 下是 7 条尾调用。text 从 164960 降到 100192,**省了 63 KB flash**。
+`-O2` 下是 7 条尾调用。text 从 176500 降到 106248,**省了 68.6 KB flash**。
 
-没有选 `Release`(`-Os -g0`,text 86608)是因为 `-g0` 会破坏这个仓库真正依赖的调试方法
+没有选 `Release`(`-Os -g0`,text 91912)是因为 `-g0` 会破坏这个仓库真正依赖的调试方法
 (`reset halt` 之后看栈回溯,见 `docs/debugging/tim2-timebase.md`)。保留 `-g` 只让 ELF 变大,
 `.bin`/`.hex` 不含调试段,设备上不占空间。
 
 三种类型都可用:`BUILD_TYPE=Debug ./build.sh` / `BUILD_TYPE=Release ./build.sh`。
-238 个主机测试在 `-O0`/`-O2`/`-Os` 下全部通过。
+258 个主机测试在 `-O0`/`-O2`/`-Os` 下全部通过。
 
 ---
 
@@ -300,6 +322,7 @@ util_registry / util_log / util_assert
 
 - **yaw 无界漂移**，实测约 3.8°/min。没有磁力计，没有任何东西观测绕重力轴的旋转，所以 yaw 是纯陀螺积分。roll/pitch 有重力做参考，不漂。
 - **蜂鸣器 PB15 / TIM12_CH2 已确认**（2026/8/26，对着厂商例程 `CtrBoard-H7_BUZZER` 的 `.ioc`），并已在硬件上听到声音。仍然**推断**的是 IMU 在 SPI2、PC0/PC3 做片选 —— PC0/PC3 在 `.ioc` 里带 `ACCEL_CS`/`GYRO_CS` 标签，但选错的失败形式是设备超时，不指名任何东西。
-- **STM32F4 后端未在硬件上回归**。代码对称、能编译，但当前只有 H7 板子。
+- **STM32F4 后端未在硬件上回归**。代码对称、能编译，但当前只有 H7 板子。CAN 的范围认领在两个后端里**实现方式不同**（H7 用 FDCAN 的 `FDCAN_FILTER_RANGE` 一个元件覆盖整段；bxCAN 没有精确范围滤波器，F4 把整段展开成逐 id 的滤波槽和注册表条目），所以这一处 F4 的行为只被主机测试覆盖过。
+- **底盘依赖四个 ESC id 连号**（`CHASSIS_FIRST_ESC_ID` 起，给出 `0x201..0x204` 这一段）。拨成 1/2/5/6 就需要更宽的范围（会放进本模块并不拥有的 id）或者一个轮子一个节点。**编译期没有任何东西能发现这件事**，硬件上的拨码就是契约；`chassis_init` 只能在运行时检查这一段是否连续并拒绝启动。
 - **本仓库没有 `ref/` 目录**，git 历史里也从未有过。这份文档早先版本说重构前的旧代码树在那里，但那棵树从未提交进来 —— 别去找。真正存在的参考实现是 `04_impl/bsp/stm32f4/`（F407 后端，在树里、不参与构建）。
-- **六个 `06_utils` 模块和六个 `02_device` 驱动不在链接产物里**（无调用者，被 `--gc-sections` 丢弃）：`util_crc`、`util_maf`、`util_msgbus`、`util_rls`、`util_td`、`util_traj_limit`；`dev_dji_motor`、`dev_dm_motor`、`dev_motor_pid`、`dev_power_limit`、`dev_remote`、`dev_steer_chassis`。它们**只被主机测试执行过**，没有在目标上跑过。
+- **六个 `06_utils` 模块和五个 `02_device` 驱动不在链接产物里**（无调用者，被 `--gc-sections` 丢弃）：`util_crc`、`util_maf`、`util_msgbus`、`util_rls`、`util_td`、`util_traj_limit`；`dev_dm_motor`、`dev_motor_pid`、`dev_power_limit`、`dev_remote`、`dev_steer_chassis`。它们**只被主机测试执行过**，没有在目标上跑过。（2026/9/4 实测。比早先的清单短了三项：`app_chassis` 一个调用者就把 `dev_dji_motor`、平台 `can` 和 `util_registry` 一起带进了镜像 —— 所以这种清单是关于**当下调用图**的断言，要重测而不是沿用。）

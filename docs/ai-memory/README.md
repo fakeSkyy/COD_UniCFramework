@@ -72,7 +72,8 @@ agents: <维护过这条记忆的 agent>
 | [blocking-spi-is-deliberate](blocking-spi-is-deliberate.md) | decision | 18.1 µs / 1000 µs = 1.8% CPU,不值得换异步 |
 | [verify-the-debugger-first](verify-the-debugger-first.md) | pitfall | 探针的 nRESET 没接,它会报告成功的复位而复位从未发生 |
 | [host-tests-blind-spots](host-tests-blind-spots.md) | pitfall | 主机测试全绿能同时兼容三类真实缺陷 |
-| [gc-sections-linkage-audit](gc-sections-linkage-audit.md) | pitfall | 六个 utils + 六个 device 模块不在镜像里,只被主机测试执行过 |
+| [gc-sections-linkage-audit](gc-sections-linkage-audit.md) | pitfall | 缺席清单会随一个新调用者整段失效;`util_registry` 缺席的原因曾被归错 |
 | [ref-directory-never-existed](ref-directory-never-existed.md) | pitfall | 四份文档描述的 `ref/` 旧代码树从未存在过 |
 | [docs-drift-audit-method](docs-drift-audit-method.md) | decision | 复核旧文档时追加「复核记录」而不改正文 |
 | [registry-removal-must-not-compact](registry-removal-must-not-compact.md) | decision | 注册表删除用墓碑法,压缩会让 ISR 漏掉无关条目 |
+| [can-range-claim-not-mask](can-range-claim-not-mask.md) | decision | 覆盖 `0x201..0x204` 的最窄掩码会多收控制帧;两个后端因此实现不同 |
