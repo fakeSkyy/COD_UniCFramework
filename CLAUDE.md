@@ -12,7 +12,7 @@ The core goal (`docs/product.md`): swapping the target chip should require chang
 
 ## Build
 
-The toolchain is `arm-none-eabi-gcc` (15.2 on this machine, at `/home/stg/tools/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi/` — but nothing in the repository hardcodes that path; clangd finds it through the `ARM_TOOLCHAIN_BIN` environment variable, see README). The build is **CMake**; the hand-written Makefile it replaced is gone.
+The toolchain is `arm-none-eabi-gcc` (15.2 on this machine, at `/home/stg/tools/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi/` — but nothing in the repository hardcodes that path — `.clangd` did until 2026/9/4, when the two absolute paths in it were measured as redundant and removed; clangd finds the toolchain through `--query-driver` and the `ARM_TOOLCHAIN_BIN` environment variable, see README). The build is **CMake**; the hand-written Makefile it replaced is gone.
 
 ```bash
 ./build.sh                 # configure if needed, build, gate on zero warnings, list artifacts
