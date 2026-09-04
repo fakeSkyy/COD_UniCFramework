@@ -22,10 +22,15 @@ warning 不构成任何证据 —— `build.sh` 在那种情况下报的是 `UP 
 期望结尾:
 
 ```
-==> OK  (119 file(s) compiled, 0 warnings)
+==> OK  (120 file(s) compiled, 0 warnings)
 ```
 
 失败时不要用 `ALLOW_WARNINGS=1` 让它过去 —— 那个开关只用于排查一次 vendor 重新生成。
+
+`clean` 还有第二个作用:**`BUILD_TYPE` 只在没有 `CMakeCache.txt` 时才被读取**,所以一个已存在的
+`build/` 会静默沿用它最初被配置成的类型。不 `clean` 的话,`BUILD_TYPE=RelWithDebInfo ./build.sh`
+可能整场都在构建 `Debug` 而只报 `OK`。要引用尺寸数字之前先 `grep CMAKE_BUILD_TYPE
+build/CMakeCache.txt`,见 `docs/ai-memory/build-type-is-cached.md`。
 
 ## 关 2:主机测试
 
@@ -33,7 +38,7 @@ warning 不构成任何证据 —— `build.sh` 在那种情况下报的是 `UP 
 ctest --test-dir build-tests --output-on-failure
 ```
 
-基线 **238/238**(2026/9/3)。测试树是独立的原生 CMake 工程,没配过就先:
+基线 **258/258**(2026/9/4)。测试树是独立的原生 CMake 工程,没配过就先:
 
 ```bash
 cmake -S tests -B build-tests -DCMAKE_BUILD_TYPE=Debug && cmake --build build-tests -j16

@@ -110,7 +110,7 @@ rm -f build/COD_UniFramework_H7.elf && ./build.sh
 
 ## 全部通过之后
 
-用 `verify-change` skill 跑完整的三关(零 warning 构建 + 238 主机测试 + 链接审计)。
+用 `verify-change` skill 跑完整的三关(零 warning 构建 + 258 主机测试 + 链接审计)。
 
 如果板子仍然是死的,**先验证调试器再相信它的输出** —— 这个台子上的探针 nRESET 没接线,配错时
 它会报告成功的复位而复位从未发生,于是每次观察都在看过期状态。自检:`reset halt` 之后 PC 必须

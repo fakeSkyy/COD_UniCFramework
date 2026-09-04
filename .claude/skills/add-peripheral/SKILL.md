@@ -14,48 +14,58 @@ grep -rl impl_stm32_ --include=*.c 01_application 02_device   # 必须只返回�
 
 ## 四处编辑,顺序照这个来
 
-**1. 存储**(组合根,和其他七个放一起):
+组合根自己标了这四处,以它为准而不是以本文为准:
 
-```c
-BOARD_DEVICE_STORAGE(ADC, current_sense);
+```bash
+grep -n 'EDIT HERE' 01_application/board/board_stm32h7.c
 ```
 
-**2. bring-up**,写在它该被初始化的位置 —— 顺序就是文件里的先后,前面的失败会停住后面的:
-
-```c
-/* 这里写硬件依据:引脚出处、时钟、为什么选这个模式。这是这个文件最有价值的部分。 */
-BOARD_BRING_UP(current_sense, ADC, IMPL_STM32_ADC_CreateCtx(&hadc1, ADC_CHANNEL_0),
-               IMPL_STM32_ADC_GetOps());
-```
-
-**3. teardown**,加在 `board_teardown()` 里 —— **反序**,所以加在最前面:
-
-```c
-BOARD_RELEASE(current_sense, IMPL_STM32_ADC_DestroyCtx);
-```
-
-**4. 访问器**,组合根里定义、`board.h` 里声明:
-
-```c
-/* board_stm32h7.c */
-ADC_Instance_s* Board_CurrentSense(void)
-{
-    return s_current_sense_up ? &s_current_sense : NULL;
-}
-
-/* board.h —— 顺带加上 typedef struct ADC_Instance_s ADC_Instance_s; */
-ADC_Instance_s* Board_CurrentSense(void);
-```
-
-漏掉第 4 步是**链接错误**(声明了没定义,或者调用方找不到符号)。漏掉第 2 或 3 步不会报错,
-所以先写 bring-up,再立刻写 teardown。
-
-后端头也要 include —— 组合根**只 include 它真正用到的**后端头,这是"不用 ADC 的板子不为 ADC
-付代价"的实现方式:
+**1/4 — include**:后端头、平台头、以及持有句柄的那个 CubeMX 头。组合根**只 include 它真正用到
+的**后端头,这是"不用 ADC 的板子不为 ADC 付代价"的实现方式:
 
 ```c
 #include "impl_stm32_adc.h"
 ```
+
+**2/4 — 设备表**,一行搞定存储 + 访问器(此处顺序无关):
+
+```c
+BOARD_DEVICE(ADC, current_sense, CurrentSense)
+```
+
+它展开出 `s_current_sense`、`s_current_sense_up`、`s_current_sense_ctx` 和
+`Board_CurrentSense()`。
+
+**3/4 — bring-up**,写在它该被初始化的位置 —— 顺序就是文件里的先后,前面的失败会停住后面的:
+
+```c
+/* 这里写硬件依据:引脚出处、时钟、为什么选这个模式。这是这个文件最有价值的部分。 */
+BOARD_BRING_UP(current_sense, ADC, IMPL_STM32_ADC_CreateCtx(&hadc1, ADC_CHANNEL_0),
+               IMPL_STM32_ADC_GetOps(), IMPL_STM32_ADC_DestroyCtx);
+```
+
+**注意第五个参数是 `DestroyCtx`,只写名字不调用。**
+
+**4/4 — `board.h`** 里的访问器原型(另一个文件):
+
+```c
+/* 顺带加上 typedef struct ADC_Instance_s ADC_Instance_s; */
+ADC_Instance_s* Board_CurrentSense(void);
+```
+
+**teardown 不在这张单子上。** `BOARD_BRING_UP` 在创建 context 的同时就把"怎么释放它"记进了台账
+(`s_built[]`),`board_teardown()` 反序走一遍这张台账即可 —— 没有第二份清单需要同步。这曾经是
+第五个编辑点,漏掉它每次 `Board_Init` 泄漏一个 context。
+
+哪些漏掉会被编译器抓到:
+
+| 漏掉 | 后果 |
+|---|---|
+| 2/4 设备表 | **编译错误** —— 存储不存在 |
+| 4/4 `board.h` 原型 | **编译错误**,而且指名道姓 —— 文件里那条 `#pragma GCC diagnostic error "-Wmissing-prototypes"` 就是为此存在的 |
+| 3/4 bring-up | **不报错** —— 设备只是永远不起来,访问器一直返回 NULL |
+
+所以先写 bring-up,再去补 `board.h`。
 
 ## 参数表抄哪里
 
@@ -68,11 +78,19 @@ grep -A3 'IMPL_STM32_ADC_CreateCtx' 04_impl/bsp/stm32h7/adc/impl_stm32_adc.h
 那里每个参数都写了单位和 NULL/零值的处理。当前这块板子上是:
 
 ```
-DWT   (cpu_freq_hz)                   PWM  (htim, channel)
-GPIO  (port, pin)                     UART (huart, mode)
-Flash (first_sector, sector_count)    IIC  (hi2c, dev_addr, mode)
-SPI   (hspi, cs_port, cs_pin, mode)   ADC  (hadc, channel)
+DWT   (cpu_freq_hz)                   PWM   (htim, channel)
+GPIO  (port, pin)                     UART  (huart, mode)
+FLASH (first_sector, sector_count)    IIC   (hi2c, dev_addr, mode)
+SPI   (hspi, cs_port, cs_pin, mode)   ADC   (hadc, channel)
+CAN   (hfdcan, tx_id, rx_id)          CAN   (…Range: hfdcan, tx_id, first, last)
 ```
+
+宏里的 `Class`(`PLAT_<Class>_Init` 用)和 `CreateCtx` 里的 `<CLASS>`(全大写)**不总是同一个
+拼法** —— flash 是 `BOARD_DEVICE(Flash, …)` 配 `IMPL_STM32_FLASH_CreateCtx`。照抄文件里现有的
+那一行,不要自己推。
+
+CAN 不走 `BOARD_DEVICE`:节点是运行时创建的(一条总线上几个节点是机器人的属性,不是板子的),
+所以它是 `Board_CANCreate` / `Board_CANCreateRange` 两个工厂,详见组合根里那一节。
 
 参数写错基本都是**编译期**抓到的:每个 `CreateCtx` 有自己的参数表,句柄类型不对、引脚参数调换
 都是调用点的类型错误。
@@ -103,7 +121,8 @@ PLAT_DMA_BUF(uint8_t, my_rx_buf, SIZE);   /* 对齐 + 定段到 .dma_buf(AXI SRA
 **空函数体**的处理器:NVIC 里中断使能了,而没人清外设标志位 → 处理器被反复重入直到栈耗尽。
 
 ```bash
-grep -c 'HAL_.*_IRQHandler' 05_vender/stm32cubemx/Core/Src/stm32h7xx_it.c   # 应为 31
+# 锚在行首:该文件注释里也提到这些名字三次,不锚会数出 34
+grep -cE '^\s*HAL_[A-Za-z_]*_IRQHandler\s*\(' 05_vender/stm32cubemx/Core/Src/stm32h7xx_it.c   # 应为 31
 ```
 
 那 31 个现在都补好了,且调用放在 `USER CODE BEGIN <IRQn> 0` **里面**,重新生成能保留。
