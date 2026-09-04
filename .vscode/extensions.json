@@ -1,0 +1,37 @@
+{
+    // 打开本工程时 VSCode 会提示安装下列扩展。不会自动安装 —— 用户只收到一次提示。
+    //
+    // 清单故意很短:每一条都是 .vscode/ 里某个文件或某条文档化流程真正依赖的。
+    // "有了更好"的东西属于个人 profile,不属于共享的工作区文件 —— 一个没人需要的
+    // 推荐只会训练人去忽略整个提示。
+    "recommendations": [
+        // 语言服务器:索引、跳转,以及把 Format Document 转发给 clang-format 的桥。
+        // 自带 clangd 二进制,只编辑代码的话不需要 apt 装东西。
+        //
+        // 由 settings.json 的 "clangd.arguments" 和仓库根的 .clangd 配置 ——
+        // 而 .clangd 里有两处绝对路径,每个 clone 都必须手改,见 README 1.1。
+        "llvm-vs-code-extensions.vscode-clangd",
+        // 调试:解释 .vscode/launch.json,其 servertype 是 openocd。没有它 F5 无效。
+        //
+        // 它从 PATH 上找 arm-none-eabi-gdb,不要设 cortex-debug.gdbPath。寄存器视图
+        // 来自仓库里的 05_vender/stm32cubemx/STM32H723.svd —— 不需要任何 device
+        // support pack,旧说明里提到的 STM32F4 那个包更是错的芯片。
+        "marus25.cortex-debug",
+        // CMake 集成。settings.json 把 cmake.buildDirectory 指向 build/、生成器钉成
+        // Unix Makefiles,与 build.sh 一致,这样两者不会把同一个目录配成两样。
+        "ms-vscode.cmake-tools",
+        // 状态栏按钮,接到 .vscode/tasks.json(见 "VsCodeTaskButtons.tasks")。
+        // 作者必须是 spencerwmiles:同名但换了作者的扩展读不到那个配置项。
+        "spencerwmiles.vscode-task-buttons"
+    ],
+    // 下面这个的 IntelliSense 会与 clangd 打架:两个语言服务器分析同一个翻译单元会
+    // 给出重复且矛盾的诊断。settings.json 已经设了
+    // "C_Cpp.intelliSenseEngine": "disabled",所以装着无害但没意义 —— 而把那个设置
+    // 改回启用,正是"头文件看起来全坏了而构建照样干净"的成因。
+    //
+    // 显式列为 unwanted 而不是省略,是为了把理由留在记录里:它是 C 开发者最可能
+    // 条件反射装上的扩展。
+    "unwantedRecommendations": [
+        "ms-vscode.cpptools"
+    ]
+}

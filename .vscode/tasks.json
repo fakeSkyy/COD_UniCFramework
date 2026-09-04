@@ -1,33 +1,24 @@
 {
-	// See https://go.microsoft.com/fwlink/?LinkId=733558
+	// 每个任务都走 ./build.sh 而不是直接调 cmake,这是本文件的要点。两个理由:
 	//
-	// CMake, not make: the CubeMX project is generated as a CMake tree now, and
-	// the root CMakeLists includes it rather than duplicating its source list.
+	//   1. cmake 在满是 warning 的构建上照样退出 0,所以一个"绿色"的任务对 -Wall 输出
+	//      什么都没说明。build.sh 出现 warning 即失败,并报告镜像开销。一个构建标准比
+	//      命令行更松的按钮,就是一个隐藏回归的按钮。
 	//
-	// The generator is "Unix Makefiles" rather than the Ninja that
-	// 05_vender/stm32cubemx/CMakePresets.json asks for, because ninja is not
-	// installed here. That is also why these tasks configure explicitly instead
-	// of using `cmake --preset` — the preset would fail on the generator, and it
-	// would configure the vendor subtree as the top-level project, which loses
-	// every framework source.
+	//   2. BUILD_TYPE 只在 configure 时被读取。这些任务曾经把 -DCMAKE_BUILD_TYPE=Debug
+	//      传进 build.sh 配成 RelWithDebInfo 的同一个 build/,于是谁先跑谁定型,另一边
+	//      静默沿用 —— 表现是 text 差 70 KB,读起来像代码膨胀。一个入口,一种配置。
+	//
+	// build.sh 自己按需 configure、自己挑 -j、并执行门禁,所以这些条目故意很薄。
+	// 不要在这里重新引入 cmake 调用:让按钮和终端走同一条路径。
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "configure",
-			"type": "shell",
-			"command": "cmake -S . -B build -G 'Unix Makefiles' -DCMAKE_TOOLCHAIN_FILE=05_vender/stm32cubemx/cmake/gcc-arm-none-eabi.cmake -DCMAKE_BUILD_TYPE=Debug",
-			"problemMatcher": [],
-			"group": {
-				"kind": "none",
-				"isDefault": false
-			}
-		},
-		{
-			// Configures on demand: CMake regenerates build/ by itself when
-			// CMakeLists.txt changes, so this is safe to run as the default.
+			// 增量。warning 只对真正重编译过的文件出现,所以无改动时它报 UP TO DATE
+			// 而不是"0 warnings" —— 要零 warning 的证据请用 rebuild task。
 			"label": "build task",
 			"type": "shell",
-			"command": "cmake -S . -B build -G 'Unix Makefiles' -DCMAKE_TOOLCHAIN_FILE=05_vender/stm32cubemx/cmake/gcc-arm-none-eabi.cmake -DCMAKE_BUILD_TYPE=Debug && cmake --build build -j16",
+			"command": "./build.sh",
 			"problemMatcher": "$gcc",
 			"group": {
 				"kind": "build",
@@ -35,21 +26,11 @@
 			}
 		},
 		{
-			"label": "clean",
-			"type": "shell",
-			"command": "cmake --build build --target clean",
-			"problemMatcher": [],
-			"group": {
-				"kind": "none",
-				"isDefault": true
-			}
-		},
-		{
-			// Deletes the cache too, which `clean` does not. Needed after moving
-			// or renaming files that CMake globbed or after a toolchain change.
+			// 全量重建:先删 build/,所以只有这一次的"0 warnings"是有意义的。也是唯一
+			// 能改变 BUILD_TYPE 的途径,因为已存在的 cache 会盖过环境变量。
 			"label": "rebuild task",
 			"type": "shell",
-			"command": "rm -rf build && cmake -S . -B build -G 'Unix Makefiles' -DCMAKE_TOOLCHAIN_FILE=05_vender/stm32cubemx/cmake/gcc-arm-none-eabi.cmake -DCMAKE_BUILD_TYPE=Debug && cmake --build build -j16",
+			"command": "./build.sh clean",
 			"problemMatcher": "$gcc",
 			"group": {
 				"kind": "none",
@@ -57,9 +38,23 @@
 			}
 		},
 		{
+			// 烧写前先构建并过门禁,所以不会烧进一个过期的或带 warning 的镜像。
 			"label": "download dap",
 			"type": "shell",
-			"command": "openocd -f openocd_dap.cfg -c 'program build/COD_UniFramework_H7.elf verify reset exit'",
+			"command": "./build.sh flash",
+			"problemMatcher": [],
+			"group": {
+				"kind": "none",
+				"isDefault": false
+			}
+		},
+		{
+			// 烧写,然后在 tcp/9090 上服务 RTT 日志直到中断。RTT 是本固件唯一的日志
+			// 通路(走 SWD,不经 UART),所以 bring-up 阶段任何东西要说话都靠它。
+			// 另开终端读: nc localhost 9090
+			"label": "rtt log",
+			"type": "shell",
+			"command": "./build.sh rtt",
 			"problemMatcher": [],
 			"group": {
 				"kind": "none",

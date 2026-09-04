@@ -10,6 +10,9 @@
 #   ./build.sh                 configure if needed, build, gate, report
 #   ./build.sh clean           delete the build directory first
 #   ./build.sh flash           build, gate, then flash via CMSIS-DAP
+#   ./build.sh rtt             build, gate, flash, then serve the RTT log
+#   ./build.sh rtt --no-flash  serve the RTT log against whatever is already on
+#                              the target, without reflashing
 #   ./build.sh <dir>           use <dir> instead of ./build
 #
 # Environment:
@@ -41,11 +44,18 @@ root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 build_dir="$root/build"
 do_clean=0
 do_flash=0
+do_rtt=0
+no_flash=0
 
 for arg in "$@"; do
     case "$arg" in
         clean) do_clean=1 ;;
         flash) do_flash=1 ;;
+        # rtt implies flash: reading a log off an image you did not just program
+        # is how you end up debugging last week's firmware. --no-flash opts out
+        # for the case where the target is already running what you want.
+        rtt) do_rtt=1; do_flash=1 ;;
+        --no-flash) no_flash=1 ;;
         -h | --help)
             # Print the header block: every leading-# line up to the first blank
             # one, with the comment marker stripped.
@@ -59,6 +69,17 @@ for arg in "$@"; do
         *) build_dir=$arg ;;
     esac
 done
+
+# --no-flash only means anything alongside rtt, and it wins over rtt's implied
+# flash. Resolved after the loop so the two are order-independent: `rtt
+# --no-flash` and `--no-flash rtt` behave the same.
+if [ "$no_flash" -eq 1 ]; then
+    if [ "$do_rtt" -eq 0 ]; then
+        echo "build.sh: --no-flash only applies with rtt" >&2
+        exit 2
+    fi
+    do_flash=0
+fi
 
 # JOBS wins over the configured default so a single run can be throttled without
 # editing the script; JOBS_DEFAULT is the value to change for good.
@@ -216,6 +237,27 @@ if [ "$do_flash" -eq 1 ]; then
     echo
     echo "==> flashing via CMSIS-DAP"
     cmake --build "$build_dir" --target flash
+fi
+
+# RTT last, because it does not return: the rtt target runs OpenOCD in the
+# foreground serving tcp/9090 until interrupted. So the summary line below would
+# never print, and printing it first would be a lie about what happens next --
+# hence the explicit note about the second terminal before handing over.
+if [ "$do_rtt" -eq 1 ]; then
+    echo
+    if [ "$warnings" -ne 0 ]; then
+        echo "==> DONE  ($warnings warning(s), allowed by ALLOW_WARNINGS)"
+    elif [ "$compiled" -eq 0 ]; then
+        echo "==> UP TO DATE  (nothing recompiled)"
+    else
+        echo "==> OK  ($compiled file(s) compiled, 0 warnings)"
+    fi
+    echo
+    echo "==> RTT on tcp/9090 -- in another terminal:  nc localhost 9090"
+    echo "    Ctrl-C here stops it. The firmware prints nothing until it reaches"
+    echo "    the first UTIL_LOG call, and the control block only exists once it"
+    echo "    is running -- silence right after reset is normal."
+    exec cmake --build "$build_dir" --target rtt
 fi
 
 echo

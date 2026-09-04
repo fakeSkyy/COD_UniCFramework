@@ -1,71 +1,73 @@
 {
+	// 扩展默认的 "N tasks" 计数器固定在最左端(优先级 -9999 写死在扩展里),而三个
+	// 按钮本身已说明一切。
+	"VsCodeTaskButtons.showCounter": false,
+	// 屏幕上的先后只能靠数组顺序决定:优先级由下标推导(左侧是 100 - index),越靠前
+	// 越靠左。"alignment" 这个键不在扩展的设置 schema 里但确实被读取,且与字符串
+	// "right" 严格比较 —— 写成 "Right" 会静默落回左侧,不报错。
 	"VsCodeTaskButtons.tasks": [
 		{
 			"label": "$(notebook-open-as-text) Build",
 			"task": "build task",
-			"tooltip": "Build target files"
+			"tooltip": "Incremental build via ./build.sh; fails on any warning",
+			"alignment": "left"
 		},
 		{
 			"label": "$(search-refresh) ReBuild",
 			"task": "rebuild task",
-			"tooltip": "ReBuild target files"
+			"tooltip": "Full rebuild via ./build.sh clean; only this run proves zero warnings",
+			"alignment": "left"
 		},
 		{
 			"label": "$(notebook-move-down) Download",
 			"task": "download dap",
-			"tooltip": "Download code to flash memory"
+			"tooltip": "Build, gate, then flash via ./build.sh flash",
+			"alignment": "left"
 		}
 	],
 	"commentTranslate.hover.enabled": true,
 	"files.associations": {
-		"*.h": "c",
-		// board_devices.def is C preprocessor input, not plain text. Without this
-		// the editor gives it no syntax highlighting and clangd ignores it
-		// entirely, so a malformed entry looks the same as a correct one until
-		// the build expands it.
-		"*.def": "c"
+		// 曾经还有一条 "*.def": "c",为 board_devices.def(X 宏设备表)而加。那个文件
+		// 已删除,整棵树不再有任何 .def 文件。
+		"*.h": "c"
 	},
 	"commentTranslate.source": "Bing",
-	// Language server: clangd, reading compile_commands.json. There is no
-	// c_cpp_properties.json — clangd never read it, and keeping a second hand-written
-	// include list only let it drift from the build (it had already lost
-	// 03_platform/rtos/{mutex,task}, 04_impl/rtos/freertos/{mutex,task} and
-	// 06_utils/util_msgbus). CMake writes compile_commands.json itself on every
-	// configure (CMAKE_EXPORT_COMPILE_COMMANDS), so there is nothing to run by
-	// hand — but it lands in build/, which is why clangd is pointed there below.
+	// clangd 的依据是 compile_commands.json,CMake 每次 configure 自动写出
+	// (CMAKE_EXPORT_COMPILE_COMMANDS),无需手动运行。本工程没有
+	// c_cpp_properties.json:clangd 从不读它,而多留一份手写的 include 清单只会与
+	// 真实构建漂移。
 	"clangd.arguments": [
-		// Absolute, because --query-driver matches the compiler path clangd reads out
-		// of compile_commands.json and will not accept a relative pattern. Written
-		// with ${env:...} so the path is not one machine's: set ARM_TOOLCHAIN_BIN to
-		// the toolchain's bin directory (the same one that holds arm-none-eabi-gcc on
-		// your PATH). Unset, this expands to a literal that matches nothing and clangd
-		// reports every vendor header as missing rather than failing loudly -- so if
-		// cross-compiled headers stop resolving, check this variable first.
+		// 必须是绝对路径:--query-driver 匹配的是 compile_commands.json 里的编译器
+		// 路径,不接受相对模式。写成 ${env:...} 是为了不把某一台机器的路径固化进仓库。
+		//
+		// 没设 ARM_TOOLCHAIN_BIN 时它展开成一个匹配不到任何东西的字面量,而 clangd
+		// 不报错,只是把每个交叉编译头当成找不到 —— 交叉编译头突然解析不了先查它。
 		"--query-driver=${env:ARM_TOOLCHAIN_BIN}/arm-none-eabi-*",
-		// CMake writes the database into build/, not the project root where clangd
-		// looks by default. Pointing at it beats symlinking a copy into the root,
-		// which a reconfigure could leave stale.
+		// 数据库在 build/,不是 clangd 默认查找的工程根目录。指过去比在根目录放一个
+		// 软链接更好 —— 后者在重新 configure 之后可能变成过期的副本。
 		"--compile-commands-dir=build",
 		"--background-index",
 		"--clang-tidy",
 		"--header-insertion=never",
 		"--completion-style=detailed"
 	],
-	// The Microsoft C/C++ extension's IntelliSense must be off, not merely unused:
-	// with both active every diagnostic appears twice, and its own engine would fall
-	// back to guessing include paths now that c_cpp_properties.json is gone. Leaving
-	// the extension installed is fine — it still provides the debugger.
+	// 必须关掉,而不只是"不用它":两个语言服务器同时生效时每条诊断出现两遍,而且
+	// c_cpp_properties.json 已删除,它自己那套引擎只能靠猜 include 路径。扩展本身
+	// 留着没问题 —— 调试器还是它提供的。
 	"C_Cpp.intelliSenseEngine": "disabled",
+	// rom/ram 描述的是这颗芯片,不是当前镜像的占用 —— 镜像变大不需要跟着改。
 	"keilMapHeatmap.memoryConfig": {
 		"COD_UniFramework_H7.map": {
 			"rom": 0,
 			"ram": 192
 		}
 	},
-	// misaka21.arm-livewatch 的设置曾经在这里,已删除:Cortex-Debug 自带 Live Watch
-	// (走第二条 GDB 连接,见 launch.json),而那个扩展走 OpenOCD 的 TCL 端口。探针是
-	// 独占的,两个都启用就是两个 OpenOCD 抢一个探针,谁都起不来。停用 arm-livewatch,
-	// 它的 elfPath / gdbPath / openocdPort / ramRegions 设置也随之删掉。
+	// 下面三条必须和 build.sh 保持一致,否则 CMake Tools 和脚本会把同一个 build/
+	// 配成两种样子。生成器写死 Unix Makefiles:vendor 子树的 preset 要 Ninja,而且
+	// 会把 vendor 目录当成顶层工程,丢掉框架全部源文件。
+	//
+	// 构建类型故意不在这里设 —— 它只在 configure 时被读取,交给 build.sh 决定
+	// (默认 RelWithDebInfo)。两处都写会互相覆盖,而症状只是尺寸差几十 KB,像代码膨胀。
 	"cmake.configureOnOpen": true,
 	"cmake.generator": "Unix Makefiles",
 	"cmake.buildDirectory": "${workspaceFolder}/build"

@@ -12,29 +12,37 @@
 #
 # What remains here is the handful of things a compile database cannot express.
 
-CompileFlags:
-  # Query the ARM cross-compiler for its target, builtin macros and system
-  # headers (newlib), rather than letting clang assume the host. Without this,
-  # <stdint.h> resolves to glibc's and every fixed-width type is subtly wrong.
-  Compiler: /home/stg/tools/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-gcc
+# There are deliberately NO absolute paths in this file, so a clone needs no edit
+# here. Two settings that used to be below were removed on 2026/9/4 after being
+# measured as having no effect:
+#
+#   Compiler: <abs path to arm-none-eabi-gcc>
+#   - -isystem<abs path>/arm-none-eabi/include
+#
+# Both are already supplied by compile_commands.json, which CMake regenerates on
+# whatever machine configures the build, so its compiler path is correct there by
+# construction. --query-driver (see .vscode/settings.json) then has clangd run
+# that compiler for its target, builtin macros and system header directories --
+# newlib's include directory among them, which is what the -isystem line was
+# added for.
+#
+# Verified rather than assumed: `clangd --check` over 40 project sources gives
+# byte-identical results with and without those two lines (the same 12 failures
+# either way, all of them stm32f4 backends that this board does not build). The
+# file that originally motivated the -isystem line, 04_impl/rtos/freertos/
+# rtos_hooks.c, reports 0 errors without it.
+#
+# Do NOT add them back to "fix" unresolved cross-compiled headers. That symptom
+# is ARM_TOOLCHAIN_BIN being unset, which makes --query-driver expand to a
+# pattern matching nothing -- clangd then reports every toolchain header as
+# missing without saying why, while the build stays clean. See README 1.1.
 
+CompileFlags:
   Add:
     # A bare .h is ambiguous — C, C++ and Objective-C all use it — and clangd
     # guesses Objective-C++ for headers with no matching .c in the database.
     # Forcing C is what makes the *_ops contracts and util_* headers navigable.
     - -xc
-
-    # newlib's headers, explicitly. `Compiler:` above is meant to make clangd
-    # discover these by querying the driver, and it finds most of what the
-    # toolchain reports — but not this directory, so a file including <stdlib.h>,
-    # <stdio.h> or <string.h> got "file not found" and clangd abandoned the whole
-    # translation unit. GCC resolves them fine (this is what
-    # `arm-none-eabi-gcc -print-sysroot` points at), so it was only ever a
-    # language-server blind spot, never a build failure.
-    #
-    # Surfaced when 04_impl/rtos/freertos/rtos_hooks.c and rtos_tasks.c became the first
-    # project sources to include SEGGER_RTT.h, which pulls in <stdlib.h>.
-    - -isystem/home/stg/tools/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi/arm-none-eabi/include
 
   Remove:
     # Valid for arm-none-eabi-gcc, rejected by clangd's bundled clang. Each one

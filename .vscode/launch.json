@@ -1,9 +1,9 @@
 {
-    // 启动调试的快捷键是 F5。需要 Cortex-Debug 扩展 (marus25.cortex-debug),
-    // 以及 PATH 上的 openocd。
+    // F5 启动调试。需要 Cortex-Debug 扩展 (marus25.cortex-debug) 以及 PATH 上的 openocd
+    // —— gdb 用工具链自带的 arm-none-eabi-gdb,不要设 cortex-debug.gdbPath。
     //
-    // 本机探针是 WCH 的 CMSIS-DAP (USB 1a86:e6e1);它的 VID/PID 写在
-    // openocd_dap.cfg 里,因为 OpenOCD 内置列表不含 WCH。
+    // 本机探针是 WCH 的 CMSIS-DAP (USB 1a86:e6e1);VID/PID 写在 openocd_dap.cfg 里,
+    // 因为 OpenOCD 内置列表不含 WCH。
     "version": "0.2.0",
     "configurations": [
         {
@@ -14,40 +14,38 @@
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "openocd",
-            // 名字来自根 CMakeLists.txt 的 CMAKE_PROJECT_NAME,改那里要同步改这里。
+            // device 名来自根 CMakeLists.txt 的 CMAKE_PROJECT_NAME,改那里要同步改这里。
+            // svdFile 在仓库里,所以不需要装任何 device support pack。
             "device": "STM32H723VG",
             "svdFile": "05_vender/stm32cubemx/STM32H723.svd",
             "configFiles": [
                 "openocd_dap.cfg"
             ],
-            // 停在 main() 而不是复位向量,所以 SystemInit 和时钟配置已经跑完。
-            // 如果板子在到达这里之前就卡住,问题就在时钟配置 —— 改用 Attach
-            // 并让核心停在复位状态来抓它。
+            // 停在 main() 而不是复位向量,所以 SystemInit 和时钟配置已经跑完。板子若在到达
+            // 这里之前就卡住,问题就在时钟配置 —— 改用 Attach 并让核心停在复位状态来抓它。
             "runToEntryPoint": "main",
             // 让扩展能解析任务列表和每个任务的栈。调度器启动前无害,视图是空的。
             "rtos": "FreeRTOS",
             "preLaunchTask": "build task",
-            // Live Watch: Cortex-Debug 自带的,不是 misaka21.arm-livewatch。它通过
-            // 第二条 GDB 连接读内存 (启动时的 CDLiveWatchSetup 就是给 OpenOCD 的
+            // Live Watch 用 Cortex-Debug 自带的,不是 misaka21.arm-livewatch。它通过第二条
+            // GDB 连接读内存(启动时的 CDLiveWatchSetup 就是给 OpenOCD 的
             // gdb-max-connections 加一),所以核心运行时也能刷新变量,且不碰 TCL 端口。
             //
-            // 因此这里不需要钉 tcl_port。装着的 arm-livewatch 扩展是多余的:它连
-            // TCL 端口,而探针独占 —— 两个 OpenOCD 抢同一个探针只会都失败。用这个,
-            // 停用那个。
+            // 因此这里不需要钉 tcl_port。arm-livewatch 是多余且冲突的:它连 TCL 端口,而
+            // 探针独占 —— 两个 OpenOCD 抢同一个探针只会都失败。用这个,停用那个。
             "liveWatch": {
                 "enabled": true,
                 "samplesPerSecond": 4
             },
-            // SEGGER RTT over SWD,这是本固件的日志通路 —— rtos_tasks.c 里每个
-            // SEGGER_RTT_printf 和断言处理器的输出都到这里,不走 UART。
-            // 代码只写通道 0。
+            // SEGGER RTT over SWD,本固件唯一的日志通路 —— 每个 UTIL_LOG 和断言处理器的
+            // 输出都到这里,不走 UART。代码只写通道 0。
             //
-            // 控制块靠扫描 RAM 找签名。搜索范围必须覆盖 _SEGGER_RTT 的实际位置:
-            // 本链接脚本把 .bss 放在 DTCMRAM 0x20000000,而**不是** H7 项目更
-            // 常见的 AXI SRAM 0x24000000。范围错了 RTT 会静默连不上。
+            // 控制块靠扫描 RAM 找签名,范围必须覆盖 _SEGGER_RTT 的实际位置:本链接脚本把
+            // .bss 放在 DTCMRAM 0x20000000,而不是 H7 工程更常见的 AXI SRAM 0x24000000。
+            // 范围错了 RTT 会静默连不上。
             //
-            // 44 KB 而不是 DTCM 的全部 128 KB:搜到 0x20020000 会读到区域末尾
-            // 之后一个字,OpenOCD 报 "Failed to read memory" 并放弃扫描。
+            // searchSize 是 44 KB 而不是 DTCM 全部 128 KB:扫到 0x20020000 会多读一个字
+            // 越过区域边界,OpenOCD 报 "Failed to read memory" 并放弃整个扫描。
             // _SEGGER_RTT 实测在 0x20009184,44 KB 足够覆盖。
             "rttConfig": {
                 "enabled": true,
@@ -79,6 +77,7 @@
             "configFiles": [
                 "openocd_dap.cfg"
             ],
+            // 让扩展能解析任务列表和每个任务的栈。调度器启动前无害,视图是空的。
             "rtos": "FreeRTOS",
             // 同上:Cortex-Debug 自带的 Live Watch,走第二条 GDB 连接。
             "liveWatch": {
