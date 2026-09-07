@@ -2,33 +2,55 @@
 
 RoboMatser机甲大师 *COD战队* 机器人通用电控软件框架。
 
+`UniC`意为`Uniform Control`
+
 ---
 
 ## 1. 快速开始
 
 ### 1.1 环境搭建
 
-开发环境基于Linux。请使用*Ubuntu 24.04*或*WSL Ubuntu 24.04*(推荐)
+开发环境基于Linux。请使用*Ubuntu 24.04*或*WSL Ubuntu 24.04*
 
-IDE使用VSCode。(微软大战代码)
+IDE使用Microsoft VSCode。(微软大战代码)
 
 #### 1.1.1 安装 arm-gcc 工具链
 
 以下命令将从 [ARM 官网](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads) 下载arm-gcc工具链，并把 `bin` 路径添加进环境变量
 
+请挂上代理，从上至下按顺序执行
+
 ```sh
 mkdir -p ~/tools
-
-tar -xf ~/Downloads/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi.tar.xz -C ~/tools
-
-echo 'export PATH=$HOME/tools/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi/bin:$PATH' >> ~/.bashrc
-
-echo 'export ARM_TOOLCHAIN_BIN=$HOME/tools/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi/bin' >> ~/.bashrc
-
-source ~/.bashrc
-
-arm-none-eabi-gcc --version    # 能打出版本号就没问题
 ```
+
+```sh
+wget -O ~/Downloads/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi.tar.xz \
+  https://developer.arm.com/-/media/Files/downloads/gnu/15.2.rel1/binrel/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi.tar.xz
+```
+
+```sh
+tar -xf ~/Downloads/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi.tar.xz -C ~/tools
+```
+
+```sh
+echo 'export PATH=$HOME/tools/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi/bin:$PATH' >> ~/.bashrc
+```
+
+```sh
+echo 'export ARM_TOOLCHAIN_BIN=$HOME/tools/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi/bin' >> ~/.bashrc
+```
+
+```sh
+source ~/.bashrc
+```
+
+```sh
+arm-none-eabi-gcc --version
+```
+
+到这里，如果成功输出了版本号，就大功告成
+
 
 #### 1.1.2 安装构建、调试、代码索引、代码格式化工具
 
@@ -52,10 +74,14 @@ git clone https://github.com/fakeSkyy/COD_UniCFramework
 
 #### 1.1.5 编译
 
+创建build目录并编译所有文件
 ```sh
-./build.sh clean
+./build.sh
+```
 
-./build.sh --help   #查看所有命令
+加上`--help`后缀查看所有功能
+```sh
+./build.sh --help
 ```
 
 ---
