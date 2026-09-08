@@ -1,0 +1,55 @@
+// J-Link Commander script: attach, start the target, and hold RTT open.
+//
+// Used by `cmake --build build --target rtt-jlink`, and by
+// `PROBE=jlink ./build.sh rtt`.
+//
+// Read the log from another terminal with:
+//
+//     JLinkRTTClient
+//
+// JLinkRTTViewer works too if you want the GUI. Both connect to localhost:19021,
+// which the J-Link DLL serves while this script holds the target -- so, as with
+// the CMSIS-DAP path, one terminal holds the probe and another reads the log.
+//
+// Comments must use `//`, not `#`; see flash.jlink.
+//
+// @par No search range here, deliberately
+// RTT is SEGGER's own protocol, so J-Link locates the control block itself. The
+// CMSIS-DAP path has to be told `rtt setup 0x20000000 0xB000` because this
+// project's linker script puts .bss in DTCMRAM rather than the AXI SRAM an H7
+// project usually uses, and a wrong range there fails silently. Nothing to get
+// wrong on this side.
+//
+// The J-Link RTT buffer also survives a reconnect, unlike OpenOCD's, which the
+// first client to attach drains destructively.
+
+device STM32H723VG
+if SWD
+speed 4000
+connect
+
+// Reset and run before the log is read, so what comes out is this run's output.
+// The control block is created lazily, on the first SEGGER_RTT call, so it does
+// not exist yet at this point -- J-Link keeps looking, which is why the ordering
+// that matters for OpenOCD does not matter here.
+r
+g
+
+// No `qc`: this script must not exit. JLinkExe has to keep holding the target for
+// the DLL to serve RTT on 19021, the same way the OpenOCD target stays in the
+// foreground. Ctrl-C here ends the session.
+
+// Hold the session open. JLinkExe has no RTT terminal of its own -- JLinkRTTClient
+// is the reader, and it attaches to the DLL of whichever process currently holds
+// the probe. So this script must NOT end: reaching the end of the file drops
+// JLinkExe to its interactive prompt and, with stdin closed by the build target,
+// it exits, releasing the target. A new `connect` from any other tool resets the
+// board, which wipes .bss and with it the RTT control block -- measured: the block
+// reads as zero right after another session's connect, then repopulates a second
+// later once the firmware runs again.
+//
+// One hour, not an infinite loop: J-Link Commander has no loop construct, and an
+// unbounded hold with no way out is worse than one that visibly expires. Ctrl-C
+// ends it sooner, which is the normal way to stop.
+sleep 3600000
+qc

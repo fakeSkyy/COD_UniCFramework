@@ -84,6 +84,45 @@
                 "enabled": true,
                 "samplesPerSecond": 4
             }
+        },
+        {
+            // J-Link 版的烧写并运行。和上面两个 OpenOCD 配置并存 —— 探针是独占的,
+            // 所以同一时刻只能用一个,但不需要改文件来回切。
+            //
+            // servertype 换成 jlink 之后 configFiles 就不适用了(那是 OpenOCD 的
+            // 脚本),device 和 svdFile 不变:它们描述的是芯片,不是探针。
+            "name": "H7 Launch (J-Link)",
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceRoot}/build/COD_UniFramework_H7.elf",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "jlink",
+            "device": "STM32H723VG",
+            "interface": "swd",
+            "svdFile": "05_vender/stm32cubemx/STM32H723.svd",
+            "runToEntryPoint": "main",
+            "rtos": "FreeRTOS",
+            "preLaunchTask": "build task",
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 4
+            },
+            // RTT 这一侧比 OpenOCD 简单得多:RTT 是 SEGGER 自己的协议,J-Link 自己
+            // 找控制块 —— 没有 address / searchSize / searchId 要配,也就没有那个
+            // "范围写错就静默连不上"的坑。缓冲区也能重连,不像 OpenOCD 那样被第一个
+            // 连上的客户端一次性取走。
+            "rttConfig": {
+                "enabled": true,
+                "address": "auto",
+                "decoders": [
+                    {
+                        "port": 0,
+                        "type": "console",
+                        "label": "RTT",
+                        "noprompt": true
+                    }
+                ]
+            }
         }
     ]
 }

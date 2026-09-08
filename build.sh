@@ -9,7 +9,7 @@
 # Usage:
 #   ./build.sh                 configure if needed, build, gate, report
 #   ./build.sh clean           delete the build directory first
-#   ./build.sh flash           build, gate, then flash via CMSIS-DAP
+#   ./build.sh flash           build, gate, then flash
 #   ./build.sh rtt             build, gate, flash, then serve the RTT log
 #   ./build.sh rtt --no-flash  serve the RTT log against whatever is already on
 #                              the target, without reflashing
@@ -17,6 +17,11 @@
 #
 # Environment:
 #   JOBS=<n>                   parallelism for one run, overriding JOBS_DEFAULT
+#   PROBE=dap|jlink            debug probe for flash and rtt; dap (CMSIS-DAP via
+#                              OpenOCD) is the default. Unlike BUILD_TYPE this is
+#                              read on every run, never cached: it selects a
+#                              target name rather than a configure-time setting,
+#                              so it cannot go stale in an existing build/.
 #   BUILD_TYPE=<cfg>           RelWithDebInfo (default) | Debug | Release.
 #                              Read ONLY when configuring, i.e. when the build
 #                              directory has no CMakeCache.txt -- an existing
@@ -98,6 +103,19 @@ esac
 #   BUILD_TYPE=Debug ./build.sh     -- -O0 -g3, for stepping
 #   BUILD_TYPE=Release ./build.sh   -- -Os -g0, smallest image
 build_type=${BUILD_TYPE:-RelWithDebInfo}
+
+# Suffixed target names (flash-dap / flash-jlink) rather than -DPROBE, so
+# switching probes needs no reconfigure and an old cache cannot override today's
+# choice. CMake defines both pairs unconditionally; whichever tool is absent
+# gives a target that names the missing program.
+probe=${PROBE:-dap}
+case "$probe" in
+    dap | jlink) ;;
+    *)
+        echo "build.sh: PROBE must be dap or jlink, got '$probe'" >&2
+        exit 2
+        ;;
+esac
 toolchain=05_vender/stm32cubemx/cmake/gcc-arm-none-eabi.cmake
 
 if [ ! -f "$root/$toolchain" ]; then
@@ -235,14 +253,17 @@ fi
 
 if [ "$do_flash" -eq 1 ]; then
     echo
-    echo "==> flashing via CMSIS-DAP"
-    cmake --build "$build_dir" --target flash
+    case "$probe" in
+        dap)   echo "==> flashing via CMSIS-DAP" ;;
+        jlink) echo "==> flashing via J-Link" ;;
+    esac
+    cmake --build "$build_dir" --target "flash-$probe"
 fi
 
-# RTT last, because it does not return: the rtt target runs OpenOCD in the
-# foreground serving tcp/9090 until interrupted. So the summary line below would
-# never print, and printing it first would be a lie about what happens next --
-# hence the explicit note about the second terminal before handing over.
+# RTT last, because it does not return: the target holds the probe in the
+# foreground until interrupted. So the summary line below would never print, and
+# printing it first would be a lie about what happens next -- hence the explicit
+# note about the second terminal before handing over.
 if [ "$do_rtt" -eq 1 ]; then
     echo
     if [ "$warnings" -ne 0 ]; then
@@ -253,11 +274,23 @@ if [ "$do_rtt" -eq 1 ]; then
         echo "==> OK  ($compiled file(s) compiled, 0 warnings)"
     fi
     echo
-    echo "==> RTT on tcp/9090 -- in another terminal:  nc localhost 9090"
-    echo "    Ctrl-C here stops it. The firmware prints nothing until it reaches"
-    echo "    the first UTIL_LOG call, and the control block only exists once it"
-    echo "    is running -- silence right after reset is normal."
-    exec cmake --build "$build_dir" --target rtt
+    if [ "$probe" = jlink ]; then
+        echo "==> RTT via J-Link -- in another terminal:  JLinkRTTClient"
+    else
+        echo "==> RTT on tcp/9090 -- in another terminal:  nc localhost 9090"
+    fi
+    # Both probes drain the buffer destructively, and this firmware only logs at
+    # startup -- so the first reader takes everything and every later one sees an
+    # empty stream. Measured on hardware for each: OpenOCD's RdOff jumps to WrOff
+    # (214 bytes) on the first connection, and a second JLinkRTTClient gets 0 of
+    # the 6 lines the first one got. Anything that merely probes the port counts
+    # as that first reader, `nc -z` included.
+    echo "    Attach BEFORE anything else does: the first reader takes the whole"
+    echo "    buffer, and this firmware only logs at startup. Re-run to see it"
+    echo "    again -- that resets the board."
+    echo "    Ctrl-C here stops it. Silence right after reset is normal: the"
+    echo "    control block only exists once the firmware reaches its first log."
+    exec cmake --build "$build_dir" --target "rtt-$probe"
 fi
 
 echo

@@ -380,10 +380,38 @@ add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
 #
 # Depends on the ELF rather than on `all`, so it cannot flash a stale image: if a
 # source changed, the build runs first.
+# Two probes are supported side by side, each named explicitly:
+#
+#   flash-dap / rtt-dap       CMSIS-DAP via OpenOCD (the WCH probe on this bench)
+#   flash-jlink / rtt-jlink   SEGGER J-Link
+#
+# There is deliberately NO `flash` or `rtt` alias. An alias would have to pick a
+# probe at configure time and remember it in the cache, so `PROBE=jlink cmake
+# --build build --target flash` would silently flash over the OTHER probe --
+# cmake does not read the environment, and the cached choice wins. That is the
+# same shape as the BUILD_TYPE trap this build already documents, and here it
+# would put the wrong image on a board. `./build.sh flash` reads PROBE per run
+# and dispatches to the suffixed target, which cannot go stale.
+#
+# Both toolchains are looked for unconditionally -- whichever is missing produces
+# a target that says so, because "No rule to make target 'flash-jlink'" does not
+# tell you which tool to install.
 find_program(OPENOCD_EXECUTABLE openocd)
+find_program(JLINK_EXECUTABLE JLinkExe)
+
+# A target that explains itself beats a missing target. Used for whichever
+# probe's tooling is absent.
+function(cod_missing_tool target tool package)
+    add_custom_target(${target}
+        COMMAND ${CMAKE_COMMAND} -E echo
+                "${tool} not found on PATH -- install it (${package}) and re-run cmake"
+        COMMAND ${CMAKE_COMMAND} -E false
+        COMMENT "Cannot run ${target}: ${tool} missing"
+    )
+endfunction()
 
 if(OPENOCD_EXECUTABLE)
-    add_custom_target(flash
+    add_custom_target(flash-dap
         COMMAND ${OPENOCD_EXECUTABLE}
                 -f ${CMAKE_CURRENT_SOURCE_DIR}/openocd_dap.cfg
                 -c "program $<TARGET_FILE:${CMAKE_PROJECT_NAME}> verify reset exit"
@@ -392,15 +420,42 @@ if(OPENOCD_EXECUTABLE)
         COMMENT "Flashing via CMSIS-DAP"
     )
 else()
-    # A target that explains itself beats a missing target that produces
-    # "No rule to make target 'flash'".
-    add_custom_target(flash
-        COMMAND ${CMAKE_COMMAND} -E echo
-                "openocd not found on PATH — install it (apt install openocd) and re-run cmake"
-        COMMAND ${CMAKE_COMMAND} -E false
-        COMMENT "Cannot flash: openocd missing"
-    )
+    cod_missing_tool(flash-dap openocd "apt install openocd")
 endif()
+
+# -CommanderScript, because JLinkExe has no -c equivalent; the settings live in
+# flash.jlink beside openocd_dap.cfg. NoGui keeps a failure on the terminal
+# rather than in a dialog nobody sees from a build target.
+# The .jlink scripts are templates: J-Link resolves loadfile against the working
+# directory, which for a build target is build/, and its own %CD% is passed
+# through literally on Linux (V9.72) -- so the path has to be absolute before
+# JLinkExe ever sees it. CMake substitutes it, and the generated copies land in
+# build/ next to the ELF they name.
+if(JLINK_EXECUTABLE)
+    set(LOADFILE $<TARGET_FILE:${CMAKE_PROJECT_NAME}>)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/rtt.jlink.in
+                   ${CMAKE_BINARY_DIR}/rtt.jlink @ONLY)
+    # file(GENERATE), not configure_file, because $<TARGET_FILE:...> is a
+    # generator expression: configure_file runs at configure time and would write
+    # the unexpanded string.
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/flash.jlink.in
+                   ${CMAKE_BINARY_DIR}/flash.jlink.tmp @ONLY)
+    file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/flash.jlink
+                  INPUT ${CMAKE_BINARY_DIR}/flash.jlink.tmp)
+
+    add_custom_target(flash-jlink
+        COMMAND ${JLINK_EXECUTABLE}
+                -NoGui 1
+                -ExitOnError 1
+                -CommanderScript ${CMAKE_BINARY_DIR}/flash.jlink
+        DEPENDS ${CMAKE_PROJECT_NAME}
+        USES_TERMINAL
+        COMMENT "Flashing via J-Link"
+    )
+else()
+    cod_missing_tool(flash-jlink JLinkExe "SEGGER J-Link Software pack")
+endif()
+
 
 # ------------------------------------------------------------------------------
 # RTT console
@@ -418,16 +473,59 @@ endif()
 # 0x20020000 reads one word past the end of the region and OpenOCD reports
 # "Failed to read memory", abandoning the scan. Verified against the ELF:
 # _SEGGER_RTT sits at 0x20009184, so 0xB000 covers it with room to spare.
+#
+# @par The OpenOCD buffer is consumed once
+# Measured on hardware: OpenOCD drains the RTT buffer only while a client is
+# attached, and destructively. The control block's RdOff sits at 0 with the boot
+# log (214 bytes) buffered, jumps to WrOff on the first connection, and a second
+# `nc` gets nothing -- this firmware logs at startup and is silent in steady
+# state, so the first client to attach takes everything. Anything that merely
+# probes the port counts as that client, `nc -z` included. To see the log again,
+# re-run the target: it resets the board.
+#
+# J-Link has no equivalent step. RTT is SEGGER's own protocol, so JLinkRTTClient
+# finds the control block itself -- no address range to get wrong, and reconnects
+# keep working.
 if(OPENOCD_EXECUTABLE)
-    add_custom_target(rtt
+    add_custom_target(rtt-dap
         COMMAND ${OPENOCD_EXECUTABLE}
                 -f ${CMAKE_CURRENT_SOURCE_DIR}/openocd_dap.cfg
                 -c "init"
+                # Reset and let the firmware run BEFORE searching for the control
+                # block. _SEGGER_RTT lives in .bss and is filled in lazily, on the
+                # first SEGGER_RTT call, so a search issued at reset time finds
+                # nothing -- and "No control block found" is only an Info line, so
+                # the target still starts a server that will never deliver a byte.
+                # That is indistinguishable from firmware that never printed.
+                #
+                # Measured: search immediately after reset -> not found; after
+                # ~1.5 s of run time -> found. 3000 ms is deliberate headroom over
+                # the ~1.4 s this firmware needs to reach its first log, which is
+                # dominated by the 2000-sample gyro calibration.
+                -c "reset run"
+                -c "sleep 3000"
                 -c "rtt setup 0x20000000 0xB000 \"SEGGER RTT\""
                 -c "rtt start"
                 -c "rtt server start 9090 0"
-                -c "reset run"
         USES_TERMINAL
         COMMENT "OpenOCD + RTT on tcp/9090 — connect with: nc localhost 9090"
     )
+else()
+    cod_missing_tool(rtt-dap openocd "apt install openocd")
 endif()
+
+# JLinkExe holds the target; JLinkRTTClient connects to it over localhost:19021,
+# which the DLL serves automatically. Same two-terminal shape as the DAP path,
+# but without a search range to configure.
+if(JLINK_EXECUTABLE)
+    add_custom_target(rtt-jlink
+        COMMAND ${JLINK_EXECUTABLE}
+                -NoGui 1
+                -CommanderScript ${CMAKE_BINARY_DIR}/rtt.jlink
+        USES_TERMINAL
+        COMMENT "J-Link + RTT — connect with: JLinkRTTClient"
+    )
+else()
+    cod_missing_tool(rtt-jlink JLinkExe "SEGGER J-Link Software pack")
+endif()
+

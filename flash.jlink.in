@@ -1,0 +1,54 @@
+// J-Link Commander script: flash the firmware and run it.
+//
+// Used by `cmake --build build --target flash-jlink`, and by
+// `PROBE=jlink ./build.sh flash`.
+//
+// Comments here MUST use `//`. J-Link Commander does not treat `#` as a comment
+// -- it echoes each such line back as "Unknown command", and with -ExitOnError 1
+// the first one aborts the script before it reaches `connect`. Verified against
+// V9.72: of `//`, `/*` and `;` all are accepted, `#` is not.
+//
+// @par Why a script file rather than -c options
+// JLinkExe has no equivalent of OpenOCD's -c: it reads commands from stdin or
+// from a -CommanderScript file. A file also keeps the settings that must match
+// the debug configuration in one reviewable place, the way openocd_dap.cfg does
+// for the CMSIS-DAP path.
+
+// Device name as it appears in J-Link's device library. Verified accepted by
+// JLinkGDBServer V9.72 -- a wrong name is reported as "unknown device" rather
+// than being ignored. The same string appears in .vscode/launch.json; changing
+// one means changing both.
+device STM32H723VG
+
+// SWD, not JTAG: this board exposes only SWCLK/SWDIO.
+if SWD
+
+// 4000 kHz, matching openocd_dap.cfg's `adapter speed 4000` so the two probe
+// paths behave the same. J-Link tolerates more on a short cable, but a rate the
+// wiring cannot sustain shows up as intermittent CRC errors rather than as
+// anything naming the clock.
+speed 4000
+
+connect
+
+// The ELF, not the .hex. loadfile takes either, and the ELF is what the build
+// gates and what the debugger loads symbols from -- flashing the same artifact
+// removes one way for the image on the target to disagree with the one being
+// debugged.
+//
+// @LOADFILE@ is substituted by CMake with the ELF's absolute path (see
+// configure_file in CMakeLists.txt) -- which is why the file J-Link actually
+// reads is build/flash.jlink, not this template. A path relative to the working
+// directory cannot work: the build target runs with cwd = build/, so
+// `build/...elf` does not resolve there. J-Link's own %CD% does not help either
+// -- on Linux V9.72 it is passed through literally, and the failure is a bare
+// "Failed to open file" that never says what path was tried.
+loadfile @LOADFILE@
+
+// Reset and run, so `flash` leaves the board doing its job rather than halted.
+r
+g
+
+// Close without prompting; without this JLinkExe waits for input and the build
+// target never finishes.
+qc
