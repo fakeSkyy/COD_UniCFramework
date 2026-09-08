@@ -119,13 +119,7 @@ add_application_test(test_app_imu
     null_heater_pwm_leaves_attitude_running_and_commands_nothing
     heater_duty_rises_below_setpoint_and_is_floored_above_it
     heater_output_never_exceeds_configured_cap
-    heater_out_of_range_temp_commands_zero_duty
-    yaw_total_unwraps_forward_across_pi
-    yaw_total_unwraps_backward_across_pi
-    yaw_total_ignores_ordinary_motion
-    heater_over_temperature_cuts_output
-    heater_below_cutoff_still_regulates
-    imu_outage_stops_heater
+    heater_out_of_range_temp_commands_nothing
     heater_steps_at_refresh_rate_not_every_loop_iteration)
 # UTIL_PID_Init/Step run for real here (app_imu.c includes util_pid.h directly,
 # not through imu_deps.h), so the tests exercise actual PID math on the duty

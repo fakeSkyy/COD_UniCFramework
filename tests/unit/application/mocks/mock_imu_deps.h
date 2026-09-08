@@ -80,6 +80,19 @@ void Board_ImuHeater_AddCallback(CMOCK_Board_ImuHeater_CALLBACK Callback);
 void Board_ImuHeater_Stub(CMOCK_Board_ImuHeater_CALLBACK Callback);
 #define Board_ImuHeater_StubWithCallback Board_ImuHeater_Stub
 int Board_ImuHeater_CallCount(void);
+#define Board_ParamFlash_Ignore() TEST_FAIL_MESSAGE("Board_ParamFlash requires _IgnoreAndReturn");
+#define Board_ParamFlash_IgnoreAndReturn(cmock_retval) Board_ParamFlash_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void Board_ParamFlash_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, Flash_Instance_s* cmock_to_return);
+#define Board_ParamFlash_StopIgnore() Board_ParamFlash_CMockStopIgnore()
+void Board_ParamFlash_CMockStopIgnore(void);
+#define Board_ParamFlash_Expect() TEST_FAIL_MESSAGE("Board_ParamFlash requires _ExpectAndReturn");
+#define Board_ParamFlash_ExpectAndReturn(cmock_retval) Board_ParamFlash_CMockExpectAndReturn(__LINE__, cmock_retval)
+void Board_ParamFlash_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, Flash_Instance_s* cmock_to_return);
+typedef Flash_Instance_s* (* CMOCK_Board_ParamFlash_CALLBACK)(int cmock_num_calls);
+void Board_ParamFlash_AddCallback(CMOCK_Board_ParamFlash_CALLBACK Callback);
+void Board_ParamFlash_Stub(CMOCK_Board_ParamFlash_CALLBACK Callback);
+#define Board_ParamFlash_StubWithCallback Board_ParamFlash_Stub
+int Board_ParamFlash_CallCount(void);
 #define DEV_BMI088_Init_Ignore() TEST_FAIL_MESSAGE("DEV_BMI088_Init requires _IgnoreAndReturn");
 #define DEV_BMI088_Init_IgnoreAndReturn(cmock_retval) DEV_BMI088_Init_CMockIgnoreAndReturn(__LINE__, cmock_retval)
 void DEV_BMI088_Init_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, DEV_BMI088_Status_e cmock_to_return);
@@ -150,6 +163,66 @@ int DEV_BMI088_Read_CallCount(void);
 void DEV_BMI088_Read_CMockReturnMemThruPtr_imu(UNITY_LINE_TYPE cmock_line, DEV_BMI088_s const* imu, size_t cmock_size);
 #define DEV_BMI088_Read_IgnoreArg_imu() DEV_BMI088_Read_CMockIgnoreArg_imu(__LINE__)
 void DEV_BMI088_Read_CMockIgnoreArg_imu(UNITY_LINE_TYPE cmock_line);
+#define DEV_BMI088_SaveBias_Ignore() TEST_FAIL_MESSAGE("DEV_BMI088_SaveBias requires _IgnoreAndReturn");
+#define DEV_BMI088_SaveBias_IgnoreAndReturn(cmock_retval) DEV_BMI088_SaveBias_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void DEV_BMI088_SaveBias_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return);
+#define DEV_BMI088_SaveBias_StopIgnore() DEV_BMI088_SaveBias_CMockStopIgnore()
+void DEV_BMI088_SaveBias_CMockStopIgnore(void);
+#define DEV_BMI088_SaveBias_ExpectAnyArgs() TEST_FAIL_MESSAGE("DEV_BMI088_SaveBias requires _ExpectAnyArgsAndReturn");
+#define DEV_BMI088_SaveBias_ExpectAnyArgsAndReturn(cmock_retval) DEV_BMI088_SaveBias_CMockExpectAnyArgsAndReturn(__LINE__, cmock_retval)
+void DEV_BMI088_SaveBias_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return);
+#define DEV_BMI088_SaveBias_Expect(imu, flash, off) TEST_FAIL_MESSAGE("DEV_BMI088_SaveBias requires _ExpectAndReturn");
+#define DEV_BMI088_SaveBias_ExpectAndReturn(imu, flash, off, cmock_retval) DEV_BMI088_SaveBias_CMockExpectAndReturn(__LINE__, imu, flash, off, cmock_retval)
+void DEV_BMI088_SaveBias_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, DEV_BMI088_s* imu, Flash_Instance_s* flash, uint32_t off, bool cmock_to_return);
+typedef bool (* CMOCK_DEV_BMI088_SaveBias_CALLBACK)(DEV_BMI088_s* imu, Flash_Instance_s* flash, uint32_t off, int cmock_num_calls);
+void DEV_BMI088_SaveBias_AddCallback(CMOCK_DEV_BMI088_SaveBias_CALLBACK Callback);
+void DEV_BMI088_SaveBias_Stub(CMOCK_DEV_BMI088_SaveBias_CALLBACK Callback);
+#define DEV_BMI088_SaveBias_StubWithCallback DEV_BMI088_SaveBias_Stub
+int DEV_BMI088_SaveBias_CallCount(void);
+#define DEV_BMI088_SaveBias_ReturnThruPtr_imu(imu) DEV_BMI088_SaveBias_CMockReturnMemThruPtr_imu(__LINE__, imu, sizeof(DEV_BMI088_s))
+#define DEV_BMI088_SaveBias_ReturnArrayThruPtr_imu(imu, cmock_len) DEV_BMI088_SaveBias_CMockReturnMemThruPtr_imu(__LINE__, imu, (cmock_len * sizeof(*imu)))
+#define DEV_BMI088_SaveBias_ReturnMemThruPtr_imu(imu, cmock_size) DEV_BMI088_SaveBias_CMockReturnMemThruPtr_imu(__LINE__, imu, (cmock_size))
+void DEV_BMI088_SaveBias_CMockReturnMemThruPtr_imu(UNITY_LINE_TYPE cmock_line, DEV_BMI088_s const* imu, size_t cmock_size);
+#define DEV_BMI088_SaveBias_ReturnThruPtr_flash(flash) DEV_BMI088_SaveBias_CMockReturnMemThruPtr_flash(__LINE__, flash, sizeof(Flash_Instance_s))
+#define DEV_BMI088_SaveBias_ReturnArrayThruPtr_flash(flash, cmock_len) DEV_BMI088_SaveBias_CMockReturnMemThruPtr_flash(__LINE__, flash, (cmock_len * sizeof(*flash)))
+#define DEV_BMI088_SaveBias_ReturnMemThruPtr_flash(flash, cmock_size) DEV_BMI088_SaveBias_CMockReturnMemThruPtr_flash(__LINE__, flash, (cmock_size))
+void DEV_BMI088_SaveBias_CMockReturnMemThruPtr_flash(UNITY_LINE_TYPE cmock_line, Flash_Instance_s const* flash, size_t cmock_size);
+#define DEV_BMI088_SaveBias_IgnoreArg_imu() DEV_BMI088_SaveBias_CMockIgnoreArg_imu(__LINE__)
+void DEV_BMI088_SaveBias_CMockIgnoreArg_imu(UNITY_LINE_TYPE cmock_line);
+#define DEV_BMI088_SaveBias_IgnoreArg_flash() DEV_BMI088_SaveBias_CMockIgnoreArg_flash(__LINE__)
+void DEV_BMI088_SaveBias_CMockIgnoreArg_flash(UNITY_LINE_TYPE cmock_line);
+#define DEV_BMI088_SaveBias_IgnoreArg_off() DEV_BMI088_SaveBias_CMockIgnoreArg_off(__LINE__)
+void DEV_BMI088_SaveBias_CMockIgnoreArg_off(UNITY_LINE_TYPE cmock_line);
+#define DEV_BMI088_LoadBias_Ignore() TEST_FAIL_MESSAGE("DEV_BMI088_LoadBias requires _IgnoreAndReturn");
+#define DEV_BMI088_LoadBias_IgnoreAndReturn(cmock_retval) DEV_BMI088_LoadBias_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void DEV_BMI088_LoadBias_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return);
+#define DEV_BMI088_LoadBias_StopIgnore() DEV_BMI088_LoadBias_CMockStopIgnore()
+void DEV_BMI088_LoadBias_CMockStopIgnore(void);
+#define DEV_BMI088_LoadBias_ExpectAnyArgs() TEST_FAIL_MESSAGE("DEV_BMI088_LoadBias requires _ExpectAnyArgsAndReturn");
+#define DEV_BMI088_LoadBias_ExpectAnyArgsAndReturn(cmock_retval) DEV_BMI088_LoadBias_CMockExpectAnyArgsAndReturn(__LINE__, cmock_retval)
+void DEV_BMI088_LoadBias_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return);
+#define DEV_BMI088_LoadBias_Expect(imu, flash, off) TEST_FAIL_MESSAGE("DEV_BMI088_LoadBias requires _ExpectAndReturn");
+#define DEV_BMI088_LoadBias_ExpectAndReturn(imu, flash, off, cmock_retval) DEV_BMI088_LoadBias_CMockExpectAndReturn(__LINE__, imu, flash, off, cmock_retval)
+void DEV_BMI088_LoadBias_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, DEV_BMI088_s* imu, Flash_Instance_s* flash, uint32_t off, bool cmock_to_return);
+typedef bool (* CMOCK_DEV_BMI088_LoadBias_CALLBACK)(DEV_BMI088_s* imu, Flash_Instance_s* flash, uint32_t off, int cmock_num_calls);
+void DEV_BMI088_LoadBias_AddCallback(CMOCK_DEV_BMI088_LoadBias_CALLBACK Callback);
+void DEV_BMI088_LoadBias_Stub(CMOCK_DEV_BMI088_LoadBias_CALLBACK Callback);
+#define DEV_BMI088_LoadBias_StubWithCallback DEV_BMI088_LoadBias_Stub
+int DEV_BMI088_LoadBias_CallCount(void);
+#define DEV_BMI088_LoadBias_ReturnThruPtr_imu(imu) DEV_BMI088_LoadBias_CMockReturnMemThruPtr_imu(__LINE__, imu, sizeof(DEV_BMI088_s))
+#define DEV_BMI088_LoadBias_ReturnArrayThruPtr_imu(imu, cmock_len) DEV_BMI088_LoadBias_CMockReturnMemThruPtr_imu(__LINE__, imu, (cmock_len * sizeof(*imu)))
+#define DEV_BMI088_LoadBias_ReturnMemThruPtr_imu(imu, cmock_size) DEV_BMI088_LoadBias_CMockReturnMemThruPtr_imu(__LINE__, imu, (cmock_size))
+void DEV_BMI088_LoadBias_CMockReturnMemThruPtr_imu(UNITY_LINE_TYPE cmock_line, DEV_BMI088_s const* imu, size_t cmock_size);
+#define DEV_BMI088_LoadBias_ReturnThruPtr_flash(flash) DEV_BMI088_LoadBias_CMockReturnMemThruPtr_flash(__LINE__, flash, sizeof(Flash_Instance_s))
+#define DEV_BMI088_LoadBias_ReturnArrayThruPtr_flash(flash, cmock_len) DEV_BMI088_LoadBias_CMockReturnMemThruPtr_flash(__LINE__, flash, (cmock_len * sizeof(*flash)))
+#define DEV_BMI088_LoadBias_ReturnMemThruPtr_flash(flash, cmock_size) DEV_BMI088_LoadBias_CMockReturnMemThruPtr_flash(__LINE__, flash, (cmock_size))
+void DEV_BMI088_LoadBias_CMockReturnMemThruPtr_flash(UNITY_LINE_TYPE cmock_line, Flash_Instance_s const* flash, size_t cmock_size);
+#define DEV_BMI088_LoadBias_IgnoreArg_imu() DEV_BMI088_LoadBias_CMockIgnoreArg_imu(__LINE__)
+void DEV_BMI088_LoadBias_CMockIgnoreArg_imu(UNITY_LINE_TYPE cmock_line);
+#define DEV_BMI088_LoadBias_IgnoreArg_flash() DEV_BMI088_LoadBias_CMockIgnoreArg_flash(__LINE__)
+void DEV_BMI088_LoadBias_CMockIgnoreArg_flash(UNITY_LINE_TYPE cmock_line);
+#define DEV_BMI088_LoadBias_IgnoreArg_off() DEV_BMI088_LoadBias_CMockIgnoreArg_off(__LINE__)
+void DEV_BMI088_LoadBias_CMockIgnoreArg_off(UNITY_LINE_TYPE cmock_line);
 #define DEV_Watchdog_Register_Ignore() TEST_FAIL_MESSAGE("DEV_Watchdog_Register requires _IgnoreAndReturn");
 #define DEV_Watchdog_Register_IgnoreAndReturn(cmock_retval) DEV_Watchdog_Register_CMockIgnoreAndReturn(__LINE__, cmock_retval)
 void DEV_Watchdog_Register_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return);
@@ -278,6 +351,30 @@ int PLAT_DWT_GetTick_CallCount(void);
 void PLAT_DWT_GetTick_CMockReturnMemThruPtr_dwt(UNITY_LINE_TYPE cmock_line, DWT_Instance_s const* dwt, size_t cmock_size);
 #define PLAT_DWT_GetTick_IgnoreArg_dwt() PLAT_DWT_GetTick_CMockIgnoreArg_dwt(__LINE__)
 void PLAT_DWT_GetTick_CMockIgnoreArg_dwt(UNITY_LINE_TYPE cmock_line);
+#define PLAT_DWT_Delay_ms_IgnoreAndReturn(cmock_retval) TEST_FAIL_MESSAGE("PLAT_DWT_Delay_ms requires _Ignore (not AndReturn)");
+#define PLAT_DWT_Delay_ms_Ignore() PLAT_DWT_Delay_ms_CMockIgnore()
+void PLAT_DWT_Delay_ms_CMockIgnore(void);
+#define PLAT_DWT_Delay_ms_StopIgnore() PLAT_DWT_Delay_ms_CMockStopIgnore()
+void PLAT_DWT_Delay_ms_CMockStopIgnore(void);
+#define PLAT_DWT_Delay_ms_ExpectAnyArgsAndReturn(cmock_retval) TEST_FAIL_MESSAGE("PLAT_DWT_Delay_ms requires _ExpectAnyArgs (not AndReturn)");
+#define PLAT_DWT_Delay_ms_ExpectAnyArgs() PLAT_DWT_Delay_ms_CMockExpectAnyArgs(__LINE__)
+void PLAT_DWT_Delay_ms_CMockExpectAnyArgs(UNITY_LINE_TYPE cmock_line);
+#define PLAT_DWT_Delay_ms_ExpectAndReturn(dwt, ms, cmock_retval) TEST_FAIL_MESSAGE("PLAT_DWT_Delay_ms requires _Expect (not AndReturn)");
+#define PLAT_DWT_Delay_ms_Expect(dwt, ms) PLAT_DWT_Delay_ms_CMockExpect(__LINE__, dwt, ms)
+void PLAT_DWT_Delay_ms_CMockExpect(UNITY_LINE_TYPE cmock_line, DWT_Instance_s* dwt, uint32_t ms);
+typedef void (* CMOCK_PLAT_DWT_Delay_ms_CALLBACK)(DWT_Instance_s* dwt, uint32_t ms, int cmock_num_calls);
+void PLAT_DWT_Delay_ms_AddCallback(CMOCK_PLAT_DWT_Delay_ms_CALLBACK Callback);
+void PLAT_DWT_Delay_ms_Stub(CMOCK_PLAT_DWT_Delay_ms_CALLBACK Callback);
+#define PLAT_DWT_Delay_ms_StubWithCallback PLAT_DWT_Delay_ms_Stub
+int PLAT_DWT_Delay_ms_CallCount(void);
+#define PLAT_DWT_Delay_ms_ReturnThruPtr_dwt(dwt) PLAT_DWT_Delay_ms_CMockReturnMemThruPtr_dwt(__LINE__, dwt, sizeof(DWT_Instance_s))
+#define PLAT_DWT_Delay_ms_ReturnArrayThruPtr_dwt(dwt, cmock_len) PLAT_DWT_Delay_ms_CMockReturnMemThruPtr_dwt(__LINE__, dwt, (cmock_len * sizeof(*dwt)))
+#define PLAT_DWT_Delay_ms_ReturnMemThruPtr_dwt(dwt, cmock_size) PLAT_DWT_Delay_ms_CMockReturnMemThruPtr_dwt(__LINE__, dwt, (cmock_size))
+void PLAT_DWT_Delay_ms_CMockReturnMemThruPtr_dwt(UNITY_LINE_TYPE cmock_line, DWT_Instance_s const* dwt, size_t cmock_size);
+#define PLAT_DWT_Delay_ms_IgnoreArg_dwt() PLAT_DWT_Delay_ms_CMockIgnoreArg_dwt(__LINE__)
+void PLAT_DWT_Delay_ms_CMockIgnoreArg_dwt(UNITY_LINE_TYPE cmock_line);
+#define PLAT_DWT_Delay_ms_IgnoreArg_ms() PLAT_DWT_Delay_ms_CMockIgnoreArg_ms(__LINE__)
+void PLAT_DWT_Delay_ms_CMockIgnoreArg_ms(UNITY_LINE_TYPE cmock_line);
 #define PLAT_DWT_GetDeltaT_Ignore() TEST_FAIL_MESSAGE("PLAT_DWT_GetDeltaT requires _IgnoreAndReturn");
 #define PLAT_DWT_GetDeltaT_IgnoreAndReturn(cmock_retval) PLAT_DWT_GetDeltaT_CMockIgnoreAndReturn(__LINE__, cmock_retval)
 void PLAT_DWT_GetDeltaT_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, float cmock_to_return);

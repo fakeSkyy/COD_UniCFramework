@@ -80,11 +80,14 @@ add_executable(integration_imu_bmi088_spi_dwt
     ${APP}/imu/app_imu.c
     ${APP}/telemetry/app_telemetry.c
     ${DEV}/dev_bmi088/dev_bmi088.c
+    ${DEV}/dev_bmi088/dev_bmi088_store.c
     ${DEV}/dev_watchdog/dev_watchdog.c
     ${PLAT}/bsp/spi/plat_spi.c
     ${PLAT}/bsp/dwt/plat_dwt.c
+    ${PLAT}/bsp/flash/plat_flash.c
     ${PLAT}/bsp/uart/plat_uart.c
     ${UTIL}/util_ahrs/util_ahrs.c
+    ${UTIL}/util_crc/util_crc.c
     ${UTIL}/util_kf/util_kf.c
     ${UTIL}/util_fast_math/util_fast_math.c
     ${UTIL}/util_ringbuf/util_ringbuf.c

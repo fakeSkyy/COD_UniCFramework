@@ -7,6 +7,7 @@
 #ifndef IMU_CONTRACT_H
 #define IMU_CONTRACT_H
 #include "plat_dwt.h"
+#include "plat_flash.h"
 #include "plat_pwm.h"
 #include "plat_spi.h"
 #include "plat_task.h"
@@ -17,6 +18,7 @@ SPI_Instance_s*  Board_ImuGyro(void);
 DWT_Instance_s*  Board_Timebase(void);
 UART_Instance_s* Board_DebugUart(void);
 PWM_Instance_s*  Board_ImuHeater(void);
+Flash_Instance_s* Board_ParamFlash(void);
 bool PLAT_Task_Create(Task_s* task, PLAT_Task_Entry entry, void* arg, const char* name, void* stack,
                       size_t stack_bytes, uint8_t priority);
 uint32_t PLAT_Task_TickNow(void);

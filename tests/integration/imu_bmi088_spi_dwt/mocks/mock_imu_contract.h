@@ -93,6 +93,19 @@ void Board_ImuHeater_AddCallback(CMOCK_Board_ImuHeater_CALLBACK Callback);
 void Board_ImuHeater_Stub(CMOCK_Board_ImuHeater_CALLBACK Callback);
 #define Board_ImuHeater_StubWithCallback Board_ImuHeater_Stub
 int Board_ImuHeater_CallCount(void);
+#define Board_ParamFlash_Ignore() TEST_FAIL_MESSAGE("Board_ParamFlash requires _IgnoreAndReturn");
+#define Board_ParamFlash_IgnoreAndReturn(cmock_retval) Board_ParamFlash_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void Board_ParamFlash_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, Flash_Instance_s* cmock_to_return);
+#define Board_ParamFlash_StopIgnore() Board_ParamFlash_CMockStopIgnore()
+void Board_ParamFlash_CMockStopIgnore(void);
+#define Board_ParamFlash_Expect() TEST_FAIL_MESSAGE("Board_ParamFlash requires _ExpectAndReturn");
+#define Board_ParamFlash_ExpectAndReturn(cmock_retval) Board_ParamFlash_CMockExpectAndReturn(__LINE__, cmock_retval)
+void Board_ParamFlash_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, Flash_Instance_s* cmock_to_return);
+typedef Flash_Instance_s* (* CMOCK_Board_ParamFlash_CALLBACK)(int cmock_num_calls);
+void Board_ParamFlash_AddCallback(CMOCK_Board_ParamFlash_CALLBACK Callback);
+void Board_ParamFlash_Stub(CMOCK_Board_ParamFlash_CALLBACK Callback);
+#define Board_ParamFlash_StubWithCallback Board_ParamFlash_Stub
+int Board_ParamFlash_CallCount(void);
 #define PLAT_Task_Create_Ignore() TEST_FAIL_MESSAGE("PLAT_Task_Create requires _IgnoreAndReturn");
 #define PLAT_Task_Create_IgnoreAndReturn(cmock_retval) PLAT_Task_Create_CMockIgnoreAndReturn(__LINE__, cmock_retval)
 void PLAT_Task_Create_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return);

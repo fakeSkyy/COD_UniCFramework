@@ -9,6 +9,8 @@
 #define IMU_DEPS_H
 
 #include "dev_bmi088.h"
+#include "dev_bmi088_store.h"
+#include "plat_flash.h"
 #include "plat_pwm.h"
 #include "plat_task.h"
 #include "util_ahrs.h"
@@ -18,14 +20,18 @@ SPI_Instance_s*     Board_ImuAccel(void);
 SPI_Instance_s*     Board_ImuGyro(void);
 DWT_Instance_s*     Board_Timebase(void);
 PWM_Instance_s*     Board_ImuHeater(void);
+Flash_Instance_s*   Board_ParamFlash(void);
 DEV_BMI088_Status_e DEV_BMI088_Init(DEV_BMI088_s* imu, const DEV_BMI088_Cfg_s* cfg);
 bool                DEV_BMI088_CalibrateGyro(DEV_BMI088_s* imu, uint16_t samples);
 bool                DEV_BMI088_Read(DEV_BMI088_s* imu);
+bool                DEV_BMI088_SaveBias(DEV_BMI088_s* imu, Flash_Instance_s* flash, uint32_t off);
+bool                DEV_BMI088_LoadBias(DEV_BMI088_s* imu, Flash_Instance_s* flash, uint32_t off);
 bool                DEV_Watchdog_Register(DEV_Watchdog_s* wd, const char* name);
 bool                UTIL_AHRS_Init(UTIL_AHRS_s* ahrs, float* buf, float gravity);
 bool                UTIL_AHRS_AlignToAccel(UTIL_AHRS_s* ahrs, const float* accel);
 bool     UTIL_AHRS_Update(UTIL_AHRS_s* ahrs, const float* gyro, const float* accel, float dt_s);
 uint32_t PLAT_DWT_GetTick(DWT_Instance_s* dwt);
+void     PLAT_DWT_Delay_ms(DWT_Instance_s* dwt, uint32_t ms);
 float    PLAT_DWT_GetDeltaT(DWT_Instance_s* dwt, uint32_t* tick_last);
 bool     App_Telemetry_Init(void);
 void     App_Telemetry_Step(float roll, float pitch, float yaw, const float* rate, float temp);

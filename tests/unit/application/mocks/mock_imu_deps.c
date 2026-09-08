@@ -11,11 +11,15 @@ static const char* CMockString_App_Telemetry_Step = "App_Telemetry_Step";
 static const char* CMockString_Board_ImuAccel = "Board_ImuAccel";
 static const char* CMockString_Board_ImuGyro = "Board_ImuGyro";
 static const char* CMockString_Board_ImuHeater = "Board_ImuHeater";
+static const char* CMockString_Board_ParamFlash = "Board_ParamFlash";
 static const char* CMockString_Board_Timebase = "Board_Timebase";
 static const char* CMockString_DEV_BMI088_CalibrateGyro = "DEV_BMI088_CalibrateGyro";
 static const char* CMockString_DEV_BMI088_Init = "DEV_BMI088_Init";
+static const char* CMockString_DEV_BMI088_LoadBias = "DEV_BMI088_LoadBias";
 static const char* CMockString_DEV_BMI088_Read = "DEV_BMI088_Read";
+static const char* CMockString_DEV_BMI088_SaveBias = "DEV_BMI088_SaveBias";
 static const char* CMockString_DEV_Watchdog_Register = "DEV_Watchdog_Register";
+static const char* CMockString_PLAT_DWT_Delay_ms = "PLAT_DWT_Delay_ms";
 static const char* CMockString_PLAT_DWT_GetDeltaT = "PLAT_DWT_GetDeltaT";
 static const char* CMockString_PLAT_DWT_GetTick = "PLAT_DWT_GetTick";
 static const char* CMockString_PLAT_PWM_SetDutyPercent = "PLAT_PWM_SetDutyPercent";
@@ -36,12 +40,15 @@ static const char* CMockString_code = "code";
 static const char* CMockString_dt_s = "dt_s";
 static const char* CMockString_dwt = "dwt";
 static const char* CMockString_entry = "entry";
+static const char* CMockString_flash = "flash";
 static const char* CMockString_fmt = "fmt";
 static const char* CMockString_gravity = "gravity";
 static const char* CMockString_gyro = "gyro";
 static const char* CMockString_imu = "imu";
 static const char* CMockString_level = "level";
+static const char* CMockString_ms = "ms";
 static const char* CMockString_name = "name";
+static const char* CMockString_off = "off";
 static const char* CMockString_percent = "percent";
 static const char* CMockString_period_ms = "period_ms";
 static const char* CMockString_pitch = "pitch";
@@ -96,6 +103,15 @@ typedef struct _CMOCK_Board_ImuHeater_CALL_INSTANCE
 
 } CMOCK_Board_ImuHeater_CALL_INSTANCE;
 
+typedef struct _CMOCK_Board_ParamFlash_CALL_INSTANCE
+{
+  UNITY_LINE_TYPE LineNumber;
+  char ExpectAnyArgsBool;
+  Flash_Instance_s* ReturnVal;
+  int CallOrder;
+
+} CMOCK_Board_ParamFlash_CALL_INSTANCE;
+
 typedef struct _CMOCK_DEV_BMI088_Init_CALL_INSTANCE
 {
   UNITY_LINE_TYPE LineNumber;
@@ -141,6 +157,48 @@ typedef struct _CMOCK_DEV_BMI088_Read_CALL_INSTANCE
   char IgnoreArg_imu;
 
 } CMOCK_DEV_BMI088_Read_CALL_INSTANCE;
+
+typedef struct _CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE
+{
+  UNITY_LINE_TYPE LineNumber;
+  char ExpectAnyArgsBool;
+  bool ReturnVal;
+  int CallOrder;
+  DEV_BMI088_s* Expected_imu;
+  Flash_Instance_s* Expected_flash;
+  uint32_t Expected_off;
+  char ReturnThruPtr_imu_Used;
+  DEV_BMI088_s const* ReturnThruPtr_imu_Val;
+  size_t ReturnThruPtr_imu_Size;
+  char ReturnThruPtr_flash_Used;
+  Flash_Instance_s const* ReturnThruPtr_flash_Val;
+  size_t ReturnThruPtr_flash_Size;
+  char IgnoreArg_imu;
+  char IgnoreArg_flash;
+  char IgnoreArg_off;
+
+} CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE;
+
+typedef struct _CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE
+{
+  UNITY_LINE_TYPE LineNumber;
+  char ExpectAnyArgsBool;
+  bool ReturnVal;
+  int CallOrder;
+  DEV_BMI088_s* Expected_imu;
+  Flash_Instance_s* Expected_flash;
+  uint32_t Expected_off;
+  char ReturnThruPtr_imu_Used;
+  DEV_BMI088_s const* ReturnThruPtr_imu_Val;
+  size_t ReturnThruPtr_imu_Size;
+  char ReturnThruPtr_flash_Used;
+  Flash_Instance_s const* ReturnThruPtr_flash_Val;
+  size_t ReturnThruPtr_flash_Size;
+  char IgnoreArg_imu;
+  char IgnoreArg_flash;
+  char IgnoreArg_off;
+
+} CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE;
 
 typedef struct _CMOCK_DEV_Watchdog_Register_CALL_INSTANCE
 {
@@ -228,6 +286,21 @@ typedef struct _CMOCK_PLAT_DWT_GetTick_CALL_INSTANCE
   char IgnoreArg_dwt;
 
 } CMOCK_PLAT_DWT_GetTick_CALL_INSTANCE;
+
+typedef struct _CMOCK_PLAT_DWT_Delay_ms_CALL_INSTANCE
+{
+  UNITY_LINE_TYPE LineNumber;
+  char ExpectAnyArgsBool;
+  int CallOrder;
+  DWT_Instance_s* Expected_dwt;
+  uint32_t Expected_ms;
+  char ReturnThruPtr_dwt_Used;
+  DWT_Instance_s const* ReturnThruPtr_dwt_Val;
+  size_t ReturnThruPtr_dwt_Size;
+  char IgnoreArg_dwt;
+  char IgnoreArg_ms;
+
+} CMOCK_PLAT_DWT_Delay_ms_CALL_INSTANCE;
 
 typedef struct _CMOCK_PLAT_DWT_GetDeltaT_CALL_INSTANCE
 {
@@ -411,6 +484,12 @@ static struct mock_imu_depsInstance
   CMOCK_Board_ImuHeater_CALLBACK Board_ImuHeater_CallbackFunctionPointer;
   int Board_ImuHeater_CallbackCalls;
   CMOCK_MEM_INDEX_TYPE Board_ImuHeater_CallInstance;
+  char Board_ParamFlash_IgnoreBool;
+  Flash_Instance_s* Board_ParamFlash_FinalReturn;
+  char Board_ParamFlash_CallbackBool;
+  CMOCK_Board_ParamFlash_CALLBACK Board_ParamFlash_CallbackFunctionPointer;
+  int Board_ParamFlash_CallbackCalls;
+  CMOCK_MEM_INDEX_TYPE Board_ParamFlash_CallInstance;
   char DEV_BMI088_Init_IgnoreBool;
   DEV_BMI088_Status_e DEV_BMI088_Init_FinalReturn;
   char DEV_BMI088_Init_CallbackBool;
@@ -429,6 +508,18 @@ static struct mock_imu_depsInstance
   CMOCK_DEV_BMI088_Read_CALLBACK DEV_BMI088_Read_CallbackFunctionPointer;
   int DEV_BMI088_Read_CallbackCalls;
   CMOCK_MEM_INDEX_TYPE DEV_BMI088_Read_CallInstance;
+  char DEV_BMI088_SaveBias_IgnoreBool;
+  bool DEV_BMI088_SaveBias_FinalReturn;
+  char DEV_BMI088_SaveBias_CallbackBool;
+  CMOCK_DEV_BMI088_SaveBias_CALLBACK DEV_BMI088_SaveBias_CallbackFunctionPointer;
+  int DEV_BMI088_SaveBias_CallbackCalls;
+  CMOCK_MEM_INDEX_TYPE DEV_BMI088_SaveBias_CallInstance;
+  char DEV_BMI088_LoadBias_IgnoreBool;
+  bool DEV_BMI088_LoadBias_FinalReturn;
+  char DEV_BMI088_LoadBias_CallbackBool;
+  CMOCK_DEV_BMI088_LoadBias_CALLBACK DEV_BMI088_LoadBias_CallbackFunctionPointer;
+  int DEV_BMI088_LoadBias_CallbackCalls;
+  CMOCK_MEM_INDEX_TYPE DEV_BMI088_LoadBias_CallInstance;
   char DEV_Watchdog_Register_IgnoreBool;
   bool DEV_Watchdog_Register_FinalReturn;
   char DEV_Watchdog_Register_CallbackBool;
@@ -459,6 +550,11 @@ static struct mock_imu_depsInstance
   CMOCK_PLAT_DWT_GetTick_CALLBACK PLAT_DWT_GetTick_CallbackFunctionPointer;
   int PLAT_DWT_GetTick_CallbackCalls;
   CMOCK_MEM_INDEX_TYPE PLAT_DWT_GetTick_CallInstance;
+  char PLAT_DWT_Delay_ms_IgnoreBool;
+  char PLAT_DWT_Delay_ms_CallbackBool;
+  CMOCK_PLAT_DWT_Delay_ms_CALLBACK PLAT_DWT_Delay_ms_CallbackFunctionPointer;
+  int PLAT_DWT_Delay_ms_CallbackCalls;
+  CMOCK_MEM_INDEX_TYPE PLAT_DWT_Delay_ms_CallInstance;
   char PLAT_DWT_GetDeltaT_IgnoreBool;
   float PLAT_DWT_GetDeltaT_FinalReturn;
   char PLAT_DWT_GetDeltaT_CallbackBool;
@@ -576,6 +672,19 @@ void mock_imu_deps_Verify(void)
     call_instance = CMOCK_GUTS_NONE;
     (void)call_instance;
   }
+  call_instance = Mock.Board_ParamFlash_CallInstance;
+  if (Mock.Board_ParamFlash_IgnoreBool)
+    call_instance = CMOCK_GUTS_NONE;
+  if (CMOCK_GUTS_NONE != call_instance)
+  {
+    UNITY_SET_DETAIL(CMockString_Board_ParamFlash);
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
+  }
+  if (Mock.Board_ParamFlash_CallbackFunctionPointer != NULL)
+  {
+    call_instance = CMOCK_GUTS_NONE;
+    (void)call_instance;
+  }
   call_instance = Mock.DEV_BMI088_Init_CallInstance;
   if (Mock.DEV_BMI088_Init_IgnoreBool)
     call_instance = CMOCK_GUTS_NONE;
@@ -611,6 +720,32 @@ void mock_imu_deps_Verify(void)
     UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
   }
   if (Mock.DEV_BMI088_Read_CallbackFunctionPointer != NULL)
+  {
+    call_instance = CMOCK_GUTS_NONE;
+    (void)call_instance;
+  }
+  call_instance = Mock.DEV_BMI088_SaveBias_CallInstance;
+  if (Mock.DEV_BMI088_SaveBias_IgnoreBool)
+    call_instance = CMOCK_GUTS_NONE;
+  if (CMOCK_GUTS_NONE != call_instance)
+  {
+    UNITY_SET_DETAIL(CMockString_DEV_BMI088_SaveBias);
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
+  }
+  if (Mock.DEV_BMI088_SaveBias_CallbackFunctionPointer != NULL)
+  {
+    call_instance = CMOCK_GUTS_NONE;
+    (void)call_instance;
+  }
+  call_instance = Mock.DEV_BMI088_LoadBias_CallInstance;
+  if (Mock.DEV_BMI088_LoadBias_IgnoreBool)
+    call_instance = CMOCK_GUTS_NONE;
+  if (CMOCK_GUTS_NONE != call_instance)
+  {
+    UNITY_SET_DETAIL(CMockString_DEV_BMI088_LoadBias);
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
+  }
+  if (Mock.DEV_BMI088_LoadBias_CallbackFunctionPointer != NULL)
   {
     call_instance = CMOCK_GUTS_NONE;
     (void)call_instance;
@@ -676,6 +811,19 @@ void mock_imu_deps_Verify(void)
     UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
   }
   if (Mock.PLAT_DWT_GetTick_CallbackFunctionPointer != NULL)
+  {
+    call_instance = CMOCK_GUTS_NONE;
+    (void)call_instance;
+  }
+  call_instance = Mock.PLAT_DWT_Delay_ms_CallInstance;
+  if (Mock.PLAT_DWT_Delay_ms_IgnoreBool)
+    call_instance = CMOCK_GUTS_NONE;
+  if (CMOCK_GUTS_NONE != call_instance)
+  {
+    UNITY_SET_DETAIL(CMockString_PLAT_DWT_Delay_ms);
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
+  }
+  if (Mock.PLAT_DWT_Delay_ms_CallbackFunctionPointer != NULL)
   {
     call_instance = CMOCK_GUTS_NONE;
     (void)call_instance;
@@ -1195,6 +1343,99 @@ void Board_ImuHeater_Stub(CMOCK_Board_ImuHeater_CALLBACK Callback)
   Mock.Board_ImuHeater_CallbackBool = (char)0;
   Mock.Board_ImuHeater_CallbackCalls = 0;
   Mock.Board_ImuHeater_CallbackFunctionPointer = Callback;
+}
+
+Flash_Instance_s* Board_ParamFlash(void)
+{
+  UNITY_LINE_TYPE cmock_line = TEST_LINE_NUM;
+  CMOCK_Board_ParamFlash_CALL_INSTANCE* cmock_call_instance;
+  UNITY_SET_DETAIL(CMockString_Board_ParamFlash);
+  cmock_call_instance = (CMOCK_Board_ParamFlash_CALL_INSTANCE*)CMock_Guts_GetAddressFor(Mock.Board_ParamFlash_CallInstance);
+  Mock.Board_ParamFlash_CallInstance = CMock_Guts_MemNext(Mock.Board_ParamFlash_CallInstance);
+  if (Mock.Board_ParamFlash_IgnoreBool)
+  {
+    UNITY_CLR_DETAILS();
+    if (cmock_call_instance == NULL)
+      return Mock.Board_ParamFlash_FinalReturn;
+    Mock.Board_ParamFlash_FinalReturn = cmock_call_instance->ReturnVal;
+    return cmock_call_instance->ReturnVal;
+  }
+  if (!Mock.Board_ParamFlash_CallbackBool &&
+      Mock.Board_ParamFlash_CallbackFunctionPointer != NULL)
+  {
+    Flash_Instance_s* cmock_cb_ret = Mock.Board_ParamFlash_CallbackFunctionPointer(Mock.Board_ParamFlash_CallbackCalls++);
+    UNITY_CLR_DETAILS();
+    return cmock_cb_ret;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringCalledMore);
+  cmock_line = cmock_call_instance->LineNumber;
+  if (cmock_call_instance->CallOrder > ++GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledEarly);
+  if (cmock_call_instance->CallOrder < GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLate);
+  if (Mock.Board_ParamFlash_CallbackFunctionPointer != NULL)
+  {
+    UNITY_SET_DETAIL(CMockString_Board_ParamFlash);
+    cmock_call_instance->ReturnVal = Mock.Board_ParamFlash_CallbackFunctionPointer(Mock.Board_ParamFlash_CallbackCalls++);
+  }
+  UNITY_CLR_DETAILS();
+  return cmock_call_instance->ReturnVal;
+}
+
+void Board_ParamFlash_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, Flash_Instance_s* cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_Board_ParamFlash_CALL_INSTANCE));
+  CMOCK_Board_ParamFlash_CALL_INSTANCE* cmock_call_instance = (CMOCK_Board_ParamFlash_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.Board_ParamFlash_CallInstance = CMock_Guts_MemChain(Mock.Board_ParamFlash_CallInstance, cmock_guts_index);
+  Mock.Board_ParamFlash_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+  Mock.Board_ParamFlash_IgnoreBool = (char)1;
+}
+
+void Board_ParamFlash_CMockStopIgnore(void)
+{
+  if(Mock.Board_ParamFlash_IgnoreBool)
+    Mock.Board_ParamFlash_CallInstance = CMock_Guts_MemNext(Mock.Board_ParamFlash_CallInstance);
+  Mock.Board_ParamFlash_IgnoreBool = (char)0;
+}
+
+void Board_ParamFlash_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, Flash_Instance_s* cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_Board_ParamFlash_CALL_INSTANCE));
+  CMOCK_Board_ParamFlash_CALL_INSTANCE* cmock_call_instance = (CMOCK_Board_ParamFlash_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.Board_ParamFlash_CallInstance = CMock_Guts_MemChain(Mock.Board_ParamFlash_CallInstance, cmock_guts_index);
+  Mock.Board_ParamFlash_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+}
+
+void Board_ParamFlash_AddCallback(CMOCK_Board_ParamFlash_CALLBACK Callback)
+{
+  Mock.Board_ParamFlash_IgnoreBool = (char)0;
+  Mock.Board_ParamFlash_CallbackBool = (char)1;
+  Mock.Board_ParamFlash_CallbackCalls = 0;
+  Mock.Board_ParamFlash_CallbackFunctionPointer = Callback;
+}
+
+int Board_ParamFlash_CallCount(void)
+{
+  return Mock.Board_ParamFlash_CallbackCalls;
+}
+
+void Board_ParamFlash_Stub(CMOCK_Board_ParamFlash_CALLBACK Callback)
+{
+  Mock.Board_ParamFlash_IgnoreBool = (char)0;
+  Mock.Board_ParamFlash_CallbackBool = (char)0;
+  Mock.Board_ParamFlash_CallbackCalls = 0;
+  Mock.Board_ParamFlash_CallbackFunctionPointer = Callback;
 }
 
 DEV_BMI088_Status_e DEV_BMI088_Init(DEV_BMI088_s* imu, const DEV_BMI088_Cfg_s* cfg)
@@ -1726,6 +1967,468 @@ void DEV_BMI088_Read_CMockIgnoreArg_imu(UNITY_LINE_TYPE cmock_line)
   CMOCK_DEV_BMI088_Read_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_BMI088_Read_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.DEV_BMI088_Read_CallInstance));
   UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
   cmock_call_instance->IgnoreArg_imu = 1;
+}
+
+bool DEV_BMI088_SaveBias(DEV_BMI088_s* imu, Flash_Instance_s* flash, uint32_t off)
+{
+  UNITY_LINE_TYPE cmock_line = TEST_LINE_NUM;
+  CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE* cmock_call_instance;
+  UNITY_SET_DETAIL(CMockString_DEV_BMI088_SaveBias);
+  cmock_call_instance = (CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE*)CMock_Guts_GetAddressFor(Mock.DEV_BMI088_SaveBias_CallInstance);
+  Mock.DEV_BMI088_SaveBias_CallInstance = CMock_Guts_MemNext(Mock.DEV_BMI088_SaveBias_CallInstance);
+  if (Mock.DEV_BMI088_SaveBias_IgnoreBool && cmock_call_instance != NULL &&
+      cmock_call_instance->ReturnThruPtr_imu_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(imu, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)imu, (const void*)cmock_call_instance->ReturnThruPtr_imu_Val,
+      cmock_call_instance->ReturnThruPtr_imu_Size);
+  }
+  if (Mock.DEV_BMI088_SaveBias_IgnoreBool && cmock_call_instance != NULL &&
+      cmock_call_instance->ReturnThruPtr_flash_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(flash, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)flash, (const void*)cmock_call_instance->ReturnThruPtr_flash_Val,
+      cmock_call_instance->ReturnThruPtr_flash_Size);
+  }
+  if (Mock.DEV_BMI088_SaveBias_IgnoreBool)
+  {
+    UNITY_CLR_DETAILS();
+    if (cmock_call_instance == NULL)
+      return Mock.DEV_BMI088_SaveBias_FinalReturn;
+    Mock.DEV_BMI088_SaveBias_FinalReturn = cmock_call_instance->ReturnVal;
+    return cmock_call_instance->ReturnVal;
+  }
+  if (!Mock.DEV_BMI088_SaveBias_CallbackBool &&
+      Mock.DEV_BMI088_SaveBias_CallbackFunctionPointer != NULL)
+  {
+    bool cmock_cb_ret = Mock.DEV_BMI088_SaveBias_CallbackFunctionPointer(imu, flash, off, Mock.DEV_BMI088_SaveBias_CallbackCalls++);
+    UNITY_CLR_DETAILS();
+    return cmock_cb_ret;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringCalledMore);
+  cmock_line = cmock_call_instance->LineNumber;
+  if (cmock_call_instance->CallOrder > ++GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledEarly);
+  if (cmock_call_instance->CallOrder < GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLate);
+  if (!cmock_call_instance->ExpectAnyArgsBool)
+  {
+  if (!cmock_call_instance->IgnoreArg_imu)
+  {
+    UNITY_SET_DETAILS(CMockString_DEV_BMI088_SaveBias,CMockString_imu);
+    UNITY_TEST_ASSERT_EQUAL_MEMORY(cmock_call_instance->Expected_imu, imu, sizeof(DEV_BMI088_s), cmock_line, CMockStringMismatch);
+  }
+  if (!cmock_call_instance->IgnoreArg_flash)
+  {
+    UNITY_SET_DETAILS(CMockString_DEV_BMI088_SaveBias,CMockString_flash);
+    UNITY_TEST_ASSERT_EQUAL_MEMORY(cmock_call_instance->Expected_flash, flash, sizeof(Flash_Instance_s), cmock_line, CMockStringMismatch);
+  }
+  if (!cmock_call_instance->IgnoreArg_off)
+  {
+    UNITY_SET_DETAILS(CMockString_DEV_BMI088_SaveBias,CMockString_off);
+    UNITY_TEST_ASSERT_EQUAL_HEX32(cmock_call_instance->Expected_off, off, cmock_line, CMockStringMismatch);
+  }
+  }
+  if (Mock.DEV_BMI088_SaveBias_CallbackFunctionPointer != NULL)
+  {
+    UNITY_SET_DETAIL(CMockString_DEV_BMI088_SaveBias);
+    cmock_call_instance->ReturnVal = Mock.DEV_BMI088_SaveBias_CallbackFunctionPointer(imu, flash, off, Mock.DEV_BMI088_SaveBias_CallbackCalls++);
+  }
+  if (cmock_call_instance->ReturnThruPtr_imu_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(imu, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)imu, (const void*)cmock_call_instance->ReturnThruPtr_imu_Val,
+      cmock_call_instance->ReturnThruPtr_imu_Size);
+  }
+  if (cmock_call_instance->ReturnThruPtr_flash_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(flash, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)flash, (const void*)cmock_call_instance->ReturnThruPtr_flash_Val,
+      cmock_call_instance->ReturnThruPtr_flash_Size);
+  }
+  UNITY_CLR_DETAILS();
+  return cmock_call_instance->ReturnVal;
+}
+
+void CMockExpectParameters_DEV_BMI088_SaveBias(CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE* cmock_call_instance, DEV_BMI088_s* imu, Flash_Instance_s* flash, uint32_t off);
+void CMockExpectParameters_DEV_BMI088_SaveBias(CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE* cmock_call_instance, DEV_BMI088_s* imu, Flash_Instance_s* flash, uint32_t off)
+{
+  cmock_call_instance->Expected_imu = imu;
+  cmock_call_instance->IgnoreArg_imu = 0;
+  cmock_call_instance->ReturnThruPtr_imu_Used = 0;
+  cmock_call_instance->Expected_flash = flash;
+  cmock_call_instance->IgnoreArg_flash = 0;
+  cmock_call_instance->ReturnThruPtr_flash_Used = 0;
+  cmock_call_instance->Expected_off = off;
+  cmock_call_instance->IgnoreArg_off = 0;
+}
+
+void DEV_BMI088_SaveBias_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE));
+  CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.DEV_BMI088_SaveBias_CallInstance = CMock_Guts_MemChain(Mock.DEV_BMI088_SaveBias_CallInstance, cmock_guts_index);
+  Mock.DEV_BMI088_SaveBias_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+  Mock.DEV_BMI088_SaveBias_IgnoreBool = (char)1;
+}
+
+void DEV_BMI088_SaveBias_CMockStopIgnore(void)
+{
+  if(Mock.DEV_BMI088_SaveBias_IgnoreBool)
+    Mock.DEV_BMI088_SaveBias_CallInstance = CMock_Guts_MemNext(Mock.DEV_BMI088_SaveBias_CallInstance);
+  Mock.DEV_BMI088_SaveBias_IgnoreBool = (char)0;
+}
+
+void DEV_BMI088_SaveBias_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE));
+  CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.DEV_BMI088_SaveBias_CallInstance = CMock_Guts_MemChain(Mock.DEV_BMI088_SaveBias_CallInstance, cmock_guts_index);
+  Mock.DEV_BMI088_SaveBias_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+  cmock_call_instance->ExpectAnyArgsBool = (char)1;
+}
+
+void DEV_BMI088_SaveBias_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, DEV_BMI088_s* imu, Flash_Instance_s* flash, uint32_t off, bool cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE));
+  CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.DEV_BMI088_SaveBias_CallInstance = CMock_Guts_MemChain(Mock.DEV_BMI088_SaveBias_CallInstance, cmock_guts_index);
+  Mock.DEV_BMI088_SaveBias_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  CMockExpectParameters_DEV_BMI088_SaveBias(cmock_call_instance, imu, flash, off);
+  cmock_call_instance->ReturnVal = cmock_to_return;
+}
+
+void DEV_BMI088_SaveBias_AddCallback(CMOCK_DEV_BMI088_SaveBias_CALLBACK Callback)
+{
+  Mock.DEV_BMI088_SaveBias_IgnoreBool = (char)0;
+  Mock.DEV_BMI088_SaveBias_CallbackBool = (char)1;
+  Mock.DEV_BMI088_SaveBias_CallbackCalls = 0;
+  Mock.DEV_BMI088_SaveBias_CallbackFunctionPointer = Callback;
+}
+
+int DEV_BMI088_SaveBias_CallCount(void)
+{
+  return Mock.DEV_BMI088_SaveBias_CallbackCalls;
+}
+
+void DEV_BMI088_SaveBias_Stub(CMOCK_DEV_BMI088_SaveBias_CALLBACK Callback)
+{
+  Mock.DEV_BMI088_SaveBias_IgnoreBool = (char)0;
+  Mock.DEV_BMI088_SaveBias_CallbackBool = (char)0;
+  Mock.DEV_BMI088_SaveBias_CallbackCalls = 0;
+  Mock.DEV_BMI088_SaveBias_CallbackFunctionPointer = Callback;
+}
+
+void DEV_BMI088_SaveBias_CMockReturnMemThruPtr_imu(UNITY_LINE_TYPE cmock_line, DEV_BMI088_s const* imu, size_t cmock_size)
+{
+  CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.DEV_BMI088_SaveBias_CallInstance));
+  if (Mock.DEV_BMI088_SaveBias_IgnoreBool &&
+      (cmock_call_instance == NULL || cmock_call_instance->ReturnThruPtr_imu_Used))
+  {
+    CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE));
+    CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE* new_instance = (CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+    UNITY_TEST_ASSERT_NOT_NULL(new_instance, cmock_line, CMockStringOutOfMemory);
+    memset(new_instance, 0, sizeof(*new_instance));
+    new_instance->LineNumber = cmock_line;
+    if (cmock_call_instance != NULL)
+      new_instance->ReturnVal = cmock_call_instance->ReturnVal;
+    Mock.DEV_BMI088_SaveBias_CallInstance = CMock_Guts_MemChain(Mock.DEV_BMI088_SaveBias_CallInstance, cmock_guts_index);
+    cmock_call_instance = new_instance;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringPtrPreExp);
+  cmock_call_instance->ReturnThruPtr_imu_Used = 1;
+  cmock_call_instance->ReturnThruPtr_imu_Val = imu;
+  cmock_call_instance->ReturnThruPtr_imu_Size = cmock_size;
+}
+
+void DEV_BMI088_SaveBias_CMockReturnMemThruPtr_flash(UNITY_LINE_TYPE cmock_line, Flash_Instance_s const* flash, size_t cmock_size)
+{
+  CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.DEV_BMI088_SaveBias_CallInstance));
+  if (Mock.DEV_BMI088_SaveBias_IgnoreBool &&
+      (cmock_call_instance == NULL || cmock_call_instance->ReturnThruPtr_flash_Used))
+  {
+    CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE));
+    CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE* new_instance = (CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+    UNITY_TEST_ASSERT_NOT_NULL(new_instance, cmock_line, CMockStringOutOfMemory);
+    memset(new_instance, 0, sizeof(*new_instance));
+    new_instance->LineNumber = cmock_line;
+    if (cmock_call_instance != NULL)
+      new_instance->ReturnVal = cmock_call_instance->ReturnVal;
+    Mock.DEV_BMI088_SaveBias_CallInstance = CMock_Guts_MemChain(Mock.DEV_BMI088_SaveBias_CallInstance, cmock_guts_index);
+    cmock_call_instance = new_instance;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringPtrPreExp);
+  cmock_call_instance->ReturnThruPtr_flash_Used = 1;
+  cmock_call_instance->ReturnThruPtr_flash_Val = flash;
+  cmock_call_instance->ReturnThruPtr_flash_Size = cmock_size;
+}
+
+void DEV_BMI088_SaveBias_CMockIgnoreArg_imu(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.DEV_BMI088_SaveBias_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_imu = 1;
+}
+
+void DEV_BMI088_SaveBias_CMockIgnoreArg_flash(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.DEV_BMI088_SaveBias_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_flash = 1;
+}
+
+void DEV_BMI088_SaveBias_CMockIgnoreArg_off(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_BMI088_SaveBias_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.DEV_BMI088_SaveBias_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_off = 1;
+}
+
+bool DEV_BMI088_LoadBias(DEV_BMI088_s* imu, Flash_Instance_s* flash, uint32_t off)
+{
+  UNITY_LINE_TYPE cmock_line = TEST_LINE_NUM;
+  CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE* cmock_call_instance;
+  UNITY_SET_DETAIL(CMockString_DEV_BMI088_LoadBias);
+  cmock_call_instance = (CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE*)CMock_Guts_GetAddressFor(Mock.DEV_BMI088_LoadBias_CallInstance);
+  Mock.DEV_BMI088_LoadBias_CallInstance = CMock_Guts_MemNext(Mock.DEV_BMI088_LoadBias_CallInstance);
+  if (Mock.DEV_BMI088_LoadBias_IgnoreBool && cmock_call_instance != NULL &&
+      cmock_call_instance->ReturnThruPtr_imu_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(imu, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)imu, (const void*)cmock_call_instance->ReturnThruPtr_imu_Val,
+      cmock_call_instance->ReturnThruPtr_imu_Size);
+  }
+  if (Mock.DEV_BMI088_LoadBias_IgnoreBool && cmock_call_instance != NULL &&
+      cmock_call_instance->ReturnThruPtr_flash_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(flash, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)flash, (const void*)cmock_call_instance->ReturnThruPtr_flash_Val,
+      cmock_call_instance->ReturnThruPtr_flash_Size);
+  }
+  if (Mock.DEV_BMI088_LoadBias_IgnoreBool)
+  {
+    UNITY_CLR_DETAILS();
+    if (cmock_call_instance == NULL)
+      return Mock.DEV_BMI088_LoadBias_FinalReturn;
+    Mock.DEV_BMI088_LoadBias_FinalReturn = cmock_call_instance->ReturnVal;
+    return cmock_call_instance->ReturnVal;
+  }
+  if (!Mock.DEV_BMI088_LoadBias_CallbackBool &&
+      Mock.DEV_BMI088_LoadBias_CallbackFunctionPointer != NULL)
+  {
+    bool cmock_cb_ret = Mock.DEV_BMI088_LoadBias_CallbackFunctionPointer(imu, flash, off, Mock.DEV_BMI088_LoadBias_CallbackCalls++);
+    UNITY_CLR_DETAILS();
+    return cmock_cb_ret;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringCalledMore);
+  cmock_line = cmock_call_instance->LineNumber;
+  if (cmock_call_instance->CallOrder > ++GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledEarly);
+  if (cmock_call_instance->CallOrder < GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLate);
+  if (!cmock_call_instance->ExpectAnyArgsBool)
+  {
+  if (!cmock_call_instance->IgnoreArg_imu)
+  {
+    UNITY_SET_DETAILS(CMockString_DEV_BMI088_LoadBias,CMockString_imu);
+    UNITY_TEST_ASSERT_EQUAL_MEMORY(cmock_call_instance->Expected_imu, imu, sizeof(DEV_BMI088_s), cmock_line, CMockStringMismatch);
+  }
+  if (!cmock_call_instance->IgnoreArg_flash)
+  {
+    UNITY_SET_DETAILS(CMockString_DEV_BMI088_LoadBias,CMockString_flash);
+    UNITY_TEST_ASSERT_EQUAL_MEMORY(cmock_call_instance->Expected_flash, flash, sizeof(Flash_Instance_s), cmock_line, CMockStringMismatch);
+  }
+  if (!cmock_call_instance->IgnoreArg_off)
+  {
+    UNITY_SET_DETAILS(CMockString_DEV_BMI088_LoadBias,CMockString_off);
+    UNITY_TEST_ASSERT_EQUAL_HEX32(cmock_call_instance->Expected_off, off, cmock_line, CMockStringMismatch);
+  }
+  }
+  if (Mock.DEV_BMI088_LoadBias_CallbackFunctionPointer != NULL)
+  {
+    UNITY_SET_DETAIL(CMockString_DEV_BMI088_LoadBias);
+    cmock_call_instance->ReturnVal = Mock.DEV_BMI088_LoadBias_CallbackFunctionPointer(imu, flash, off, Mock.DEV_BMI088_LoadBias_CallbackCalls++);
+  }
+  if (cmock_call_instance->ReturnThruPtr_imu_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(imu, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)imu, (const void*)cmock_call_instance->ReturnThruPtr_imu_Val,
+      cmock_call_instance->ReturnThruPtr_imu_Size);
+  }
+  if (cmock_call_instance->ReturnThruPtr_flash_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(flash, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)flash, (const void*)cmock_call_instance->ReturnThruPtr_flash_Val,
+      cmock_call_instance->ReturnThruPtr_flash_Size);
+  }
+  UNITY_CLR_DETAILS();
+  return cmock_call_instance->ReturnVal;
+}
+
+void CMockExpectParameters_DEV_BMI088_LoadBias(CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE* cmock_call_instance, DEV_BMI088_s* imu, Flash_Instance_s* flash, uint32_t off);
+void CMockExpectParameters_DEV_BMI088_LoadBias(CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE* cmock_call_instance, DEV_BMI088_s* imu, Flash_Instance_s* flash, uint32_t off)
+{
+  cmock_call_instance->Expected_imu = imu;
+  cmock_call_instance->IgnoreArg_imu = 0;
+  cmock_call_instance->ReturnThruPtr_imu_Used = 0;
+  cmock_call_instance->Expected_flash = flash;
+  cmock_call_instance->IgnoreArg_flash = 0;
+  cmock_call_instance->ReturnThruPtr_flash_Used = 0;
+  cmock_call_instance->Expected_off = off;
+  cmock_call_instance->IgnoreArg_off = 0;
+}
+
+void DEV_BMI088_LoadBias_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE));
+  CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.DEV_BMI088_LoadBias_CallInstance = CMock_Guts_MemChain(Mock.DEV_BMI088_LoadBias_CallInstance, cmock_guts_index);
+  Mock.DEV_BMI088_LoadBias_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+  Mock.DEV_BMI088_LoadBias_IgnoreBool = (char)1;
+}
+
+void DEV_BMI088_LoadBias_CMockStopIgnore(void)
+{
+  if(Mock.DEV_BMI088_LoadBias_IgnoreBool)
+    Mock.DEV_BMI088_LoadBias_CallInstance = CMock_Guts_MemNext(Mock.DEV_BMI088_LoadBias_CallInstance);
+  Mock.DEV_BMI088_LoadBias_IgnoreBool = (char)0;
+}
+
+void DEV_BMI088_LoadBias_CMockExpectAnyArgsAndReturn(UNITY_LINE_TYPE cmock_line, bool cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE));
+  CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.DEV_BMI088_LoadBias_CallInstance = CMock_Guts_MemChain(Mock.DEV_BMI088_LoadBias_CallInstance, cmock_guts_index);
+  Mock.DEV_BMI088_LoadBias_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+  cmock_call_instance->ExpectAnyArgsBool = (char)1;
+}
+
+void DEV_BMI088_LoadBias_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, DEV_BMI088_s* imu, Flash_Instance_s* flash, uint32_t off, bool cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE));
+  CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.DEV_BMI088_LoadBias_CallInstance = CMock_Guts_MemChain(Mock.DEV_BMI088_LoadBias_CallInstance, cmock_guts_index);
+  Mock.DEV_BMI088_LoadBias_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  CMockExpectParameters_DEV_BMI088_LoadBias(cmock_call_instance, imu, flash, off);
+  cmock_call_instance->ReturnVal = cmock_to_return;
+}
+
+void DEV_BMI088_LoadBias_AddCallback(CMOCK_DEV_BMI088_LoadBias_CALLBACK Callback)
+{
+  Mock.DEV_BMI088_LoadBias_IgnoreBool = (char)0;
+  Mock.DEV_BMI088_LoadBias_CallbackBool = (char)1;
+  Mock.DEV_BMI088_LoadBias_CallbackCalls = 0;
+  Mock.DEV_BMI088_LoadBias_CallbackFunctionPointer = Callback;
+}
+
+int DEV_BMI088_LoadBias_CallCount(void)
+{
+  return Mock.DEV_BMI088_LoadBias_CallbackCalls;
+}
+
+void DEV_BMI088_LoadBias_Stub(CMOCK_DEV_BMI088_LoadBias_CALLBACK Callback)
+{
+  Mock.DEV_BMI088_LoadBias_IgnoreBool = (char)0;
+  Mock.DEV_BMI088_LoadBias_CallbackBool = (char)0;
+  Mock.DEV_BMI088_LoadBias_CallbackCalls = 0;
+  Mock.DEV_BMI088_LoadBias_CallbackFunctionPointer = Callback;
+}
+
+void DEV_BMI088_LoadBias_CMockReturnMemThruPtr_imu(UNITY_LINE_TYPE cmock_line, DEV_BMI088_s const* imu, size_t cmock_size)
+{
+  CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.DEV_BMI088_LoadBias_CallInstance));
+  if (Mock.DEV_BMI088_LoadBias_IgnoreBool &&
+      (cmock_call_instance == NULL || cmock_call_instance->ReturnThruPtr_imu_Used))
+  {
+    CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE));
+    CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE* new_instance = (CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+    UNITY_TEST_ASSERT_NOT_NULL(new_instance, cmock_line, CMockStringOutOfMemory);
+    memset(new_instance, 0, sizeof(*new_instance));
+    new_instance->LineNumber = cmock_line;
+    if (cmock_call_instance != NULL)
+      new_instance->ReturnVal = cmock_call_instance->ReturnVal;
+    Mock.DEV_BMI088_LoadBias_CallInstance = CMock_Guts_MemChain(Mock.DEV_BMI088_LoadBias_CallInstance, cmock_guts_index);
+    cmock_call_instance = new_instance;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringPtrPreExp);
+  cmock_call_instance->ReturnThruPtr_imu_Used = 1;
+  cmock_call_instance->ReturnThruPtr_imu_Val = imu;
+  cmock_call_instance->ReturnThruPtr_imu_Size = cmock_size;
+}
+
+void DEV_BMI088_LoadBias_CMockReturnMemThruPtr_flash(UNITY_LINE_TYPE cmock_line, Flash_Instance_s const* flash, size_t cmock_size)
+{
+  CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.DEV_BMI088_LoadBias_CallInstance));
+  if (Mock.DEV_BMI088_LoadBias_IgnoreBool &&
+      (cmock_call_instance == NULL || cmock_call_instance->ReturnThruPtr_flash_Used))
+  {
+    CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE));
+    CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE* new_instance = (CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+    UNITY_TEST_ASSERT_NOT_NULL(new_instance, cmock_line, CMockStringOutOfMemory);
+    memset(new_instance, 0, sizeof(*new_instance));
+    new_instance->LineNumber = cmock_line;
+    if (cmock_call_instance != NULL)
+      new_instance->ReturnVal = cmock_call_instance->ReturnVal;
+    Mock.DEV_BMI088_LoadBias_CallInstance = CMock_Guts_MemChain(Mock.DEV_BMI088_LoadBias_CallInstance, cmock_guts_index);
+    cmock_call_instance = new_instance;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringPtrPreExp);
+  cmock_call_instance->ReturnThruPtr_flash_Used = 1;
+  cmock_call_instance->ReturnThruPtr_flash_Val = flash;
+  cmock_call_instance->ReturnThruPtr_flash_Size = cmock_size;
+}
+
+void DEV_BMI088_LoadBias_CMockIgnoreArg_imu(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.DEV_BMI088_LoadBias_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_imu = 1;
+}
+
+void DEV_BMI088_LoadBias_CMockIgnoreArg_flash(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.DEV_BMI088_LoadBias_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_flash = 1;
+}
+
+void DEV_BMI088_LoadBias_CMockIgnoreArg_off(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE* cmock_call_instance = (CMOCK_DEV_BMI088_LoadBias_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.DEV_BMI088_LoadBias_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_off = 1;
 }
 
 bool DEV_Watchdog_Register(DEV_Watchdog_s* wd, const char* name)
@@ -2707,6 +3410,168 @@ void PLAT_DWT_GetTick_CMockIgnoreArg_dwt(UNITY_LINE_TYPE cmock_line)
   CMOCK_PLAT_DWT_GetTick_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_DWT_GetTick_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.PLAT_DWT_GetTick_CallInstance));
   UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
   cmock_call_instance->IgnoreArg_dwt = 1;
+}
+
+void PLAT_DWT_Delay_ms(DWT_Instance_s* dwt, uint32_t ms)
+{
+  UNITY_LINE_TYPE cmock_line = TEST_LINE_NUM;
+  CMOCK_PLAT_DWT_Delay_ms_CALL_INSTANCE* cmock_call_instance;
+  UNITY_SET_DETAIL(CMockString_PLAT_DWT_Delay_ms);
+  cmock_call_instance = (CMOCK_PLAT_DWT_Delay_ms_CALL_INSTANCE*)CMock_Guts_GetAddressFor(Mock.PLAT_DWT_Delay_ms_CallInstance);
+  Mock.PLAT_DWT_Delay_ms_CallInstance = CMock_Guts_MemNext(Mock.PLAT_DWT_Delay_ms_CallInstance);
+  if (Mock.PLAT_DWT_Delay_ms_IgnoreBool && cmock_call_instance != NULL &&
+      cmock_call_instance->ReturnThruPtr_dwt_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(dwt, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)dwt, (const void*)cmock_call_instance->ReturnThruPtr_dwt_Val,
+      cmock_call_instance->ReturnThruPtr_dwt_Size);
+  }
+  if (Mock.PLAT_DWT_Delay_ms_IgnoreBool)
+  {
+    UNITY_CLR_DETAILS();
+    return;
+  }
+  if (!Mock.PLAT_DWT_Delay_ms_CallbackBool &&
+      Mock.PLAT_DWT_Delay_ms_CallbackFunctionPointer != NULL)
+  {
+    Mock.PLAT_DWT_Delay_ms_CallbackFunctionPointer(dwt, ms, Mock.PLAT_DWT_Delay_ms_CallbackCalls++);
+    UNITY_CLR_DETAILS();
+    return;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringCalledMore);
+  cmock_line = cmock_call_instance->LineNumber;
+  if (cmock_call_instance->CallOrder > ++GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledEarly);
+  if (cmock_call_instance->CallOrder < GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLate);
+  if (!cmock_call_instance->ExpectAnyArgsBool)
+  {
+  if (!cmock_call_instance->IgnoreArg_dwt)
+  {
+    UNITY_SET_DETAILS(CMockString_PLAT_DWT_Delay_ms,CMockString_dwt);
+    UNITY_TEST_ASSERT_EQUAL_MEMORY(cmock_call_instance->Expected_dwt, dwt, sizeof(DWT_Instance_s), cmock_line, CMockStringMismatch);
+  }
+  if (!cmock_call_instance->IgnoreArg_ms)
+  {
+    UNITY_SET_DETAILS(CMockString_PLAT_DWT_Delay_ms,CMockString_ms);
+    UNITY_TEST_ASSERT_EQUAL_HEX32(cmock_call_instance->Expected_ms, ms, cmock_line, CMockStringMismatch);
+  }
+  }
+  if (Mock.PLAT_DWT_Delay_ms_CallbackFunctionPointer != NULL)
+  {
+    UNITY_SET_DETAIL(CMockString_PLAT_DWT_Delay_ms);
+    Mock.PLAT_DWT_Delay_ms_CallbackFunctionPointer(dwt, ms, Mock.PLAT_DWT_Delay_ms_CallbackCalls++);
+  }
+  if (cmock_call_instance->ReturnThruPtr_dwt_Used)
+  {
+    UNITY_TEST_ASSERT_NOT_NULL(dwt, cmock_line, CMockStringPtrIsNULL);
+    CMOCK_MEMCPY((void*)dwt, (const void*)cmock_call_instance->ReturnThruPtr_dwt_Val,
+      cmock_call_instance->ReturnThruPtr_dwt_Size);
+  }
+  UNITY_CLR_DETAILS();
+}
+
+void CMockExpectParameters_PLAT_DWT_Delay_ms(CMOCK_PLAT_DWT_Delay_ms_CALL_INSTANCE* cmock_call_instance, DWT_Instance_s* dwt, uint32_t ms);
+void CMockExpectParameters_PLAT_DWT_Delay_ms(CMOCK_PLAT_DWT_Delay_ms_CALL_INSTANCE* cmock_call_instance, DWT_Instance_s* dwt, uint32_t ms)
+{
+  cmock_call_instance->Expected_dwt = dwt;
+  cmock_call_instance->IgnoreArg_dwt = 0;
+  cmock_call_instance->ReturnThruPtr_dwt_Used = 0;
+  cmock_call_instance->Expected_ms = ms;
+  cmock_call_instance->IgnoreArg_ms = 0;
+}
+
+void PLAT_DWT_Delay_ms_CMockIgnore(void)
+{
+  Mock.PLAT_DWT_Delay_ms_IgnoreBool = (char)1;
+}
+
+void PLAT_DWT_Delay_ms_CMockStopIgnore(void)
+{
+  Mock.PLAT_DWT_Delay_ms_IgnoreBool = (char)0;
+}
+
+void PLAT_DWT_Delay_ms_CMockExpectAnyArgs(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_PLAT_DWT_Delay_ms_CALL_INSTANCE));
+  CMOCK_PLAT_DWT_Delay_ms_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_DWT_Delay_ms_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.PLAT_DWT_Delay_ms_CallInstance = CMock_Guts_MemChain(Mock.PLAT_DWT_Delay_ms_CallInstance, cmock_guts_index);
+  Mock.PLAT_DWT_Delay_ms_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ExpectAnyArgsBool = (char)1;
+}
+
+void PLAT_DWT_Delay_ms_CMockExpect(UNITY_LINE_TYPE cmock_line, DWT_Instance_s* dwt, uint32_t ms)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_PLAT_DWT_Delay_ms_CALL_INSTANCE));
+  CMOCK_PLAT_DWT_Delay_ms_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_DWT_Delay_ms_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.PLAT_DWT_Delay_ms_CallInstance = CMock_Guts_MemChain(Mock.PLAT_DWT_Delay_ms_CallInstance, cmock_guts_index);
+  Mock.PLAT_DWT_Delay_ms_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  CMockExpectParameters_PLAT_DWT_Delay_ms(cmock_call_instance, dwt, ms);
+}
+
+void PLAT_DWT_Delay_ms_AddCallback(CMOCK_PLAT_DWT_Delay_ms_CALLBACK Callback)
+{
+  Mock.PLAT_DWT_Delay_ms_IgnoreBool = (char)0;
+  Mock.PLAT_DWT_Delay_ms_CallbackBool = (char)1;
+  Mock.PLAT_DWT_Delay_ms_CallbackCalls = 0;
+  Mock.PLAT_DWT_Delay_ms_CallbackFunctionPointer = Callback;
+}
+
+int PLAT_DWT_Delay_ms_CallCount(void)
+{
+  return Mock.PLAT_DWT_Delay_ms_CallbackCalls;
+}
+
+void PLAT_DWT_Delay_ms_Stub(CMOCK_PLAT_DWT_Delay_ms_CALLBACK Callback)
+{
+  Mock.PLAT_DWT_Delay_ms_IgnoreBool = (char)0;
+  Mock.PLAT_DWT_Delay_ms_CallbackBool = (char)0;
+  Mock.PLAT_DWT_Delay_ms_CallbackCalls = 0;
+  Mock.PLAT_DWT_Delay_ms_CallbackFunctionPointer = Callback;
+}
+
+void PLAT_DWT_Delay_ms_CMockReturnMemThruPtr_dwt(UNITY_LINE_TYPE cmock_line, DWT_Instance_s const* dwt, size_t cmock_size)
+{
+  CMOCK_PLAT_DWT_Delay_ms_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_DWT_Delay_ms_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.PLAT_DWT_Delay_ms_CallInstance));
+  if (Mock.PLAT_DWT_Delay_ms_IgnoreBool &&
+      (cmock_call_instance == NULL || cmock_call_instance->ReturnThruPtr_dwt_Used))
+  {
+    CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_PLAT_DWT_Delay_ms_CALL_INSTANCE));
+    CMOCK_PLAT_DWT_Delay_ms_CALL_INSTANCE* new_instance = (CMOCK_PLAT_DWT_Delay_ms_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+    UNITY_TEST_ASSERT_NOT_NULL(new_instance, cmock_line, CMockStringOutOfMemory);
+    memset(new_instance, 0, sizeof(*new_instance));
+    new_instance->LineNumber = cmock_line;
+    Mock.PLAT_DWT_Delay_ms_CallInstance = CMock_Guts_MemChain(Mock.PLAT_DWT_Delay_ms_CallInstance, cmock_guts_index);
+    cmock_call_instance = new_instance;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringPtrPreExp);
+  cmock_call_instance->ReturnThruPtr_dwt_Used = 1;
+  cmock_call_instance->ReturnThruPtr_dwt_Val = dwt;
+  cmock_call_instance->ReturnThruPtr_dwt_Size = cmock_size;
+}
+
+void PLAT_DWT_Delay_ms_CMockIgnoreArg_dwt(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_PLAT_DWT_Delay_ms_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_DWT_Delay_ms_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.PLAT_DWT_Delay_ms_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_dwt = 1;
+}
+
+void PLAT_DWT_Delay_ms_CMockIgnoreArg_ms(UNITY_LINE_TYPE cmock_line)
+{
+  CMOCK_PLAT_DWT_Delay_ms_CALL_INSTANCE* cmock_call_instance = (CMOCK_PLAT_DWT_Delay_ms_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.PLAT_DWT_Delay_ms_CallInstance));
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
+  cmock_call_instance->IgnoreArg_ms = 1;
 }
 
 float PLAT_DWT_GetDeltaT(DWT_Instance_s* dwt, uint32_t* tick_last)

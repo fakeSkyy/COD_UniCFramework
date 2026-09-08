@@ -10,6 +10,7 @@ static const char* CMockString_Board_DebugUart = "Board_DebugUart";
 static const char* CMockString_Board_ImuAccel = "Board_ImuAccel";
 static const char* CMockString_Board_ImuGyro = "Board_ImuGyro";
 static const char* CMockString_Board_ImuHeater = "Board_ImuHeater";
+static const char* CMockString_Board_ParamFlash = "Board_ParamFlash";
 static const char* CMockString_Board_Timebase = "Board_Timebase";
 static const char* CMockString_PLAT_PWM_SetDutyPercent = "PLAT_PWM_SetDutyPercent";
 static const char* CMockString_PLAT_PWM_Start = "PLAT_PWM_Start";
@@ -78,6 +79,15 @@ typedef struct _CMOCK_Board_ImuHeater_CALL_INSTANCE
   int CallOrder;
 
 } CMOCK_Board_ImuHeater_CALL_INSTANCE;
+
+typedef struct _CMOCK_Board_ParamFlash_CALL_INSTANCE
+{
+  UNITY_LINE_TYPE LineNumber;
+  char ExpectAnyArgsBool;
+  Flash_Instance_s* ReturnVal;
+  int CallOrder;
+
+} CMOCK_Board_ParamFlash_CALL_INSTANCE;
 
 typedef struct _CMOCK_PLAT_Task_Create_CALL_INSTANCE
 {
@@ -234,6 +244,12 @@ static struct mock_imu_contractInstance
   CMOCK_Board_ImuHeater_CALLBACK Board_ImuHeater_CallbackFunctionPointer;
   int Board_ImuHeater_CallbackCalls;
   CMOCK_MEM_INDEX_TYPE Board_ImuHeater_CallInstance;
+  char Board_ParamFlash_IgnoreBool;
+  Flash_Instance_s* Board_ParamFlash_FinalReturn;
+  char Board_ParamFlash_CallbackBool;
+  CMOCK_Board_ParamFlash_CALLBACK Board_ParamFlash_CallbackFunctionPointer;
+  int Board_ParamFlash_CallbackCalls;
+  CMOCK_MEM_INDEX_TYPE Board_ParamFlash_CallInstance;
   char PLAT_Task_Create_IgnoreBool;
   bool PLAT_Task_Create_FinalReturn;
   char PLAT_Task_Create_CallbackBool;
@@ -348,6 +364,19 @@ void mock_imu_contract_Verify(void)
     UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
   }
   if (Mock.Board_ImuHeater_CallbackFunctionPointer != NULL)
+  {
+    call_instance = CMOCK_GUTS_NONE;
+    (void)call_instance;
+  }
+  call_instance = Mock.Board_ParamFlash_CallInstance;
+  if (Mock.Board_ParamFlash_IgnoreBool)
+    call_instance = CMOCK_GUTS_NONE;
+  if (CMOCK_GUTS_NONE != call_instance)
+  {
+    UNITY_SET_DETAIL(CMockString_Board_ParamFlash);
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
+  }
+  if (Mock.Board_ParamFlash_CallbackFunctionPointer != NULL)
   {
     call_instance = CMOCK_GUTS_NONE;
     (void)call_instance;
@@ -934,6 +963,99 @@ void Board_ImuHeater_Stub(CMOCK_Board_ImuHeater_CALLBACK Callback)
   Mock.Board_ImuHeater_CallbackBool = (char)0;
   Mock.Board_ImuHeater_CallbackCalls = 0;
   Mock.Board_ImuHeater_CallbackFunctionPointer = Callback;
+}
+
+Flash_Instance_s* Board_ParamFlash(void)
+{
+  UNITY_LINE_TYPE cmock_line = TEST_LINE_NUM;
+  CMOCK_Board_ParamFlash_CALL_INSTANCE* cmock_call_instance;
+  UNITY_SET_DETAIL(CMockString_Board_ParamFlash);
+  cmock_call_instance = (CMOCK_Board_ParamFlash_CALL_INSTANCE*)CMock_Guts_GetAddressFor(Mock.Board_ParamFlash_CallInstance);
+  Mock.Board_ParamFlash_CallInstance = CMock_Guts_MemNext(Mock.Board_ParamFlash_CallInstance);
+  if (Mock.Board_ParamFlash_IgnoreBool)
+  {
+    UNITY_CLR_DETAILS();
+    if (cmock_call_instance == NULL)
+      return Mock.Board_ParamFlash_FinalReturn;
+    Mock.Board_ParamFlash_FinalReturn = cmock_call_instance->ReturnVal;
+    return cmock_call_instance->ReturnVal;
+  }
+  if (!Mock.Board_ParamFlash_CallbackBool &&
+      Mock.Board_ParamFlash_CallbackFunctionPointer != NULL)
+  {
+    Flash_Instance_s* cmock_cb_ret = Mock.Board_ParamFlash_CallbackFunctionPointer(Mock.Board_ParamFlash_CallbackCalls++);
+    UNITY_CLR_DETAILS();
+    return cmock_cb_ret;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringCalledMore);
+  cmock_line = cmock_call_instance->LineNumber;
+  if (cmock_call_instance->CallOrder > ++GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledEarly);
+  if (cmock_call_instance->CallOrder < GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLate);
+  if (Mock.Board_ParamFlash_CallbackFunctionPointer != NULL)
+  {
+    UNITY_SET_DETAIL(CMockString_Board_ParamFlash);
+    cmock_call_instance->ReturnVal = Mock.Board_ParamFlash_CallbackFunctionPointer(Mock.Board_ParamFlash_CallbackCalls++);
+  }
+  UNITY_CLR_DETAILS();
+  return cmock_call_instance->ReturnVal;
+}
+
+void Board_ParamFlash_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, Flash_Instance_s* cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_Board_ParamFlash_CALL_INSTANCE));
+  CMOCK_Board_ParamFlash_CALL_INSTANCE* cmock_call_instance = (CMOCK_Board_ParamFlash_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.Board_ParamFlash_CallInstance = CMock_Guts_MemChain(Mock.Board_ParamFlash_CallInstance, cmock_guts_index);
+  Mock.Board_ParamFlash_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+  Mock.Board_ParamFlash_IgnoreBool = (char)1;
+}
+
+void Board_ParamFlash_CMockStopIgnore(void)
+{
+  if(Mock.Board_ParamFlash_IgnoreBool)
+    Mock.Board_ParamFlash_CallInstance = CMock_Guts_MemNext(Mock.Board_ParamFlash_CallInstance);
+  Mock.Board_ParamFlash_IgnoreBool = (char)0;
+}
+
+void Board_ParamFlash_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, Flash_Instance_s* cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_Board_ParamFlash_CALL_INSTANCE));
+  CMOCK_Board_ParamFlash_CALL_INSTANCE* cmock_call_instance = (CMOCK_Board_ParamFlash_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.Board_ParamFlash_CallInstance = CMock_Guts_MemChain(Mock.Board_ParamFlash_CallInstance, cmock_guts_index);
+  Mock.Board_ParamFlash_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+}
+
+void Board_ParamFlash_AddCallback(CMOCK_Board_ParamFlash_CALLBACK Callback)
+{
+  Mock.Board_ParamFlash_IgnoreBool = (char)0;
+  Mock.Board_ParamFlash_CallbackBool = (char)1;
+  Mock.Board_ParamFlash_CallbackCalls = 0;
+  Mock.Board_ParamFlash_CallbackFunctionPointer = Callback;
+}
+
+int Board_ParamFlash_CallCount(void)
+{
+  return Mock.Board_ParamFlash_CallbackCalls;
+}
+
+void Board_ParamFlash_Stub(CMOCK_Board_ParamFlash_CALLBACK Callback)
+{
+  Mock.Board_ParamFlash_IgnoreBool = (char)0;
+  Mock.Board_ParamFlash_CallbackBool = (char)0;
+  Mock.Board_ParamFlash_CallbackCalls = 0;
+  Mock.Board_ParamFlash_CallbackFunctionPointer = Callback;
 }
 
 bool PLAT_Task_Create(Task_s* task, PLAT_Task_Entry entry, void* arg, const char* name, void* stack, size_t stack_bytes, uint8_t priority)

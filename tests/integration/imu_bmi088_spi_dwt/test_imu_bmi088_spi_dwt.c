@@ -21,6 +21,18 @@
 
 #define CALIBRATION_READS 2000u
 #define ALIGNMENT_READS 1u
+
+/**
+ * @brief Reads consumed by bring-up's warm-up wait before the calibration.
+ *
+ * IMU_CALIB_ON_BOOT waits for the die to reach setpoint, reading once per
+ * millisecond, and gives up after IMU_CALIB_WARMUP_TIMEOUT_MS. The mock sensor
+ * here reports a fixed temperature that never reaches the setpoint, so this test
+ * always takes the full timeout -- 60000 ms at one read per ms.
+ *
+ * Mirrors two private constants in app_imu.c. If either moves, this does too.
+ */
+#define WARMUP_READS 60000u
 #define DYNAMIC_GYRO_Z_RAW 3277
 
 static SPI_Instance_s  accel_spi, gyro_spi;
@@ -105,7 +117,7 @@ static bool spi_receive(void* ctx, uint8_t* rx, uint16_t len, uint32_t timeout)
     {
         memset(rx, 0, len);
         rx[0] = BMI088_GYRO_CHIP_ID_VALUE;
-        if (sensor_reads > CALIBRATION_READS + ALIGNMENT_READS)
+        if (sensor_reads > WARMUP_READS + CALIBRATION_READS + ALIGNMENT_READS)
         {
             put_i16_le(&rx[2], dynamic_gyro_raw[0]);
             put_i16_le(&rx[4], dynamic_gyro_raw[1]);
@@ -330,6 +342,11 @@ void setUp(void)
      * never reaches UTIL_PID_Init/PLAT_PWM_Start — no stub is installed for
      * either, so CMock fails the test if production code called them. */
     Board_ImuHeater_IgnoreAndReturn(NULL);
+    /* NULL for the same reason: bring-up's calibration path asks for the
+     * parameter region, and a NULL one takes the "not persisted" branch without
+     * reaching DEV_BMI088_SaveBias -- which links here for real, and would
+     * otherwise erase a flash sector through a mock backend. */
+    Board_ParamFlash_IgnoreAndReturn(NULL);
     PLAT_Task_Create_StubWithCallback(task_create);
     PLAT_Task_TickNow_StubWithCallback(task_tick);
     PLAT_Task_DelayUntil_StubWithCallback(task_delay);
@@ -358,7 +375,8 @@ static void test_sample_to_ahrs_to_telemetry(void)
 {
     loop_limit = 20u;
     TEST_ASSERT_EQUAL_INT(1, run_task());
-    TEST_ASSERT_EQUAL_UINT(CALIBRATION_READS + ALIGNMENT_READS + loop_limit, sensor_reads);
+    TEST_ASSERT_EQUAL_UINT(WARMUP_READS + CALIBRATION_READS + ALIGNMENT_READS + loop_limit,
+                           sensor_reads);
     TEST_ASSERT_TRUE(App_Imu_Online());
 
     const float* quat = App_Imu_Quat();
