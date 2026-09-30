@@ -16,6 +16,8 @@
 #include "plat_task.h"
 #include "util_log.h"
 
+#include "app_imu.h"
+
 /* ========================================================================= */
 /*  Configuration                                                            */
 /* ========================================================================= */
@@ -211,6 +213,8 @@ static bool chassis_init(void)
 /*  Task                                                                     */
 /* ========================================================================= */
 
+float yaw, pitch, roll;
+
 /**
  * @brief Command the wheels once per period.
  *
@@ -240,6 +244,10 @@ static void body(void* arg)
          * that loses arbitration is dropped rather than retried and this counter is
          * the only signal that the bus is oversubscribed. */
         (void) DEV_DJIMotor_CommitBus(&bus, dt);
+
+        yaw   = App_Imu_Yaw() * 57.2958f;
+        pitch = App_Imu_Pitch() * 57.2958f;
+        roll  = App_Imu_Roll() * 57.2958f;
 
         PLAT_Task_DelayUntil(&prev_tick, CHASSIS_PERIOD_MS);
     }

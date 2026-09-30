@@ -14,11 +14,28 @@ The one real reference backend is `04_impl/bsp/stm32f4/`: the F407 code this pro
 from, present and not built. It must not be edited or called into, and it is the worked example of
 the "second backend beside the existing one" rule below.
 
-There is no `00_config` layer. An earlier draft of this document reserved one; it was never created
-and the idea is dropped — configuration lives in the header of whatever module owns it.
+`00_config` exists again, and holds exactly one file: `config.h`. This document previously said the
+layer had been dropped, and the reasoning behind dropping it still stands — **configuration lives in
+the header of whatever module owns it**, so IMU setpoints stay in `app_imu.c`, PID gains at their
+call site, task priorities in `app_tasks.c`. A reader looking for why the heater runs at 40 C should
+find that number next to the heater.
+
+What brought the layer back (2026/9/29) is a switch that has no owning module:
+`UTIL_MATH_USE_CMSIS_DSP` changes the numerical backend of `util_kf` and `util_ahrs` together, is
+read by a third file (`util_math_backend.h`), and is consumed by `CMakeLists.txt` as well. Putting it
+in any one of those makes the other two include it for a reason unrelated to what they do.
+
+So the admission test is narrow: **a switch belongs in `00_config` when turning it changes more than
+one module and none of them is its natural home.** Everything else does not. A growing list of
+per-module tunables there would be the mistake this document was originally warning about, and one
+file is the expected steady state — if it reaches half a dozen, re-read this paragraph rather than
+adding the seventh. `config.h` must also stay includable from any layer, so it contains no types, no
+includes and no code: only object-like macros with literal values.
 
 ### Layer overview
 
+- **00_config** — Build-wide switches only, in a single `config.h`. Includable from any layer, and
+  depends on nothing. See the admission test above; this is not a home for per-module tunables.
 - **01_application** — Application layer. Written by the end user. `01_application/board/` is the
   composition root and is the one place allowed to include both platform and vendor headers.
 - **02_device** — Drivers for concrete devices. Depends on the platform layer only; it must never

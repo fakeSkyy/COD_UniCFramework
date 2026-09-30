@@ -59,6 +59,9 @@ if(COVERAGE)
 endif()
 
 include_directories(
+    # 00_config holds config.h, which util_math_backend.h includes; every module
+    # reaching util_kf or util_ahrs needs it on the path.
+    ${CONFIG_ROOT}
     ${TESTS_ROOT}
     ${TESTS_ROOT}/unity
     ${TESTS_ROOT}/stubs
@@ -93,6 +96,15 @@ set(UTIL_SOURCES
     ${UTILS}/util_traj_limit/util_traj_limit.c
 )
 add_library(utils STATIC ${UTIL_SOURCES})
+
+# Pin the default math backend rather than inheriting whatever config.h currently
+# says. Every suite linking this library asserts the standard-library behaviour,
+# and the DSP path has its own targets (unit/utils/CMakeLists.txt) that pin the
+# other value. Without this, flipping the switch in config.h would silently turn
+# all 253 default tests into DSP tests and leave the default path untested --
+# exactly the coverage hole the dsp targets exist to close, reopened from the
+# other side.
+target_compile_definitions(utils PUBLIC UTIL_MATH_USE_CMSIS_DSP=0)
 
 enable_testing()
 

@@ -17,8 +17,10 @@
 #include "plat_dwt.h"
 #include "plat_pwm.h"
 #include "plat_task.h"
+
 #include "util_ahrs.h"
 #include "util_log.h"
+#include "util_lpf.h"
 #include "util_pid.h"
 
 /* ========================================================================= */
@@ -28,8 +30,53 @@
 #define IMU_PERIOD_MS 1u
 #define IMU_GRAVITY 9.794f
 
-/** @brief Averaged samples per calibration. 2000 at 1 kHz is two seconds. */
-#define IMU_CALIB_SAMPLES 2000u
+/**
+ * @brief Accelerometer low-pass cutoff, Hz.
+ *
+ * The gyro is fed raw and the accelerometer is filtered, which is not an
+ * inconsistency: the gyro's high-frequency content is real rotation the filter
+ * needs, while the accelerometer's job here is only to say which way is down.
+ * Vibration on this frame arrives as broadband acceleration, and every bit of it
+ * that reaches the correction step tilts the estimate and pushes the bias states
+ * around -- which is exactly what a stationary board must not do.
+ *
+ * 7.7 Hz is the cutoff of the second-order section the COD_H7_Template reference
+ * uses at this same 1 kHz rate: its coefficients work out to a -3 dB point of
+ * 7.69 Hz and -32 dB at 50 Hz. Attitude changes far slower than this, so the
+ * phase lag costs nothing that matters.
+ */
+#define IMU_ACCEL_LPF_FC_HZ 7.7f
+
+/**
+ * @brief Averaged samples per calibration; 3000 at 1 kHz is three seconds.
+ *
+ * @par What the window buys, measured
+ * The bias estimate's standard error falls as 1/sqrt(N), and that error IS the
+ * yaw drift: nothing downstream removes it, because the z-axis bias is
+ * unobservable once the loop is running (see App_Imu_Yaw). Ten-minute static
+ * runs on this board measured 0.0035 deg/s surviving a 2 s window, which matches
+ * what the gyro's own noise density predicts for that window -- 0.014
+ * deg/s/sqrt(Hz) at the 230 Hz bandwidth the driver configures gives a 1-sigma
+ * bias error of 0.0070 deg/s. So the drift was the calibration's uncertainty,
+ * not a defect elsewhere, and the window is the only lever on it short of adding
+ * a magnetometer.
+ *
+ *     window   1-sigma bias      expected yaw drift over 10 min
+ *      2 s     0.0070 deg/s      4.2 deg
+ *      3 s     0.0057 deg/s      3.4 deg     <- here
+ *     20 s     0.0022 deg/s      1.3 deg
+ *
+ * @par Why 3 s and not 20
+ * 20 s was tried first and does work, but the whole window is time the vehicle
+ * MUST be still -- a robot moved during it has its motion averaged into the bias
+ * and the gyro then reports that motion as zero, which is worse than not
+ * calibrating. Three seconds is short enough to be a realistic power-on
+ * requirement. The arithmetic is not the constraint; the operator is.
+ *
+ * Raising it later is a one-line change here plus two mirrored constants in the
+ * tests, which the build will point at.
+ */
+#define IMU_CALIB_SAMPLES 3000u
 
 /**
  * @brief Calibrate the gyro every boot (1), or load the bias from flash (0).
@@ -47,8 +94,19 @@
  * Bounded because a board with a dead heater would otherwise never start. On
  * expiry the calibration proceeds at whatever temperature was reached, which
  * beats not calibrating, and says so in the log.
+ *
+ * Five minutes, not one: the element's authority is small enough that the last
+ * couple of degrees take minutes, and every run that timed out at 60 s did so
+ * while the die was still climbing -- a bound that expires mid-ramp measures the
+ * bound, not the hardware. The cost is paid on a board whose heater is dead or
+ * unpopulated, which then sits here for five minutes before starting; the log
+ * line names the temperature reached, so that case is recognisable rather than
+ * looking like a hang.
+ *
+ * Note this is time with no scheduler and no status LED -- see the note on
+ * App_Imu_StartTask about bring-up blocking.
  */
-#define IMU_CALIB_WARMUP_TIMEOUT_MS 60000u
+#define IMU_CALIB_WARMUP_TIMEOUT_MS 300000u
 
 /** @brief Margin below setpoint accepted as "at temperature", degrees C. */
 #define IMU_CALIB_WARMUP_MARGIN_C 0.5f
@@ -119,8 +177,12 @@ static uint8_t task_stack[2048];
 static Task_s  task;
 
 static DEV_BMI088_s imu;
-static UTIL_AHRS_s  ahrs;
-static float        ahrs_buf[UTIL_AHRS_BUF_SIZE];
+
+static UTIL_AHRS_s ahrs;
+static float       ahrs_buf[UTIL_AHRS_BUF_SIZE];
+
+/** @brief One second-order section per accelerometer axis. */
+static UTIL_LPF2_s accel_lpf[3];
 
 static uint32_t dt_cursor;
 static uint32_t fail_streak;
@@ -132,6 +194,27 @@ static UTIL_PID_s      heater_pid;
 static PWM_Instance_s* heater_pwm;
 static unsigned        heater_countdown;
 static float           heater_duty;
+
+/**
+ * @brief Low-pass the accelerometer in place and return the filtered vector.
+ *
+ * Returns a pointer to internal storage, valid until the next call. The driver's
+ * own buffer is left untouched, so App_Imu_* accessors and the telemetry stream
+ * still report what the sensor actually measured.
+ */
+static const float* filtered_accel(void)
+{
+    static float out[3];
+
+    const float* raw = DEV_BMI088_GetAccel(&imu);
+
+    for (uint16_t i = 0u; i < 3u; i++)
+    {
+        out[i] = UTIL_LPF2_Step(&accel_lpf[i], raw[i]);
+    }
+
+    return out;
+}
 
 /* ========================================================================= */
 /*  Heater                                                                   */
@@ -317,9 +400,21 @@ static bool imu_init(void)
         .spi_gyro  = Board_ImuGyro(),
         .timebase  = Board_Timebase(),
 
-        /* 3g, not a wider range: the accelerometer's only job is to find gravity,
-         * so resolution wins, and a hit past 3g is one the AHRS rejects anyway. */
-        .acc_range = DEV_BMI088_ACC_RANGE_3G,
+        /* 6g, matching the COD_H7_Template reference on this same vehicle. It was
+         * 3g here, argued from resolution -- the accelerometer only has to find
+         * gravity, so the narrower range reads it more finely.
+         *
+         * The argument was wrong about the failure it dismissed. Past full scale the
+         * reading is CLIPPED, not large: each axis saturates independently, so a
+         * hard hit returns a vector that is short and pointing somewhere the vehicle
+         * is not. Its magnitude can land back inside the plausibility window while
+         * the direction is wrong, which is exactly the case the magnitude guard
+         * cannot catch -- the AHRS does not reject it, it corrects towards it.
+         *
+         * Losing one bit of resolution costs a little tilt noise, and the
+         * accelerometer low-pass and the filter's own averaging both absorb that.
+         * Clipping costs a wrong attitude with no indication. */
+        .acc_range = DEV_BMI088_ACC_RANGE_6G,
 
         /* 2000 dps, the widest. A saturated gyro under-reports rotation, so the
          * attitude lags and stays wrong after the motion stops. */
@@ -339,6 +434,16 @@ static bool imu_init(void)
     {
         UTIL_LOG_E("imu", "AHRS init failed");
         return false;
+    }
+
+    for (uint16_t i = 0u; i < 3u; i++)
+    {
+        if (!UTIL_LPF2_InitByFc(&accel_lpf[i], IMU_ACCEL_LPF_FC_HZ,
+                                (float) IMU_PERIOD_MS / 1000.0f))
+        {
+            UTIL_LOG_E("imu", "accel filter init failed");
+            return false;
+        }
     }
 
     /* Before the calibration, which drives the heater to reach temperature and
@@ -362,7 +467,10 @@ static bool imu_init(void)
      * visible as the attitude sweeping from level to actual. */
     if (DEV_BMI088_Read(&imu))
     {
-        (void) UTIL_AHRS_AlignToAccel(&ahrs, DEV_BMI088_GetAccel(&imu));
+        /* Through the filter too, so its state is seeded with the first real
+         * sample rather than starting from zero on the task's first step --
+         * UTIL_LPF2_Step returns its input unchanged on the first call. */
+        (void) UTIL_AHRS_AlignToAccel(&ahrs, filtered_accel());
     }
 
     /* Seeded last so the first dt measures one loop period, not all of the above. */
@@ -424,7 +532,8 @@ static void imu_step(void)
 
     /* The raw gyro: the AHRS subtracts its own bias estimate internally, and the
      * driver's start-up bias is already baked into what this returns. */
-    UTIL_AHRS_Update(&ahrs, DEV_BMI088_GetGyro(&imu), DEV_BMI088_GetAccel(&imu), dt);
+    /* Gyro raw, accelerometer filtered -- see IMU_ACCEL_LPF_FC_HZ. */
+    UTIL_AHRS_Update(&ahrs, DEV_BMI088_GetGyro(&imu), filtered_accel(), dt);
 
     heater_step(true);
 

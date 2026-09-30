@@ -24,10 +24,22 @@ class FixtureRepo:
         (root / ".clang-format").write_text(
             "BasedOnStyle: LLVM\nIndentWidth: 4\nBreakBeforeBraces: Allman\n", encoding="utf-8"
         )
-        for layer in ("01_application", "02_device", "03_platform", "04_impl", "06_utils"):
+        # Mirrors quality_gate.PRODUCTION_LAYERS, including 00_config: a fixture
+        # missing a layer the gate scans would leave that layer's rules untested.
+        #
+        # 00_config gets a header rather than a .c, matching the real layer, which
+        # holds only config.h. A .c there would have to appear in the compile
+        # database too, and analysis.compile_database rightly fails on a production
+        # translation unit that is not in it.
+        for layer in (
+            "00_config", "01_application", "02_device", "03_platform", "04_impl", "06_utils",
+        ):
             directory = root / layer
             directory.mkdir(parents=True)
-            (directory / "clean.c").write_text("int clean_symbol;\n", encoding="utf-8")
+            if layer == "00_config":
+                (directory / "clean.h").write_text("#define CLEAN_MACRO 1\n", encoding="utf-8")
+            else:
+                (directory / "clean.c").write_text("int clean_symbol;\n", encoding="utf-8")
         self.compile_db = root / "compile_commands.json"
         compile_entries = []
         for source in sorted(root.glob("0[1-6]_*/clean.c")):

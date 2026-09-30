@@ -80,8 +80,13 @@ typedef struct
     float accel_tol;  /**< Accept the accelerometer only when its magnitude is
                            within this much of @c gravity.                  */
     float bias_limit; /**< Cap on |estimated bias|, radians per second.      */
+    float still_rate; /**< Accept the accelerometer only while |gyro| is below
+                           this, radians per second. Zero disables the test.  */
+    float bias_slew;  /**< Cap on |d bias / dt|, rad/s per second. Zero lets the
+                           estimate move by any amount in one step.           */
 
-    uint32_t accel_reject_count; /**< Accelerometer samples rejected on norm. */
+    uint32_t accel_reject_count; /**< Accelerometer samples rejected on norm
+                                      or because the body was turning.        */
 
     bool initialized; /**< False until UTIL_AHRS_Init succeeds.  */
     bool converged;   /**< True once the first accelerometer sample has set
@@ -151,6 +156,35 @@ void UTIL_AHRS_SetNoise(UTIL_AHRS_s* ahrs, float q_gyro, float q_bias, float r_a
  *                     filter is absorbing something that is not bias.
  */
 void UTIL_AHRS_SetGuards(UTIL_AHRS_s* ahrs, float accel_tol, float gate_sigma, float bias_limit);
+
+/**
+ * @brief Set the angular rate below which gravity is treated as observable.
+ *
+ * Above this rate the accelerometer is ignored, because a steady turn reads a
+ * perfectly ordinary 1 g while the attitude is changing -- correcting there feeds
+ * real rotation into the bias states, and the bias goes on applying it after the
+ * motion stops.
+ *
+ * @param ahrs  Instance. Must be initialized.
+ * @param rate  Threshold on |gyro| in rad/s, bias-corrected. 0 disables the test
+ *              and accepts the accelerometer at any rate, which is what a caller
+ *              wants only when something else establishes stillness.
+ */
+void UTIL_AHRS_SetStillRate(UTIL_AHRS_s* ahrs, float rate);
+
+/**
+ * @brief Set how fast the bias estimate may move, rad/s per second.
+ *
+ * Bounds the rate; UTIL_AHRS_SetGuards's bias_limit bounds the destination. A real
+ * MEMS bias walks over minutes, so a correction that moves it appreciably in one
+ * step is a shock or attitude error being charged to the wrong state rather than
+ * bias being tracked.
+ *
+ * @param ahrs  Instance. Must be initialized.
+ * @param slew  Cap on |d bias / dt| in rad/s per second. 0 removes the limit, so
+ *              one step may move the estimate as far as the gain asks.
+ */
+void UTIL_AHRS_SetBiasSlew(UTIL_AHRS_s* ahrs, float slew);
 
 /**
  * @brief Force the attitude to match a measured gravity vector.

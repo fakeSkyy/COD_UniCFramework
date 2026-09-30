@@ -490,6 +490,45 @@ void UTIL_Log_Write_CMockIgnoreArg_level(UNITY_LINE_TYPE cmock_line);
 void UTIL_Log_Write_CMockIgnoreArg_tag(UNITY_LINE_TYPE cmock_line);
 #define UTIL_Log_Write_IgnoreArg_fmt() UTIL_Log_Write_CMockIgnoreArg_fmt(__LINE__)
 void UTIL_Log_Write_CMockIgnoreArg_fmt(UNITY_LINE_TYPE cmock_line);
+#define App_Imu_Yaw_Ignore() TEST_FAIL_MESSAGE("App_Imu_Yaw requires _IgnoreAndReturn");
+#define App_Imu_Yaw_IgnoreAndReturn(cmock_retval) App_Imu_Yaw_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void App_Imu_Yaw_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, float cmock_to_return);
+#define App_Imu_Yaw_StopIgnore() App_Imu_Yaw_CMockStopIgnore()
+void App_Imu_Yaw_CMockStopIgnore(void);
+#define App_Imu_Yaw_Expect() TEST_FAIL_MESSAGE("App_Imu_Yaw requires _ExpectAndReturn");
+#define App_Imu_Yaw_ExpectAndReturn(cmock_retval) App_Imu_Yaw_CMockExpectAndReturn(__LINE__, cmock_retval)
+void App_Imu_Yaw_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, float cmock_to_return);
+typedef float (* CMOCK_App_Imu_Yaw_CALLBACK)(int cmock_num_calls);
+void App_Imu_Yaw_AddCallback(CMOCK_App_Imu_Yaw_CALLBACK Callback);
+void App_Imu_Yaw_Stub(CMOCK_App_Imu_Yaw_CALLBACK Callback);
+#define App_Imu_Yaw_StubWithCallback App_Imu_Yaw_Stub
+int App_Imu_Yaw_CallCount(void);
+#define App_Imu_Pitch_Ignore() TEST_FAIL_MESSAGE("App_Imu_Pitch requires _IgnoreAndReturn");
+#define App_Imu_Pitch_IgnoreAndReturn(cmock_retval) App_Imu_Pitch_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void App_Imu_Pitch_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, float cmock_to_return);
+#define App_Imu_Pitch_StopIgnore() App_Imu_Pitch_CMockStopIgnore()
+void App_Imu_Pitch_CMockStopIgnore(void);
+#define App_Imu_Pitch_Expect() TEST_FAIL_MESSAGE("App_Imu_Pitch requires _ExpectAndReturn");
+#define App_Imu_Pitch_ExpectAndReturn(cmock_retval) App_Imu_Pitch_CMockExpectAndReturn(__LINE__, cmock_retval)
+void App_Imu_Pitch_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, float cmock_to_return);
+typedef float (* CMOCK_App_Imu_Pitch_CALLBACK)(int cmock_num_calls);
+void App_Imu_Pitch_AddCallback(CMOCK_App_Imu_Pitch_CALLBACK Callback);
+void App_Imu_Pitch_Stub(CMOCK_App_Imu_Pitch_CALLBACK Callback);
+#define App_Imu_Pitch_StubWithCallback App_Imu_Pitch_Stub
+int App_Imu_Pitch_CallCount(void);
+#define App_Imu_Roll_Ignore() TEST_FAIL_MESSAGE("App_Imu_Roll requires _IgnoreAndReturn");
+#define App_Imu_Roll_IgnoreAndReturn(cmock_retval) App_Imu_Roll_CMockIgnoreAndReturn(__LINE__, cmock_retval)
+void App_Imu_Roll_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, float cmock_to_return);
+#define App_Imu_Roll_StopIgnore() App_Imu_Roll_CMockStopIgnore()
+void App_Imu_Roll_CMockStopIgnore(void);
+#define App_Imu_Roll_Expect() TEST_FAIL_MESSAGE("App_Imu_Roll requires _ExpectAndReturn");
+#define App_Imu_Roll_ExpectAndReturn(cmock_retval) App_Imu_Roll_CMockExpectAndReturn(__LINE__, cmock_retval)
+void App_Imu_Roll_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, float cmock_to_return);
+typedef float (* CMOCK_App_Imu_Roll_CALLBACK)(int cmock_num_calls);
+void App_Imu_Roll_AddCallback(CMOCK_App_Imu_Roll_CALLBACK Callback);
+void App_Imu_Roll_Stub(CMOCK_App_Imu_Roll_CALLBACK Callback);
+#define App_Imu_Roll_StubWithCallback App_Imu_Roll_Stub
+int App_Imu_Roll_CallCount(void);
 
 #ifdef __cplusplus
 }

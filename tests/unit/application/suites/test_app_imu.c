@@ -58,12 +58,14 @@ static bool                heater_pwm_present;
 /* Bring-up persists a freshly measured bias; both are ignored rather than
  * order-checked because the warm-up loop calls them a data-dependent number
  * of times. */
-static bool                param_flash_present;
-static bool                save_bias_result;
-static bool                pwm_start_result;
-static float               heater_temp_c;
-static unsigned            duty_calls;
-static float               last_duty;
+static bool     param_flash_present;
+static bool     save_bias_result;
+static bool     pwm_start_result;
+static float    heater_temp_c;
+static float    accel_shake;
+static float    last_accel_x;
+static unsigned duty_calls;
+static float    last_duty;
 
 static bool capture_create(Task_s* task, PLAT_Task_Entry entry, void* arg, const char* name,
                            void* stack, size_t bytes, uint8_t priority, int calls)
@@ -90,7 +92,10 @@ static DEV_BMI088_Status_e capture_bmi_init(DEV_BMI088_s* imu, const DEV_BMI088_
     TEST_ASSERT_EQUAL_PTR(&accel_spi, cfg->spi_accel);
     TEST_ASSERT_EQUAL_PTR(&gyro_spi, cfg->spi_gyro);
     TEST_ASSERT_EQUAL_PTR(&timebase, cfg->timebase);
-    TEST_ASSERT_EQUAL(DEV_BMI088_ACC_RANGE_3G, cfg->acc_range);
+    /* 6g, not 3g: past full scale each axis clips independently, so a hard hit
+     * yields a short vector pointing the wrong way -- and its magnitude can land
+     * back inside the plausibility window, where nothing rejects it. */
+    TEST_ASSERT_EQUAL(DEV_BMI088_ACC_RANGE_6G, cfg->acc_range);
     TEST_ASSERT_EQUAL(DEV_BMI088_GYRO_RANGE_2000, cfg->gyro_range);
     TEST_ASSERT_EQUAL_UINT8(3u, cfg->max_attempts);
     TEST_ASSERT_EQUAL_UINT16(100u, cfg->temp_divider);
@@ -121,7 +126,10 @@ static bool capture_calibrate(DEV_BMI088_s* imu, uint16_t samples, int calls)
 {
     (void) calls;
     TEST_ASSERT_EQUAL_PTR(imu_seen, imu);
-    TEST_ASSERT_EQUAL_UINT16(2000u, samples);
+    /* Mirrors IMU_CALIB_SAMPLES in app_imu.c, which is private to it. 3000 (3 s)
+     * since 2026/9/29, chosen for how long a vehicle can be held still rather
+     * than for accuracy -- app_imu.c carries the measured trade-off table. */
+    TEST_ASSERT_EQUAL_UINT16(3000u, samples);
     return calibrate_result;
 }
 
@@ -136,7 +144,15 @@ static bool capture_read(DEV_BMI088_s* imu, int calls)
     imu->accel[0] = 0.0f;
     imu->accel[1] = 0.0f;
     imu->accel[2] = 9.794f;
-    imu->temp_c   = heater_temp_c;
+
+    /* Square-wave vibration on x when a test asks for it: alternating +/- on
+     * consecutive samples is the highest frequency this rate can carry, so the
+     * accelerometer low-pass has to attenuate nearly all of it. */
+    if (accel_shake != 0.0f)
+    {
+        imu->accel[0] = ((read_calls & 1u) != 0u) ? accel_shake : -accel_shake;
+    }
+    imu->temp_c = heater_temp_c;
     if (read_calls == 1u)
     {
         return initial_read_result;
@@ -153,7 +169,17 @@ static bool capture_align(UTIL_AHRS_s* ahrs, const float* accel, int calls)
 {
     (void) calls;
     TEST_ASSERT_EQUAL_PTR(ahrs_seen, ahrs);
-    TEST_ASSERT_EQUAL_PTR(imu_seen->accel, accel);
+
+    /* Not the driver's own buffer any more: the accelerometer goes through a
+     * second-order low-pass first, so what arrives is the filter's storage. The
+     * first filtered sample equals its input, so the values still match. */
+    TEST_ASSERT_NOT_NULL(accel);
+
+    for (unsigned i = 0u; i < 3u; i++)
+    {
+        TEST_ASSERT_EQUAL_FLOAT(imu_seen->accel[i], accel[i]);
+    }
+
     return align_result;
 }
 
@@ -210,8 +236,15 @@ static bool capture_update(UTIL_AHRS_s* ahrs, const float* gyro, const float* ac
 {
     (void) calls;
     TEST_ASSERT_EQUAL_PTR(ahrs_seen, ahrs);
+
+    /* The gyro IS the driver's own buffer -- it is fed raw on purpose, because its
+     * high-frequency content is real rotation the filter needs. The accelerometer
+     * is not: it passes through a second-order low-pass first, so only its values
+     * can be checked, and only while the input is constant (these tests hold it
+     * fixed, so the filtered output settles on the same vector). */
     TEST_ASSERT_EQUAL_PTR(imu_seen->gyro, gyro);
-    TEST_ASSERT_EQUAL_PTR(imu_seen->accel, accel);
+    TEST_ASSERT_NOT_NULL(accel);
+    last_accel_x = accel[0];
     TEST_ASSERT_FLOAT_WITHIN(0.000001f, 0.00125f, dt);
     ahrs->euler[0] = 0.4f;
     ahrs->euler[1] = 0.5f;
@@ -404,6 +437,8 @@ void setUp(void)
     telemetry_init_result  = true;
     watchdog_result        = true;
     param_flash_present    = true;
+    accel_shake            = 0.0f;
+    last_accel_x           = 0.0f;
     save_bias_result       = true;
     imu_seen               = NULL;
     ahrs_seen              = NULL;
@@ -641,6 +676,34 @@ static void test_null_heater_pwm_leaves_attitude_running_and_commands_nothing(vo
  * IMU_HEATER_STEP_DIVIDER is IMU_TEMP_DIVIDER / IMU_TASK_PERIOD_MS = 100 / 1 =
  * 100, so the controller's first step lands on the 100th imu_step call.
  */
+/**
+ * @brief Vibration on the accelerometer must not reach the attitude filter.
+ *
+ * The driver reports +/-2 m/s^2 on alternating samples, which is a full-amplitude
+ * square wave at the Nyquist frequency. Attitude is a slow quantity, so what the
+ * filter is handed has to be a small fraction of that -- otherwise every bit of
+ * frame vibration tilts the estimate and pushes the bias states around.
+ *
+ * Fails outright if filtered_accel is bypassed: the raw value arrives at full
+ * amplitude.
+ */
+static void test_accel_vibration_is_attenuated_before_the_filter(void)
+{
+    heater_pwm_present = true;
+    accel_shake        = 2.0f;
+    install_common_stubs();
+    capture_task();
+
+    /* Long enough for the section to settle; its own step response is the first
+     * few tens of samples at this cutoff. */
+    TEST_ASSERT_EQUAL_INT(1, run_body(200u));
+
+    /* Under a tenth of the input amplitude. The exact figure follows from the
+     * cutoff, so this asserts the order of magnitude rather than a coefficient. */
+    TEST_ASSERT_TRUE(last_accel_x < 0.2f);
+    TEST_ASSERT_TRUE(last_accel_x > -0.2f);
+}
+
 static void test_heater_duty_rises_below_setpoint_and_is_floored_above_it(void)
 {
     heater_pwm_present = true;
@@ -740,6 +803,7 @@ int main(int argc, char** argv)
     APP_CASE(hundred_failures_report_once_and_recovery_clears);
     APP_CASE(persistent_failure_after_threshold_faults_only_once);
     APP_CASE(null_heater_pwm_leaves_attitude_running_and_commands_nothing);
+    APP_CASE(accel_vibration_is_attenuated_before_the_filter);
     APP_CASE(heater_duty_rises_below_setpoint_and_is_floored_above_it);
     APP_CASE(heater_output_never_exceeds_configured_cap);
     APP_CASE(heater_out_of_range_temp_commands_nothing);

@@ -36,6 +36,24 @@
       "line_sha256": "59eefc3e1cbe19ced07e0a7b68b3b05c68dafa3297635dd24a79c2ced69d8070",
       "occurrence": 1,
       "rationale": "Reviewed legacy message-bus dependency on platform task notification APIs; retained as explicit architecture debt pending wakeup injection."
+    },
+    {
+      "id": "06_utils/util_fast_math/util_math_backend.h|ARCH_LAYER_INCLUDE|dsp/fast_math_functions.h|1bcde3ed9bc19b79|1",
+      "path": "06_utils/util_fast_math/util_math_backend.h",
+      "rule": "ARCH_LAYER_INCLUDE",
+      "token": "dsp/fast_math_functions.h",
+      "line_sha256": "1bcde3ed9bc19b7903610effc60ee0e9d9548c3f0b1ba6cfb6a230b7ab75f046",
+      "occurrence": 1,
+      "rationale": "Reviewed: 06_utils depending DOWNWARD on 05_vender is sanctioned by docs/rules/structure.md, which names util_log and util_assert including SEGGER_RTT.h as the same shape. Reached only under UTIL_MATH_USE_CMSIS_DSP=1, which is 0 by default, so the default build has no vendor include here at all. Confined to this one shim header on purpose: the whole reason it exists is that util_kf and util_ahrs never name a vendor. These two dsp/ headers replaced a single arm_math.h include, which resolved to the WRONG package -- CubeMX installs two DSP versions and puts both on the path."
+    },
+    {
+      "id": "06_utils/util_fast_math/util_math_backend.h|ARCH_LAYER_INCLUDE|dsp/matrix_functions.h|a957a5e4ae6f5e59|1",
+      "path": "06_utils/util_fast_math/util_math_backend.h",
+      "rule": "ARCH_LAYER_INCLUDE",
+      "token": "dsp/matrix_functions.h",
+      "line_sha256": "a957a5e4ae6f5e592ecdb96354acc77da534ecccd0d09814d8d3c50018f3195f",
+      "occurrence": 1,
+      "rationale": "Reviewed: 06_utils depending DOWNWARD on 05_vender is sanctioned by docs/rules/structure.md, which names util_log and util_assert including SEGGER_RTT.h as the same shape. Reached only under UTIL_MATH_USE_CMSIS_DSP=1, which is 0 by default, so the default build has no vendor include here at all. Confined to this one shim header on purpose: the whole reason it exists is that util_kf and util_ahrs never name a vendor. These two dsp/ headers replaced a single arm_math.h include, which resolved to the WRONG package -- CubeMX installs two DSP versions and puts both on the path."
     }
   ]
 }

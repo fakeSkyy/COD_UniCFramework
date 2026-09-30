@@ -277,6 +277,9 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${SEGGER_CONF_DIR}
     ${SEGGER_DIR}/RTT
 
+    # --- 00_config: build-wide switches, includable from any layer.
+    00_config
+
     06_utils/util_assert
     06_utils/util_registry
     06_utils/util_ringbuf
@@ -342,13 +345,80 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     01_application/telemetry
 )
 
-# CMSIS-DSP is deliberately absent. The F4 build defined ARM_MATH_CM4 and the
-# FPU macros for it, but arm_math.h has never been included anywhere in this
-# repository — so those defines configured a library that was not in use. If DSP
-# is ever wanted, add ARM_MATH_CM7 plus the DSP sources, and check the FPU
-# macros against what the H7 CMSIS already provides.
-target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
-)
+# ------------------------------------------------------------------------------
+# CMSIS-DSP, gated on 00_config/config.h's UTIL_MATH_USE_CMSIS_DSP.
+#
+# OFF by default, and then nothing here runs: no vendor source joins the build and
+# no ARM_MATH_* macro is defined. That matters because the F4 build used to define
+# ARM_MATH_CM4 and the FPU macros while arm_math.h was included nowhere — macros
+# configuring a library that was not in use, which is worse than absent since it
+# reads as though DSP were active.
+#
+# Sources are listed one by one rather than via the vendor tree's own CMake. That
+# is not a preference: CubeMX installs DSP's sources and headers but NOT its
+# *.cmake helper modules, so every CMakeLists.txt under DSP/Source fails at
+# `include(configLib)`. Verified 2026/9/29 — add_subdirectory on it errors out.
+# Three files is also the whole requirement; see util_math_backend.h for why sqrt,
+# asin and sin/cos are not routed through DSP at all. arm_mat_init_f32 is not among
+# them: the descriptors are built as struct literals at each call, so it has no
+# caller and --gc-sections dropped it when it was listed.
+# The switch lives in 00_config/config.h and is READ FROM THERE, not duplicated
+# here. An earlier version declared its own cache variable, which made the setting
+# have two homes that had to agree: editing only the header turned on the #include
+# without adding the DSP sources or include paths, and the build then failed with
+# `implicit declaration of function 'arm_atan2_f32'` while still printing "Solver
+# math: standard library". One switch, one place to set it.
+#
+# CONFIGURE_DEPENDS is not a thing for file(READ), so the reconfigure is wired by
+# hand below: config.h is added to CMAKE_CONFIGURE_DEPENDS so editing it re-runs
+# CMake, which is what makes the value take effect without a manual reconfigure.
+set(COD_CONFIG_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/00_config/config.h)
+
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${COD_CONFIG_HEADER})
+
+file(STRINGS ${COD_CONFIG_HEADER} _dsp_line
+     REGEX "^#define[ \t]+UTIL_MATH_USE_CMSIS_DSP[ \t]+[01]")
+
+if(NOT _dsp_line)
+    message(FATAL_ERROR
+        "00_config/config.h must define UTIL_MATH_USE_CMSIS_DSP as 0 or 1. "
+        "Parsing it rather than taking a -D keeps the switch in one place; a "
+        "silently unparsed header would fall back to a default and mislead.")
+endif()
+
+string(REGEX REPLACE ".*UTIL_MATH_USE_CMSIS_DSP[ \t]+([01]).*" "\\1"
+       UTIL_MATH_USE_CMSIS_DSP "${_dsp_line}")
+
+set(DSP_DIR 05_vender/stm32cubemx/Drivers/CMSIS/DSP)
+
+if(UTIL_MATH_USE_CMSIS_DSP)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        ${DSP_DIR}/Source/MatrixFunctions/arm_mat_mult_f32.c
+        ${DSP_DIR}/Source/MatrixFunctions/arm_mat_add_f32.c
+        ${DSP_DIR}/Source/FastMathFunctions/arm_atan2_f32.c
+    )
+
+    target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
+        ${DSP_DIR}/Include
+        ${DSP_DIR}/PrivateInclude
+    )
+
+    # ARM_MATH_CM7 selects the core's code paths; LOOPUNROLL is the only reason
+    # arm_mat_mult_f32 beats the plain triple loop it replaces, since a Cortex-M7
+    # has no Helium and every vectorised path in DSP is gated on MVE.
+    #
+    # UTIL_MATH_USE_CMSIS_DSP is deliberately NOT defined here: config.h already
+    # defines it, and a -D of the same name would shadow the header while leaving
+    # it looking authoritative. The value was read FROM that header above.
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
+        ARM_MATH_CM7
+        ARM_MATH_LOOPUNROLL
+    )
+
+    message(STATUS "Solver math: CMSIS-DSP (matrix + atan2)")
+else()
+    message(STATUS "Solver math: standard library + util_fast_math (default)")
+endif()
 
 # Removes a bogus libob.a dependency the toolchain file leaves behind for C++.
 list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)

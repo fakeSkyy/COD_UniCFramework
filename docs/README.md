@@ -33,6 +33,10 @@
 **要动代码:** [`rules/structure.md`](rules/structure.md) 是硬性的(层级方向、命名前缀、
 错误处理约定、注释要求)。然后 [`ai-memory/`](ai-memory/) 里看有没有相关的坑。
 
+**要碰 `03_platform` 或 `04_impl`:** [`rules/ops-vtable.md`](rules/ops-vtable.md) 讲清了
+这两层之间那唯一的接缝 —— ops 函数表加不透明 context:契约住在哪、两步创建、构造为什么是
+编译期受管的、回调怎么穿过去、转发器的实测代价、以及加一个后端具体要做什么。
+
 **在查一个 bug:** [`debugging/`](debugging/) 有两份完整的排查记录 ——
 [`tim2-timebase.md`](debugging/tim2-timebase.md) 的价值在方法论(**先验证调试器再相信它的
 输出**),[`hardfault.md`](debugging/hardfault.md) 讲这个框架怎么替换 CubeMX 的裸

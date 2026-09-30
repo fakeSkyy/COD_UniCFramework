@@ -12,6 +12,7 @@
 #include <stdint.h>
 
 #include "util_fast_math.h"
+#include "util_math_backend.h"
 
 /* ========================================================================= */
 /*  Storage sizing                                                           */

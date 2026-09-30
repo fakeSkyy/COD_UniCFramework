@@ -19,7 +19,7 @@
 #include <setjmp.h>
 #include <string.h>
 
-#define CALIBRATION_READS 2000u
+#define CALIBRATION_READS 3000u
 #define ALIGNMENT_READS 1u
 
 /**
@@ -28,11 +28,11 @@
  * IMU_CALIB_ON_BOOT waits for the die to reach setpoint, reading once per
  * millisecond, and gives up after IMU_CALIB_WARMUP_TIMEOUT_MS. The mock sensor
  * here reports a fixed temperature that never reaches the setpoint, so this test
- * always takes the full timeout -- 60000 ms at one read per ms.
+ * always takes the full timeout -- 300000 ms at one read per ms.
  *
  * Mirrors two private constants in app_imu.c. If either moves, this does too.
  */
-#define WARMUP_READS 60000u
+#define WARMUP_READS 300000u
 #define DYNAMIC_GYRO_Z_RAW 3277
 
 static SPI_Instance_s  accel_spi, gyro_spi;

@@ -20,6 +20,11 @@ import xml.etree.ElementTree as ET
 
 SCHEMA_VERSION = 3
 PRODUCTION_LAYERS = (
+    # 00_config is scanned like any other layer. It holds one header of macros
+    # today, so no check is likely to fire on it -- which is the reason to list it
+    # now rather than later: an unscanned layer is exempt from the layering rule,
+    # the vendor-type rule and clang-format at once, and nothing would report that.
+    "00_config",
     "01_application",
     "02_device",
     "03_platform",
@@ -51,10 +56,18 @@ VENDOR_TYPE_RE = re.compile(
 )
 VENDOR_HEADER_RE = re.compile(
     r"^(?:stm32[^/]*\.h|FreeRTOS\.h|task\.h|semphr\.h|queue\.h|event_groups\.h|"
-    r"SEGGER_RTT[^/]*\.h|cmsis[^/]*\.h|arm_math\.h|main\.h|gpio\.h|tim\.h|"
+    r"SEGGER_RTT[^/]*\.h|cmsis[^/]*\.h|arm_[A-Za-z0-9_]*\.h|main\.h|gpio\.h|tim\.h|"
     r"fdcan\.h|can\.h|spi\.h|i2c\.h|usart\.h|adc\.h|dma\.h)$",
     re.IGNORECASE,
 )
+# Matched against the whole include string rather than its basename, for vendor
+# headers whose name alone is generic. CMSIS-DSP's current layout is exactly this
+# case: "dsp/matrix_functions.h" is unmistakably vendor, while its basename
+# "matrix_functions.h" is a name any project could use. Without this the gate saw
+# no violation at all where it previously saw (and had a review recorded for) the
+# equivalent "arm_math.h".
+VENDOR_PATH_RE = re.compile(r"(?:^|/)dsp/[A-Za-z0-9_]+\.h$", re.IGNORECASE)
+
 VENDOR_PACKAGES = ("05_vender/freertos", "05_vender/segger_rtt")
 TEST_PATH_PARTS = {"test", "tests", "mock", "mocks", "contract", "contracts"}
 
@@ -348,12 +361,20 @@ class QualityRunner:
         dependency_violations: list[dict] = []
         vendor_violations: list[dict] = []
         test_violations: list[dict] = []
+        # 00_config is readable from EVERY layer and depends on nothing, so it is
+        # the one entry that appears in every row and has an empty row of its own.
+        # That asymmetry is the rule, not an exemption: a header of literal macros
+        # with no includes cannot create a cycle, which is exactly why it is allowed
+        # to sit below the layering direction rather than inside it.
         allowed = {
-            "01_application": {"01_application", "02_device", "03_platform", "06_utils"},
-            "02_device": {"02_device", "03_platform", "06_utils"},
-            "03_platform": {"03_platform", "04_impl", "06_utils"},
-            "04_impl": {"04_impl", "05_vender", "06_utils"},
-            "06_utils": {"06_utils"},
+            "00_config": set(),
+            "01_application": {
+                "00_config", "01_application", "02_device", "03_platform", "06_utils",
+            },
+            "02_device": {"00_config", "02_device", "03_platform", "06_utils"},
+            "03_platform": {"00_config", "03_platform", "04_impl", "06_utils"},
+            "04_impl": {"00_config", "04_impl", "05_vender", "06_utils"},
+            "06_utils": {"00_config", "06_utils"},
         }
         for source in self.production_files:
             relative = self._relative(source)
@@ -371,7 +392,10 @@ class QualityRunner:
                     ))
                 target_layers = {self._layer(target) for target in targets}
                 target_layers.discard(None)
-                if not target_layers and VENDOR_HEADER_RE.match(Path(include).name):
+                if not target_layers and (
+                    VENDOR_HEADER_RE.match(Path(include).name)
+                    or VENDOR_PATH_RE.search(include.replace("\\", "/"))
+                ):
                     target_layers.add("05_vender")
                 board_exception = relative.startswith("01_application/board/")
                 for target_layer in sorted(target_layers):

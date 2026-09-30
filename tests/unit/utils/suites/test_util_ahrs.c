@@ -406,7 +406,12 @@ static void test_util_ahrs_estimates_the_two_observable_biases(void)
     float accel[3] = {0.0f, 0.0f, G_MPS2};
     float gyro[3]  = {0.02f, -0.01f, 0.0f};
 
-    for (unsigned i = 0u; i < 60000u; i++)
+    /* 180 s, not 60: the bias rate limit (DEFAULT_BIAS_SLEW) caps how fast the
+     * estimate may move, so it reaches 99.0% of the true offset by 60 s and settles
+     * at 99.7% by 180 s. Measured, both with the limit and without it -- the settled
+     * value is the same either way, only the approach is slower. A real loop has
+     * minutes, as the note above says; this just gives the test the same. */
+    for (unsigned i = 0u; i < 180000u; i++)
     {
         TEST_ASSERT_TRUE(UTIL_AHRS_Update(&ahrs, gyro, accel, 0.001f));
     }
@@ -425,6 +430,137 @@ static void test_util_ahrs_estimates_the_two_observable_biases(void)
     TEST_ASSERT_FLOAT_WITHIN(TEST_EPS_LOOSE, 0.0f, UTIL_AHRS_GetPitch(&ahrs));
 }
 
+/**
+ * @brief A tilt present at start-up must land in the attitude, not in the bias.
+ *
+ * This is what the initial covariance ratio decides. The state begins as the
+ * identity quaternion -- "level" -- while the accelerometer reports a body tilted
+ * about x, and the gyro is perfectly still, so every correction is unambiguous: a
+ * still gyro cannot have produced the discrepancy, and the whole of it belongs in
+ * the quaternion. With the ratio inverted the filter charges part of it to the bias
+ * states instead, and a bias fitted to a stationary board goes on rotating the
+ * attitude for as long as it runs.
+ *
+ * Note UTIL_AHRS_Update takes the first accepted sample as an outright alignment,
+ * so this drives it past that and looks at what the corrections afterwards did.
+ *
+ * Fails with INITIAL_P_QUAT at 1.0: the bias picks up the tilt.
+ */
+/**
+ * @brief One step must not move the bias estimate by more than the slew limit.
+ *
+ * A gyro offset far larger than any real bias, with q_bias high enough that the
+ * filter wants to take it in immediately: without the limit the estimate jumps a
+ * large fraction of the way in the first correction, and a jump like that is a
+ * shock or an attitude error charged to the wrong state, not bias being tracked.
+ *
+ * Fails with DEFAULT_BIAS_SLEW removed -- the first step takes far more.
+ */
+static void test_util_ahrs_bias_cannot_jump_in_one_step(void)
+{
+    static float buf[UTIL_AHRS_BUF_SIZE];
+    UTIL_AHRS_s  ahrs;
+
+    TEST_ASSERT_TRUE(UTIL_AHRS_Init(&ahrs, buf, G_MPS2));
+    UTIL_AHRS_SetNoise(&ahrs, 10.0f, 10.0f, 1.0f);
+
+    float accel[3] = {0.0f, 0.0f, G_MPS2};
+
+    /* One step to align, so the next Update runs a real correction. */
+    run_static(&ahrs, accel, 1u);
+
+    float bias[2];
+    UTIL_AHRS_GetBias(&ahrs, bias);
+    const float before = bias[0];
+
+    /* 0.2 rad/s: a huge offset for a bias, yet under DEFAULT_STILL_RATE so the
+     * stillness gate lets the correction run. At 0.5 it would be rejected and the
+     * bias would not move at all, which would pass this assertion for the wrong
+     * reason.
+     *
+     * Three steps, because the gain starts small: the first correction asks for
+     * 5e-11 and only by the third does it want more than one step's allowance.
+     * Each step's own delta is what the limit bounds. */
+    float offset[3] = {0.2f, 0.0f, 0.0f};
+    float prev      = before;
+
+    for (unsigned i = 0u; i < 3u; i++)
+    {
+        TEST_ASSERT_TRUE(UTIL_AHRS_Update(&ahrs, offset, accel, 0.001f));
+        UTIL_AHRS_GetBias(&ahrs, bias);
+
+        /* 0.01 rad/s per second is 1e-5 in a 1 ms step; the bound allows for float
+         * rounding, not for a second step's worth. */
+        TEST_ASSERT_TRUE(UTIL_Absf(bias[0] - prev) <= 1.1e-5f);
+        prev = bias[0];
+    }
+}
+
+/**
+ * @brief With the limit removed the estimate is free to move as far as the gain asks.
+ *
+ * The companion to the case above: it shows the bound there is the limit doing its
+ * job rather than the filter simply never asking for a large step.
+ */
+static void test_util_ahrs_bias_slew_zero_allows_a_large_step(void)
+{
+    static float buf[UTIL_AHRS_BUF_SIZE];
+    UTIL_AHRS_s  ahrs;
+
+    TEST_ASSERT_TRUE(UTIL_AHRS_Init(&ahrs, buf, G_MPS2));
+    UTIL_AHRS_SetNoise(&ahrs, 10.0f, 10.0f, 1.0f);
+    UTIL_AHRS_SetBiasSlew(&ahrs, 0.0f);
+
+    float accel[3] = {0.0f, 0.0f, G_MPS2};
+    run_static(&ahrs, accel, 1u);
+
+    float bias[2];
+    UTIL_AHRS_GetBias(&ahrs, bias);
+    const float before = bias[0];
+
+    /* Same 0.2 rad/s and the same three steps as the case above, so the two differ
+     * only in the limit. By the third step the unlimited filter asks for 3.8e-5 in
+     * one millisecond, nearly four times what the limit would allow. */
+    float offset[3] = {0.2f, 0.0f, 0.0f};
+    float prev      = before;
+    float worst     = 0.0f;
+
+    for (unsigned i = 0u; i < 3u; i++)
+    {
+        TEST_ASSERT_TRUE(UTIL_AHRS_Update(&ahrs, offset, accel, 0.001f));
+        UTIL_AHRS_GetBias(&ahrs, bias);
+
+        const float delta = UTIL_Absf(bias[0] - prev);
+        worst             = (delta > worst) ? delta : worst;
+        prev              = bias[0];
+    }
+
+    TEST_ASSERT_TRUE(worst > 1.1e-5f);
+}
+
+static void test_util_ahrs_startup_tilt_does_not_become_bias(void)
+{
+    static float buf[UTIL_AHRS_BUF_SIZE];
+    UTIL_AHRS_s  ahrs;
+
+    make_ahrs(&ahrs, buf);
+
+    /* About 30 degrees of roll, well inside the magnitude guard. */
+    float tilted[3] = {0.0f, -G_MPS2 * 0.5f, G_MPS2 * 0.866f};
+    run_static(&ahrs, tilted, 500u);
+
+    float bias[2];
+    UTIL_AHRS_GetBias(&ahrs, bias);
+
+    /* A real gyro bias is a small fraction of a rad/s; anything approaching this
+     * is the tilt having been absorbed. */
+    TEST_ASSERT_TRUE(UTIL_Absf(bias[0]) < 0.005f);
+    TEST_ASSERT_TRUE(UTIL_Absf(bias[1]) < 0.005f);
+
+    /* And the attitude did take it: roll sits at the measured tilt. */
+    TEST_ASSERT_FLOAT_WITHIN(0.05f, -0.5236f, UTIL_AHRS_GetRoll(&ahrs));
+}
+
 static void test_util_ahrs_bias_limit_clamps_the_estimate(void)
 {
     static float buf[UTIL_AHRS_BUF_SIZE];
@@ -433,6 +569,11 @@ static void test_util_ahrs_bias_limit_clamps_the_estimate(void)
     TEST_ASSERT_TRUE(UTIL_AHRS_Init(&ahrs, buf, G_MPS2));
     UTIL_AHRS_SetGuards(&ahrs, 0.5f, 5.0f, 0.01f);
     UTIL_AHRS_SetNoise(&ahrs, 10.0f, 1.0f, 1.0f);
+
+    /* The stillness gate would reject every sample below at 2 rad/s, so nothing
+     * would reach the bias states and there would be no clamp to observe. Disabled
+     * here to test the clamp on its own; the gate has its own cases. */
+    UTIL_AHRS_SetStillRate(&ahrs, 0.0f);
 
     float accel[3] = {0.0f, 0.0f, G_MPS2};
     run_static(&ahrs, accel, 1u);
@@ -456,6 +597,70 @@ static void test_util_ahrs_bias_limit_clamps_the_estimate(void)
 /* ========================================================================= */
 /*  Accelerometer magnitude guard                                            */
 /* ========================================================================= */
+
+/**
+ * @brief A steady turn must not be absorbed into the bias states.
+ *
+ * The accelerometer reads exactly 1 g throughout, so the magnitude guard passes and
+ * only the rate gate can reject these samples. Without it the correction attributes
+ * part of a real rotation to bias, and the bias then applies it after the motion
+ * stops -- a heading that walks away on a stationary board.
+ */
+static void test_util_ahrs_turning_does_not_accumulate_bias(void)
+{
+    static float buf[UTIL_AHRS_BUF_SIZE];
+    UTIL_AHRS_s  ahrs;
+
+    make_ahrs(&ahrs, buf);
+
+    float accel[3] = {0.0f, 0.0f, G_MPS2};
+    run_static(&ahrs, accel, 1u);
+
+    const uint32_t before = UTIL_AHRS_GetAccelRejectCount(&ahrs);
+
+    /* 1 rad/s, well over the 0.3 rad/s default and far short of anything the
+     * magnitude guard would catch. */
+    float turning[3] = {1.0f, 0.0f, 0.0f};
+    for (unsigned i = 0u; i < 2000u; i++)
+    {
+        TEST_ASSERT_TRUE(UTIL_AHRS_Update(&ahrs, turning, accel, 0.001f));
+    }
+
+    TEST_ASSERT_EQUAL_UINT32(before + 2000u, UTIL_AHRS_GetAccelRejectCount(&ahrs));
+
+    float bias[2];
+    UTIL_AHRS_GetBias(&ahrs, bias);
+    TEST_ASSERT_FLOAT_WITHIN(TEST_EPS_TIGHT, 0.0f, bias[0]);
+    TEST_ASSERT_FLOAT_WITHIN(TEST_EPS_TIGHT, 0.0f, bias[1]);
+}
+
+/**
+ * @brief Below the threshold the accelerometer is still used.
+ *
+ * The gate must not be so eager that ordinary noise suppresses the correction the
+ * filter depends on; a rate under the threshold has to behave exactly as before.
+ */
+static void test_util_ahrs_slow_motion_still_corrects(void)
+{
+    static float buf[UTIL_AHRS_BUF_SIZE];
+    UTIL_AHRS_s  ahrs;
+
+    make_ahrs(&ahrs, buf);
+
+    float accel[3] = {0.0f, 0.0f, G_MPS2};
+    run_static(&ahrs, accel, 1u);
+
+    const uint32_t before = UTIL_AHRS_GetAccelRejectCount(&ahrs);
+
+    /* 0.1 rad/s: under the 0.3 rad/s default. */
+    float creeping[3] = {0.1f, 0.0f, 0.0f};
+    for (unsigned i = 0u; i < 100u; i++)
+    {
+        TEST_ASSERT_TRUE(UTIL_AHRS_Update(&ahrs, creeping, accel, 0.001f));
+    }
+
+    TEST_ASSERT_EQUAL_UINT32(before, UTIL_AHRS_GetAccelRejectCount(&ahrs));
+}
 
 static void test_util_ahrs_rejects_accel_far_from_gravity(void)
 {
@@ -774,8 +979,13 @@ int main(void)
     RUN_TEST(test_util_ahrs_accel_never_corrects_yaw);
 
     RUN_TEST(test_util_ahrs_estimates_the_two_observable_biases);
+    RUN_TEST(test_util_ahrs_bias_cannot_jump_in_one_step);
+    RUN_TEST(test_util_ahrs_bias_slew_zero_allows_a_large_step);
+    RUN_TEST(test_util_ahrs_startup_tilt_does_not_become_bias);
     RUN_TEST(test_util_ahrs_bias_limit_clamps_the_estimate);
 
+    RUN_TEST(test_util_ahrs_turning_does_not_accumulate_bias);
+    RUN_TEST(test_util_ahrs_slow_motion_still_corrects);
     RUN_TEST(test_util_ahrs_rejects_accel_far_from_gravity);
     RUN_TEST(test_util_ahrs_runs_open_loop_while_accel_is_rejected);
     RUN_TEST(test_util_ahrs_bad_accel_defers_the_initial_fix);

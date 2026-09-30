@@ -46,4 +46,11 @@ bool     DEV_DJIMotor_CommitBus(DEV_DJI_Bus_s* bus, float dt_s);
 
 void UTIL_Log_Write(UTIL_Log_Level_e level, const char* tag, const char* fmt, ...);
 
+
+/* app_chassis reads the attitude for a debugger-visible readout of yaw/pitch/roll.
+ * Mocked rather than linked so the chassis suite stays independent of the IMU. */
+float App_Imu_Yaw(void);
+float App_Imu_Pitch(void);
+float App_Imu_Roll(void);
+
 #endif /* CHASSIS_DEPS_H */

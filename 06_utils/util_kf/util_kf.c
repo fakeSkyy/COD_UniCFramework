@@ -350,43 +350,17 @@ bool UTIL_KF_Predict(UTIL_KF_s* kf)
     /* ---- P = A P A' + Q ---- */
 
     /* scratch = A P */
-    for (uint16_t i = 0u; i < n; i++)
-    {
-        const float* a_row = &kf->a_mat[(uint32_t) i * n];
+    UTIL_MatMul(kf->a_mat, kf->p_mat, kf->scratch_nn, n, n, n);
 
-        for (uint16_t j = 0u; j < n; j++)
-        {
-            float acc = 0.0f;
-
-            for (uint16_t k = 0u; k < n; k++)
-            {
-                acc += a_row[k] * kf->p_mat[(uint32_t) k * n + j];
-            }
-
-            kf->scratch_nn[(uint32_t) i * n + j] = acc;
-        }
-    }
-
-    /* P = scratch * A' + Q. A' is read as a column walk of A rather than being
+    /* P = scratch * A'. A' is read as a column walk of A rather than being
      * materialised, which is what lets this run without the explicit transpose
-     * buffer the legacy version carried. */
-    for (uint16_t i = 0u; i < n; i++)
-    {
-        const float* s_row = &kf->scratch_nn[(uint32_t) i * n];
+     * buffer the legacy version carried — see UTIL_MatMulTransposed for why that
+     * holds under both math backends. */
+    UTIL_MatMulTransposed(kf->scratch_nn, kf->a_mat, kf->p_mat, n, n, n);
 
-        for (uint16_t j = 0u; j < n; j++)
-        {
-            const float* a_row_j = &kf->a_mat[(uint32_t) j * n];
-            float        acc     = 0.0f;
-
-            for (uint16_t k = 0u; k < n; k++)
-            {
-                acc += s_row[k] * a_row_j[k];
-            }
-
-            kf->p_mat[(uint32_t) i * n + j] = acc + kf->q_mat[(uint32_t) i * n + j];
-        }
-    }
+    /* P += Q. Separate from the product above because neither backend's multiply
+     * accumulates into its destination, and scratch_nn is already spoken for. */
+    UTIL_MatAdd(kf->p_mat, kf->q_mat, kf->p_mat, n, n);
 
     symmetrise(kf);
 

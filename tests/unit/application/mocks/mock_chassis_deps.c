@@ -5,6 +5,9 @@
 #include "cmock.h"
 #include "mock_chassis_deps.h"
 
+static const char* CMockString_App_Imu_Pitch = "App_Imu_Pitch";
+static const char* CMockString_App_Imu_Roll = "App_Imu_Roll";
+static const char* CMockString_App_Imu_Yaw = "App_Imu_Yaw";
 static const char* CMockString_Board_CANCreate = "Board_CANCreate";
 static const char* CMockString_Board_CANCreateRange = "Board_CANCreateRange";
 static const char* CMockString_Board_Timebase = "Board_Timebase";
@@ -369,6 +372,33 @@ typedef struct _CMOCK_UTIL_Log_Write_CALL_INSTANCE
 
 } CMOCK_UTIL_Log_Write_CALL_INSTANCE;
 
+typedef struct _CMOCK_App_Imu_Yaw_CALL_INSTANCE
+{
+  UNITY_LINE_TYPE LineNumber;
+  char ExpectAnyArgsBool;
+  float ReturnVal;
+  int CallOrder;
+
+} CMOCK_App_Imu_Yaw_CALL_INSTANCE;
+
+typedef struct _CMOCK_App_Imu_Pitch_CALL_INSTANCE
+{
+  UNITY_LINE_TYPE LineNumber;
+  char ExpectAnyArgsBool;
+  float ReturnVal;
+  int CallOrder;
+
+} CMOCK_App_Imu_Pitch_CALL_INSTANCE;
+
+typedef struct _CMOCK_App_Imu_Roll_CALL_INSTANCE
+{
+  UNITY_LINE_TYPE LineNumber;
+  char ExpectAnyArgsBool;
+  float ReturnVal;
+  int CallOrder;
+
+} CMOCK_App_Imu_Roll_CALL_INSTANCE;
+
 static struct mock_chassis_depsInstance
 {
   char Board_Timebase_IgnoreBool;
@@ -482,6 +512,24 @@ static struct mock_chassis_depsInstance
   CMOCK_UTIL_Log_Write_CALLBACK UTIL_Log_Write_CallbackFunctionPointer;
   int UTIL_Log_Write_CallbackCalls;
   CMOCK_MEM_INDEX_TYPE UTIL_Log_Write_CallInstance;
+  char App_Imu_Yaw_IgnoreBool;
+  float App_Imu_Yaw_FinalReturn;
+  char App_Imu_Yaw_CallbackBool;
+  CMOCK_App_Imu_Yaw_CALLBACK App_Imu_Yaw_CallbackFunctionPointer;
+  int App_Imu_Yaw_CallbackCalls;
+  CMOCK_MEM_INDEX_TYPE App_Imu_Yaw_CallInstance;
+  char App_Imu_Pitch_IgnoreBool;
+  float App_Imu_Pitch_FinalReturn;
+  char App_Imu_Pitch_CallbackBool;
+  CMOCK_App_Imu_Pitch_CALLBACK App_Imu_Pitch_CallbackFunctionPointer;
+  int App_Imu_Pitch_CallbackCalls;
+  CMOCK_MEM_INDEX_TYPE App_Imu_Pitch_CallInstance;
+  char App_Imu_Roll_IgnoreBool;
+  float App_Imu_Roll_FinalReturn;
+  char App_Imu_Roll_CallbackBool;
+  CMOCK_App_Imu_Roll_CALLBACK App_Imu_Roll_CallbackFunctionPointer;
+  int App_Imu_Roll_CallbackCalls;
+  CMOCK_MEM_INDEX_TYPE App_Imu_Roll_CallInstance;
 } Mock;
 
 extern int GlobalExpectCount;
@@ -734,6 +782,45 @@ void mock_chassis_deps_Verify(void)
     UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
   }
   if (Mock.UTIL_Log_Write_CallbackFunctionPointer != NULL)
+  {
+    call_instance = CMOCK_GUTS_NONE;
+    (void)call_instance;
+  }
+  call_instance = Mock.App_Imu_Yaw_CallInstance;
+  if (Mock.App_Imu_Yaw_IgnoreBool)
+    call_instance = CMOCK_GUTS_NONE;
+  if (CMOCK_GUTS_NONE != call_instance)
+  {
+    UNITY_SET_DETAIL(CMockString_App_Imu_Yaw);
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
+  }
+  if (Mock.App_Imu_Yaw_CallbackFunctionPointer != NULL)
+  {
+    call_instance = CMOCK_GUTS_NONE;
+    (void)call_instance;
+  }
+  call_instance = Mock.App_Imu_Pitch_CallInstance;
+  if (Mock.App_Imu_Pitch_IgnoreBool)
+    call_instance = CMOCK_GUTS_NONE;
+  if (CMOCK_GUTS_NONE != call_instance)
+  {
+    UNITY_SET_DETAIL(CMockString_App_Imu_Pitch);
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
+  }
+  if (Mock.App_Imu_Pitch_CallbackFunctionPointer != NULL)
+  {
+    call_instance = CMOCK_GUTS_NONE;
+    (void)call_instance;
+  }
+  call_instance = Mock.App_Imu_Roll_CallInstance;
+  if (Mock.App_Imu_Roll_IgnoreBool)
+    call_instance = CMOCK_GUTS_NONE;
+  if (CMOCK_GUTS_NONE != call_instance)
+  {
+    UNITY_SET_DETAIL(CMockString_App_Imu_Roll);
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLess);
+  }
+  if (Mock.App_Imu_Roll_CallbackFunctionPointer != NULL)
   {
     call_instance = CMOCK_GUTS_NONE;
     (void)call_instance;
@@ -4181,5 +4268,284 @@ void UTIL_Log_Write_CMockIgnoreArg_fmt(UNITY_LINE_TYPE cmock_line)
   CMOCK_UTIL_Log_Write_CALL_INSTANCE* cmock_call_instance = (CMOCK_UTIL_Log_Write_CALL_INSTANCE*)CMock_Guts_GetAddressFor(CMock_Guts_MemEndOfChain(Mock.UTIL_Log_Write_CallInstance));
   UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringIgnPreExp);
   cmock_call_instance->IgnoreArg_fmt = 1;
+}
+
+float App_Imu_Yaw(void)
+{
+  UNITY_LINE_TYPE cmock_line = TEST_LINE_NUM;
+  CMOCK_App_Imu_Yaw_CALL_INSTANCE* cmock_call_instance;
+  UNITY_SET_DETAIL(CMockString_App_Imu_Yaw);
+  cmock_call_instance = (CMOCK_App_Imu_Yaw_CALL_INSTANCE*)CMock_Guts_GetAddressFor(Mock.App_Imu_Yaw_CallInstance);
+  Mock.App_Imu_Yaw_CallInstance = CMock_Guts_MemNext(Mock.App_Imu_Yaw_CallInstance);
+  if (Mock.App_Imu_Yaw_IgnoreBool)
+  {
+    UNITY_CLR_DETAILS();
+    if (cmock_call_instance == NULL)
+      return Mock.App_Imu_Yaw_FinalReturn;
+    Mock.App_Imu_Yaw_FinalReturn = cmock_call_instance->ReturnVal;
+    return cmock_call_instance->ReturnVal;
+  }
+  if (!Mock.App_Imu_Yaw_CallbackBool &&
+      Mock.App_Imu_Yaw_CallbackFunctionPointer != NULL)
+  {
+    float cmock_cb_ret = Mock.App_Imu_Yaw_CallbackFunctionPointer(Mock.App_Imu_Yaw_CallbackCalls++);
+    UNITY_CLR_DETAILS();
+    return cmock_cb_ret;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringCalledMore);
+  cmock_line = cmock_call_instance->LineNumber;
+  if (cmock_call_instance->CallOrder > ++GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledEarly);
+  if (cmock_call_instance->CallOrder < GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLate);
+  if (Mock.App_Imu_Yaw_CallbackFunctionPointer != NULL)
+  {
+    UNITY_SET_DETAIL(CMockString_App_Imu_Yaw);
+    cmock_call_instance->ReturnVal = Mock.App_Imu_Yaw_CallbackFunctionPointer(Mock.App_Imu_Yaw_CallbackCalls++);
+  }
+  UNITY_CLR_DETAILS();
+  return cmock_call_instance->ReturnVal;
+}
+
+void App_Imu_Yaw_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, float cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_App_Imu_Yaw_CALL_INSTANCE));
+  CMOCK_App_Imu_Yaw_CALL_INSTANCE* cmock_call_instance = (CMOCK_App_Imu_Yaw_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.App_Imu_Yaw_CallInstance = CMock_Guts_MemChain(Mock.App_Imu_Yaw_CallInstance, cmock_guts_index);
+  Mock.App_Imu_Yaw_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+  Mock.App_Imu_Yaw_IgnoreBool = (char)1;
+}
+
+void App_Imu_Yaw_CMockStopIgnore(void)
+{
+  if(Mock.App_Imu_Yaw_IgnoreBool)
+    Mock.App_Imu_Yaw_CallInstance = CMock_Guts_MemNext(Mock.App_Imu_Yaw_CallInstance);
+  Mock.App_Imu_Yaw_IgnoreBool = (char)0;
+}
+
+void App_Imu_Yaw_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, float cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_App_Imu_Yaw_CALL_INSTANCE));
+  CMOCK_App_Imu_Yaw_CALL_INSTANCE* cmock_call_instance = (CMOCK_App_Imu_Yaw_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.App_Imu_Yaw_CallInstance = CMock_Guts_MemChain(Mock.App_Imu_Yaw_CallInstance, cmock_guts_index);
+  Mock.App_Imu_Yaw_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+}
+
+void App_Imu_Yaw_AddCallback(CMOCK_App_Imu_Yaw_CALLBACK Callback)
+{
+  Mock.App_Imu_Yaw_IgnoreBool = (char)0;
+  Mock.App_Imu_Yaw_CallbackBool = (char)1;
+  Mock.App_Imu_Yaw_CallbackCalls = 0;
+  Mock.App_Imu_Yaw_CallbackFunctionPointer = Callback;
+}
+
+int App_Imu_Yaw_CallCount(void)
+{
+  return Mock.App_Imu_Yaw_CallbackCalls;
+}
+
+void App_Imu_Yaw_Stub(CMOCK_App_Imu_Yaw_CALLBACK Callback)
+{
+  Mock.App_Imu_Yaw_IgnoreBool = (char)0;
+  Mock.App_Imu_Yaw_CallbackBool = (char)0;
+  Mock.App_Imu_Yaw_CallbackCalls = 0;
+  Mock.App_Imu_Yaw_CallbackFunctionPointer = Callback;
+}
+
+float App_Imu_Pitch(void)
+{
+  UNITY_LINE_TYPE cmock_line = TEST_LINE_NUM;
+  CMOCK_App_Imu_Pitch_CALL_INSTANCE* cmock_call_instance;
+  UNITY_SET_DETAIL(CMockString_App_Imu_Pitch);
+  cmock_call_instance = (CMOCK_App_Imu_Pitch_CALL_INSTANCE*)CMock_Guts_GetAddressFor(Mock.App_Imu_Pitch_CallInstance);
+  Mock.App_Imu_Pitch_CallInstance = CMock_Guts_MemNext(Mock.App_Imu_Pitch_CallInstance);
+  if (Mock.App_Imu_Pitch_IgnoreBool)
+  {
+    UNITY_CLR_DETAILS();
+    if (cmock_call_instance == NULL)
+      return Mock.App_Imu_Pitch_FinalReturn;
+    Mock.App_Imu_Pitch_FinalReturn = cmock_call_instance->ReturnVal;
+    return cmock_call_instance->ReturnVal;
+  }
+  if (!Mock.App_Imu_Pitch_CallbackBool &&
+      Mock.App_Imu_Pitch_CallbackFunctionPointer != NULL)
+  {
+    float cmock_cb_ret = Mock.App_Imu_Pitch_CallbackFunctionPointer(Mock.App_Imu_Pitch_CallbackCalls++);
+    UNITY_CLR_DETAILS();
+    return cmock_cb_ret;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringCalledMore);
+  cmock_line = cmock_call_instance->LineNumber;
+  if (cmock_call_instance->CallOrder > ++GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledEarly);
+  if (cmock_call_instance->CallOrder < GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLate);
+  if (Mock.App_Imu_Pitch_CallbackFunctionPointer != NULL)
+  {
+    UNITY_SET_DETAIL(CMockString_App_Imu_Pitch);
+    cmock_call_instance->ReturnVal = Mock.App_Imu_Pitch_CallbackFunctionPointer(Mock.App_Imu_Pitch_CallbackCalls++);
+  }
+  UNITY_CLR_DETAILS();
+  return cmock_call_instance->ReturnVal;
+}
+
+void App_Imu_Pitch_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, float cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_App_Imu_Pitch_CALL_INSTANCE));
+  CMOCK_App_Imu_Pitch_CALL_INSTANCE* cmock_call_instance = (CMOCK_App_Imu_Pitch_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.App_Imu_Pitch_CallInstance = CMock_Guts_MemChain(Mock.App_Imu_Pitch_CallInstance, cmock_guts_index);
+  Mock.App_Imu_Pitch_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+  Mock.App_Imu_Pitch_IgnoreBool = (char)1;
+}
+
+void App_Imu_Pitch_CMockStopIgnore(void)
+{
+  if(Mock.App_Imu_Pitch_IgnoreBool)
+    Mock.App_Imu_Pitch_CallInstance = CMock_Guts_MemNext(Mock.App_Imu_Pitch_CallInstance);
+  Mock.App_Imu_Pitch_IgnoreBool = (char)0;
+}
+
+void App_Imu_Pitch_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, float cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_App_Imu_Pitch_CALL_INSTANCE));
+  CMOCK_App_Imu_Pitch_CALL_INSTANCE* cmock_call_instance = (CMOCK_App_Imu_Pitch_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.App_Imu_Pitch_CallInstance = CMock_Guts_MemChain(Mock.App_Imu_Pitch_CallInstance, cmock_guts_index);
+  Mock.App_Imu_Pitch_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+}
+
+void App_Imu_Pitch_AddCallback(CMOCK_App_Imu_Pitch_CALLBACK Callback)
+{
+  Mock.App_Imu_Pitch_IgnoreBool = (char)0;
+  Mock.App_Imu_Pitch_CallbackBool = (char)1;
+  Mock.App_Imu_Pitch_CallbackCalls = 0;
+  Mock.App_Imu_Pitch_CallbackFunctionPointer = Callback;
+}
+
+int App_Imu_Pitch_CallCount(void)
+{
+  return Mock.App_Imu_Pitch_CallbackCalls;
+}
+
+void App_Imu_Pitch_Stub(CMOCK_App_Imu_Pitch_CALLBACK Callback)
+{
+  Mock.App_Imu_Pitch_IgnoreBool = (char)0;
+  Mock.App_Imu_Pitch_CallbackBool = (char)0;
+  Mock.App_Imu_Pitch_CallbackCalls = 0;
+  Mock.App_Imu_Pitch_CallbackFunctionPointer = Callback;
+}
+
+float App_Imu_Roll(void)
+{
+  UNITY_LINE_TYPE cmock_line = TEST_LINE_NUM;
+  CMOCK_App_Imu_Roll_CALL_INSTANCE* cmock_call_instance;
+  UNITY_SET_DETAIL(CMockString_App_Imu_Roll);
+  cmock_call_instance = (CMOCK_App_Imu_Roll_CALL_INSTANCE*)CMock_Guts_GetAddressFor(Mock.App_Imu_Roll_CallInstance);
+  Mock.App_Imu_Roll_CallInstance = CMock_Guts_MemNext(Mock.App_Imu_Roll_CallInstance);
+  if (Mock.App_Imu_Roll_IgnoreBool)
+  {
+    UNITY_CLR_DETAILS();
+    if (cmock_call_instance == NULL)
+      return Mock.App_Imu_Roll_FinalReturn;
+    Mock.App_Imu_Roll_FinalReturn = cmock_call_instance->ReturnVal;
+    return cmock_call_instance->ReturnVal;
+  }
+  if (!Mock.App_Imu_Roll_CallbackBool &&
+      Mock.App_Imu_Roll_CallbackFunctionPointer != NULL)
+  {
+    float cmock_cb_ret = Mock.App_Imu_Roll_CallbackFunctionPointer(Mock.App_Imu_Roll_CallbackCalls++);
+    UNITY_CLR_DETAILS();
+    return cmock_cb_ret;
+  }
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringCalledMore);
+  cmock_line = cmock_call_instance->LineNumber;
+  if (cmock_call_instance->CallOrder > ++GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledEarly);
+  if (cmock_call_instance->CallOrder < GlobalVerifyOrder)
+    UNITY_TEST_FAIL(cmock_line, CMockStringCalledLate);
+  if (Mock.App_Imu_Roll_CallbackFunctionPointer != NULL)
+  {
+    UNITY_SET_DETAIL(CMockString_App_Imu_Roll);
+    cmock_call_instance->ReturnVal = Mock.App_Imu_Roll_CallbackFunctionPointer(Mock.App_Imu_Roll_CallbackCalls++);
+  }
+  UNITY_CLR_DETAILS();
+  return cmock_call_instance->ReturnVal;
+}
+
+void App_Imu_Roll_CMockIgnoreAndReturn(UNITY_LINE_TYPE cmock_line, float cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_App_Imu_Roll_CALL_INSTANCE));
+  CMOCK_App_Imu_Roll_CALL_INSTANCE* cmock_call_instance = (CMOCK_App_Imu_Roll_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.App_Imu_Roll_CallInstance = CMock_Guts_MemChain(Mock.App_Imu_Roll_CallInstance, cmock_guts_index);
+  Mock.App_Imu_Roll_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+  Mock.App_Imu_Roll_IgnoreBool = (char)1;
+}
+
+void App_Imu_Roll_CMockStopIgnore(void)
+{
+  if(Mock.App_Imu_Roll_IgnoreBool)
+    Mock.App_Imu_Roll_CallInstance = CMock_Guts_MemNext(Mock.App_Imu_Roll_CallInstance);
+  Mock.App_Imu_Roll_IgnoreBool = (char)0;
+}
+
+void App_Imu_Roll_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, float cmock_to_return)
+{
+  CMOCK_MEM_INDEX_TYPE cmock_guts_index = CMock_Guts_MemNew(sizeof(CMOCK_App_Imu_Roll_CALL_INSTANCE));
+  CMOCK_App_Imu_Roll_CALL_INSTANCE* cmock_call_instance = (CMOCK_App_Imu_Roll_CALL_INSTANCE*)CMock_Guts_GetAddressFor(cmock_guts_index);
+  UNITY_TEST_ASSERT_NOT_NULL(cmock_call_instance, cmock_line, CMockStringOutOfMemory);
+  memset(cmock_call_instance, 0, sizeof(*cmock_call_instance));
+  Mock.App_Imu_Roll_CallInstance = CMock_Guts_MemChain(Mock.App_Imu_Roll_CallInstance, cmock_guts_index);
+  Mock.App_Imu_Roll_IgnoreBool = (char)0;
+  cmock_call_instance->LineNumber = cmock_line;
+  cmock_call_instance->CallOrder = ++GlobalExpectCount;
+  cmock_call_instance->ExpectAnyArgsBool = (char)0;
+  cmock_call_instance->ReturnVal = cmock_to_return;
+}
+
+void App_Imu_Roll_AddCallback(CMOCK_App_Imu_Roll_CALLBACK Callback)
+{
+  Mock.App_Imu_Roll_IgnoreBool = (char)0;
+  Mock.App_Imu_Roll_CallbackBool = (char)1;
+  Mock.App_Imu_Roll_CallbackCalls = 0;
+  Mock.App_Imu_Roll_CallbackFunctionPointer = Callback;
+}
+
+int App_Imu_Roll_CallCount(void)
+{
+  return Mock.App_Imu_Roll_CallbackCalls;
+}
+
+void App_Imu_Roll_Stub(CMOCK_App_Imu_Roll_CALLBACK Callback)
+{
+  Mock.App_Imu_Roll_IgnoreBool = (char)0;
+  Mock.App_Imu_Roll_CallbackBool = (char)0;
+  Mock.App_Imu_Roll_CallbackCalls = 0;
+  Mock.App_Imu_Roll_CallbackFunctionPointer = Callback;
 }
 

@@ -33,7 +33,31 @@
 
 /** @brief Bounds on the calibration sample count. */
 #define CALIB_MIN_SAMPLES 100u
-#define CALIB_MAX_SAMPLES 5000u
+/**
+ * @brief Upper bound on averaged samples, and why it is this large.
+ *
+ * The bias estimate's standard error falls as 1/sqrt(N), so the window length is
+ * the only lever on calibration accuracy short of a better sensor. Measured on
+ * this board, the yaw drift that survives calibration is 0.0035 deg/s, which is
+ * inside the 1-sigma noise floor of a 2000-sample (2 s) window -- i.e. the drift
+ * IS the calibration's own uncertainty, not a defect elsewhere.
+ *
+ * The cap is 30000 rather than the 3000 its only caller currently asks for
+ * (IMU_CALIB_SAMPLES in app_imu.c, where the trade-off is tabulated): a driver
+ * limit should bound what the hardware and this loop can honour, not mirror one
+ * application's present choice. Raising the application's window must not require
+ * editing the driver, which is exactly the coupling that made the first attempt
+ * at 20000 silently clamp to the old 5000.
+ *
+ * 30000 is the defensible maximum because the caller passes a uint16_t and the
+ * loop delays 1 ms per sample: the call blocks for that many milliseconds, and
+ * bring-up runs before the scheduler, so 30 s is already a long time to be
+ * unresponsive.
+ *
+ * Float accumulation is not the limit: summing 20000 terms of ~1.6e-5 carries a
+ * relative error near 8e-6, far below the noise being averaged.
+ */
+#define CALIB_MAX_SAMPLES 30000u
 
 /**
  * @brief Largest sample standard deviation, in rad/s, that still counts as still.

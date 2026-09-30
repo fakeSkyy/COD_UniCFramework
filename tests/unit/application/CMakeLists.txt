@@ -117,6 +117,7 @@ add_application_test(test_app_imu
     hundred_failures_report_once_and_recovery_clears
     persistent_failure_after_threshold_faults_only_once
     null_heater_pwm_leaves_attitude_running_and_commands_nothing
+    accel_vibration_is_attenuated_before_the_filter
     heater_duty_rises_below_setpoint_and_is_floored_above_it
     heater_output_never_exceeds_configured_cap
     heater_out_of_range_temp_commands_nothing

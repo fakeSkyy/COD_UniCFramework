@@ -28,6 +28,40 @@
 /** @brief Default cap on the estimated bias magnitude, rad/s. */
 #define DEFAULT_BIAS_LIMIT 0.1f
 
+/**
+ * @brief Cap on how fast the bias estimate may move, rad/s per second.
+ *
+ * DEFAULT_BIAS_LIMIT bounds where the estimate can end up; this bounds how quickly
+ * it gets there, and the two catch different things. A real MEMS bias walks over
+ * minutes as the die warms, so any correction that moves it appreciably in one
+ * millisecond is not tracking bias -- it is a shock, a clipped sample, or attitude
+ * error being charged to the wrong state. Those all pass the magnitude test on the
+ * accelerometer and reach the correction.
+ *
+ * Without a rate limit the estimate can travel from zero to DEFAULT_BIAS_LIMIT in a
+ * single step and then take many seconds to unwind, during which the propagated
+ * rate is wrong. 0.01 rad/s per second is the reference implementation's figure for
+ * the same guard; at 1 kHz it permits 1e-5 rad/s per step, which is far more than
+ * thermal drift needs and far less than one bad sample would ask for.
+ */
+#define DEFAULT_BIAS_SLEW 0.01f
+
+/**
+ * @brief Default angular rate below which the body counts as still, rad/s.
+ *
+ * The magnitude test alone is not enough to decide that gravity is observable.
+ * Turning at a constant rate leaves the accelerometer reading exactly 1 g -- the
+ * magnitude check passes -- while the attitude is genuinely changing, so the
+ * correction that follows attributes part of that real rotation to the bias
+ * states. The bias then carries the error forward after the motion stops, which
+ * is the mechanism behind a heading that walks away over minutes.
+ *
+ * 0.3 rad/s (about 17 deg/s) is the DJI reference implementation's threshold for
+ * the same gate. It is loose enough that sensor noise and small handling never
+ * suppress the correction, and tight enough that any deliberate rotation does.
+ */
+#define DEFAULT_STILL_RATE 0.3f
+
 /** @brief Default innovation gate, in sigma. */
 #define DEFAULT_GATE_SIGMA 5.0f
 
@@ -47,11 +81,40 @@
  */
 #define DEFAULT_GATE_MAX_RUN 50u
 
-/** @brief Initial covariance on the quaternion states. */
-#define INITIAL_P_QUAT 1.0f
+/**
+ * @brief Initial covariance on the quaternion states.
+ *
+ * Large, and larger than INITIAL_P_BIAS on purpose: what a Kalman filter does with
+ * these numbers is decide how to SPLIT each correction between the states, so only
+ * their ratio matters. At start-up the attitude is a guess -- the state is the
+ * identity quaternion, i.e. "perfectly level", whatever the vehicle is really
+ * sitting on -- while the bias is genuinely close to zero because bring-up has
+ * just measured it. A ratio that says the opposite makes the filter read the first
+ * "you are tilted" measurements as bias error and absorb the initial tilt into the
+ * bias states, which then keeps applying it to the gyro after the attitude has
+ * settled. That is a heading that walks away on a stationary board.
+ *
+ * 1e5 against a bias 1e2 is the ratio the COD_H7_Template reference uses, whose
+ * heading is stable. It had been 1.0 here, i.e. a hundred-thousand-fold weighting
+ * the other way.
+ */
+#define INITIAL_P_QUAT 100000.0f
 
 /** @brief Initial covariance on the bias states. */
 #define INITIAL_P_BIAS 100.0f
+
+/**
+ * @brief Diagonal loaded into P when the state has to be rebuilt after going
+ *        non-finite.
+ *
+ * Deliberately not INITIAL_P_QUAT. This is a recovery path, not a cold start: the
+ * attitude is about to be re-established from gravity by the caller, and handing
+ * the filter 1e5 here would make the first few corrections after a rebuild
+ * enormous. 1.0 keeps the recovery gentle, which is what it was before
+ * INITIAL_P_QUAT was raised -- the two shared a constant, and the sharing was
+ * incidental rather than meant.
+ */
+#define REBUILD_P_DIAG 1.0f
 
 /** @brief Smallest vector magnitude that still defines a direction. */
 #define MIN_VECTOR_NORM 1.0e-9f
@@ -132,7 +195,7 @@ static void update_euler(UTIL_AHRS_s* ahrs)
     float q0 = q[0], q1 = q[1], q2 = q[2], q3 = q[3];
 
     /* Roll: rotation about x. */
-    ahrs->euler[0] = atan2f(2.0f * (q0 * q1 + q2 * q3), 1.0f - 2.0f * (q1 * q1 + q2 * q2));
+    ahrs->euler[0] = UTIL_Atan2(2.0f * (q0 * q1 + q2 * q3), 1.0f - 2.0f * (q1 * q1 + q2 * q2));
 
     /* Pitch: rotation about y. The argument is 1 only for an exactly unit
      * quaternion, so clamp it — asinf of 1.0000001 is NaN, and one rounding past
@@ -142,7 +205,7 @@ static void update_euler(UTIL_AHRS_s* ahrs)
     ahrs->euler[1]  = asinf(UTIL_Clampf(sin_pitch, -1.0f, 1.0f));
 
     /* Yaw: rotation about z. */
-    ahrs->euler[2] = atan2f(2.0f * (q0 * q3 + q1 * q2), 1.0f - 2.0f * (q2 * q2 + q3 * q3));
+    ahrs->euler[2] = UTIL_Atan2(2.0f * (q0 * q3 + q1 * q2), 1.0f - 2.0f * (q2 * q2 + q3 * q3));
 }
 
 /**
@@ -327,17 +390,37 @@ static void write_jacobian_h(UTIL_AHRS_s* ahrs)
  *
  * @param ahrs  Instance whose bias states are clamped.
  */
-static void clamp_bias(UTIL_AHRS_s* ahrs)
+static void clamp_bias(UTIL_AHRS_s* ahrs, const float* before, float dt)
 {
-    if (!(ahrs->bias_limit > 0.0f))
-    {
-        return;
-    }
-
     float* x = ahrs->kf.x;
 
-    x[4] = UTIL_Clampf(x[4], -ahrs->bias_limit, ahrs->bias_limit);
-    x[5] = UTIL_Clampf(x[5], -ahrs->bias_limit, ahrs->bias_limit);
+    /* Rate first, then magnitude. Limiting how far this step moved has to happen
+     * against the pre-correction value, and clamping to the magnitude first would
+     * change what "how far it moved" means. */
+    if (ahrs->bias_slew > 0.0f && before != NULL)
+    {
+        const float step = ahrs->bias_slew * dt;
+
+        for (uint16_t i = 4u; i < 6u; i++)
+        {
+            const float delta = x[i] - before[i - 4u];
+
+            if (delta > step)
+            {
+                x[i] = before[i - 4u] + step;
+            }
+            else if (delta < -step)
+            {
+                x[i] = before[i - 4u] - step;
+            }
+        }
+    }
+
+    if (ahrs->bias_limit > 0.0f)
+    {
+        x[4] = UTIL_Clampf(x[4], -ahrs->bias_limit, ahrs->bias_limit);
+        x[5] = UTIL_Clampf(x[5], -ahrs->bias_limit, ahrs->bias_limit);
+    }
 }
 
 /**
@@ -384,6 +467,8 @@ bool UTIL_AHRS_Init(UTIL_AHRS_s* ahrs, float* buf, float gravity)
     ahrs->gravity            = 1.0f;
     ahrs->accel_tol          = 0.0f;
     ahrs->bias_limit         = DEFAULT_BIAS_LIMIT;
+    ahrs->still_rate         = DEFAULT_STILL_RATE;
+    ahrs->bias_slew          = DEFAULT_BIAS_SLEW;
     ahrs->accel_reject_count = 0u;
     ahrs->initialized        = false;
     ahrs->converged          = false;
@@ -406,7 +491,7 @@ bool UTIL_AHRS_Init(UTIL_AHRS_s* ahrs, float* buf, float gravity)
     float r_diag[UTIL_AHRS_MEAS_DIM] = {ahrs->r_accel, ahrs->r_accel, ahrs->r_accel};
     UTIL_KF_SetMeasurementNoise(&ahrs->kf, r_diag);
 
-    UTIL_KF_SetGuards(&ahrs->kf, DEFAULT_GATE_SIGMA, INITIAL_P_QUAT);
+    UTIL_KF_SetGuards(&ahrs->kf, DEFAULT_GATE_SIGMA, REBUILD_P_DIAG);
     UTIL_KF_SetGateMaxRun(&ahrs->kf, DEFAULT_GATE_MAX_RUN);
 
     ahrs->initialized = true;
@@ -459,6 +544,32 @@ void UTIL_AHRS_SetGuards(UTIL_AHRS_s* ahrs, float accel_tol, float gate_sigma, f
     UTIL_KF_SetGuards(&ahrs->kf, gate_sigma, 0.0f);
 }
 
+void UTIL_AHRS_SetStillRate(UTIL_AHRS_s* ahrs, float rate)
+{
+    if (ahrs == NULL || !ahrs->initialized)
+    {
+        return;
+    }
+
+    if (UTIL_IsFinitef(rate) && rate >= 0.0f)
+    {
+        ahrs->still_rate = rate;
+    }
+}
+
+void UTIL_AHRS_SetBiasSlew(UTIL_AHRS_s* ahrs, float slew)
+{
+    if (ahrs == NULL || !ahrs->initialized)
+    {
+        return;
+    }
+
+    if (UTIL_IsFinitef(slew) && slew >= 0.0f)
+    {
+        ahrs->bias_slew = slew;
+    }
+}
+
 void UTIL_AHRS_Reset(UTIL_AHRS_s* ahrs)
 {
     if (ahrs == NULL || !ahrs->initialized)
@@ -476,9 +587,10 @@ void UTIL_AHRS_Reset(UTIL_AHRS_s* ahrs)
     x[4]     = 0.0f;
     x[5]     = 0.0f;
 
-    /* The quaternion is well known relative to itself; the bias is not known at
-     * all, so it gets the larger initial variance and therefore the larger share
-     * of early corrections. */
+    /* The attitude is unknown and the bias is not: see INITIAL_P_QUAT. The
+     * quaternion's norm is fixed, which is what an earlier comment here called
+     * "well known" -- but its direction is a guess, and direction is what the
+     * accelerometer corrects. */
     float p_diag[UTIL_AHRS_STATE_DIM] = {INITIAL_P_QUAT, INITIAL_P_QUAT, INITIAL_P_QUAT,
                                          INITIAL_P_QUAT, INITIAL_P_BIAS, INITIAL_P_BIAS};
     UTIL_KF_SetCovarianceDiag(&ahrs->kf, p_diag);
@@ -515,7 +627,7 @@ bool UTIL_AHRS_AlignToAccel(UTIL_AHRS_s* ahrs, const float* accel)
 
     /* Roll and pitch that place gravity where it was measured. Yaw is left at
      * zero because gravity carries no heading information. */
-    float roll  = atan2f(ay, az);
+    float roll  = UTIL_Atan2(ay, az);
     float pitch = asinf(UTIL_Clampf(-ax, -1.0f, 1.0f));
 
     float cr = cosf(roll * 0.5f), sr = sinf(roll * 0.5f);
@@ -634,6 +746,24 @@ bool UTIL_AHRS_Update(UTIL_AHRS_s* ahrs, const float* gyro, const float* accel, 
         ahrs->accel_reject_count++;
     }
 
+    /* Magnitude is not sufficient on its own: a steady turn keeps |a| at exactly 1 g
+     * while the attitude is really changing, so the correction that follows would
+     * attribute part of that rotation to the bias states -- and the bias keeps
+     * applying it after the motion stops. Rate is what separates "gravity is
+     * observable" from "the vector happens to have the right length". Uses the
+     * bias-corrected w, not the raw gyro, so a large stored bias cannot hold the
+     * gate shut and starve the filter of the corrections that would fix it. */
+    if (accel_usable && ahrs->still_rate > 0.0f)
+    {
+        const float w_inv = inv_norm3(w);
+
+        if (w_inv > 0.0f && (1.0f / w_inv) > ahrs->still_rate)
+        {
+            accel_usable = false;
+            ahrs->accel_reject_count++;
+        }
+    }
+
     if (accel_usable)
     {
         write_jacobian_h(ahrs);
@@ -663,6 +793,27 @@ bool UTIL_AHRS_Update(UTIL_AHRS_s* ahrs, const float* gyro, const float* accel, 
             z_eff[i] = (accel[i] * inv) - g_pred[i] + h_x;
         }
 
+        /* Gravity carries no information about rotation ABOUT gravity, so whatever
+         * the correction wants to do to q3 is not a measurement -- it is the
+         * numerical coupling in K and the accelerometer's own noise. Held across
+         * Correct and put back, which is the same thing as zeroing that element of
+         * the correction vector; UTIL_KF_Correct applies the whole vector
+         * internally, so there is no other way to reach it.
+         *
+         * Without this, every accepted sample nudges the heading by a little
+         * noise. At 1 kHz that is 600000 nudges in ten minutes, and a random walk
+         * over that many steps is the yaw drift measured on this board (0.0035
+         * deg/s) even with the bias correctly calibrated. Nothing else in the loop
+         * removes it, because it is not a bias -- it is injected fresh each step.
+         *
+         * This is the same reasoning the state vector already follows by having no
+         * bias_z term at all (see UTIL_AHRS_s): unobservable quantities do not get
+         * estimated. q3 was the one place the rule was not applied.
+         *
+         * Roll and pitch are unaffected -- they are what gravity does observe. */
+        const float q3_before     = ahrs->kf.x[3];
+        const float bias_before[] = {ahrs->kf.x[4], ahrs->kf.x[5]};
+
         if (!UTIL_KF_Correct(&ahrs->kf, z_eff))
         {
             /* Every component gated out is normal and not a failure; a rebuilt
@@ -674,8 +825,15 @@ bool UTIL_AHRS_Update(UTIL_AHRS_s* ahrs, const float* gyro, const float* accel, 
             }
         }
 
+        /* Only when the state survived: a rebuilt quaternion must not have a stale
+         * component written back into it. */
+        if (UTIL_IsFinitef(ahrs->kf.x[3]))
+        {
+            ahrs->kf.x[3] = q3_before;
+        }
+
         quat_normalise(UTIL_KF_State(&ahrs->kf));
-        clamp_bias(ahrs);
+        clamp_bias(ahrs, bias_before, dt_s);
     }
 
     update_euler(ahrs);
